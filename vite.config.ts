@@ -19,18 +19,46 @@ function figmaAssetResolver() {
 export default defineConfig({
   plugins: [
     figmaAssetResolver(),
-    // The React and Tailwind plugins are both required for Make, even if
-    // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
   ],
   resolve: {
     alias: {
-      // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return
+          }
 
-  // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
+          if (id.includes('react') || id.includes('scheduler')) {
+            return 'react'
+          }
+
+          if (id.includes('@mui') || id.includes('@emotion')) {
+            return 'mui'
+          }
+
+          if (id.includes('@radix-ui')) {
+            return 'radix-ui'
+          }
+
+          if (id.includes('lucide-react')) {
+            return 'icons'
+          }
+
+          return 'vendor'
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+    reportCompressedSize: false,
+  },
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })

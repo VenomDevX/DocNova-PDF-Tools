@@ -1,5 +1,8 @@
 {
-  "buildCommand": "npm install && npm run build",
+  "buildCommand": "node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
   "outputDirectory": "dist",
-  "framework": "vite"
+  "framework": "vite",
+  "env": {
+    "VITE_API_URL": "@docnova-pdf-tools-production"
+  }
 }
