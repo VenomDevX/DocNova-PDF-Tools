@@ -28,7 +28,7 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     CORS_ORIGINS = [
-        "https://docnova-pdf-tools.vercel.app",
+        "https://doc-nova.vercel.app",
         "https://docnova-pdf-tools-production.up.railway.app"
     ]
     # Optimize uploads
