@@ -1,7 +1,6 @@
 {
+  "runtime": "python3.11",
   "buildCommand": "pip install -r requirements.txt",
-  "devCommand": "python app.py",
-  "outputDirectory": ".",
   "env": {
     "PYTHONUNBUFFERED": "1"
   }
