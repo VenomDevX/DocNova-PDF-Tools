@@ -7,7 +7,7 @@ type ImportMetaWithEnv = ImportMeta & {
   };
 };
 
-const API_BASE_URL = (import.meta as ImportMetaWithEnv).env?.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = (import.meta as ImportMetaWithEnv).env?.VITE_API_URL || 'https://docnova-pdf-tools-production.up.railway.app';
 
 export interface ApiResponse<T = any> {
   success: boolean;
