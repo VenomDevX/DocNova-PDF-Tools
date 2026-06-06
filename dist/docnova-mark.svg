@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="DocNova logo">
+  <defs>
+    <linearGradient id="dn-bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1d4ed8"/>
+      <stop offset="0.52" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="dn-sheet" x1="20" y1="14" x2="46" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+    <filter id="dn-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#2563eb" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <rect x="5" y="5" width="54" height="54" rx="16" fill="url(#dn-bg)" filter="url(#dn-glow)"/>
+  <path d="M22 14h17l9 9v27H22V14z" fill="url(#dn-sheet)" opacity="0.98"/>
+  <path d="M39 14v10h9" fill="#bfdbfe"/>
+  <path d="M22 14h17l9 9v27H22V14z" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M27 24h8.5c6.2 0 10.5 4.2 10.5 9.9S41.7 44 35.5 44H27V24z" fill="none" stroke="#1d4ed8" stroke-width="4.1" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M31.2 31.2h4.1c2.5 0 4.1 1.6 4.1 3.8s-1.6 3.8-4.1 3.8h-4.1v-7.6z" fill="#3b82f6" opacity="0.22"/>
+  <path d="M18 18l1.9 5.2L25 25l-5.1 1.8L18 32l-1.9-5.2L11 25l5.1-1.8L18 18z" fill="#ffffff"/>
+  <path d="M49 35l1.3 3.4L54 40l-3.7 1.6L49 45l-1.3-3.4L44 40l3.7-1.6L49 35z" fill="#dbeafe"/>
+  <path d="M13 46c10.5 5.8 25.4 5.5 38-1.2" fill="none" stroke="rgba(191,219,254,0.76)" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

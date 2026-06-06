@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: docnova-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    restart: unless-stopped
+    networks:
+      - docnova-network
+
+networks:
+  docnova-network:
+    driver: bridge
+
+# Usage:
+# docker-compose up -d          # Start backend
+# docker-compose down           # Stop backend
+# docker-compose logs -f        # View logs
+# docker-compose exec backend bash  # Access container
