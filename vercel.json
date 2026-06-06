@@ -1,8 +1,5 @@
 {
   "buildCommand": "npm install && npm run build",
   "outputDirectory": "dist",
-  "framework": "vite",
-  "env": {
-    "PYTHONUNBUFFERED": "1"
-  }
+  "framework": "vite"
 }
