@@ -28,9 +28,13 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     CORS_ORIGINS = [
-        "https://yourdomain.com",
-        "https://www.yourdomain.com"
+        "https://docnova-pdf-tools.vercel.app",
+        "https://docnova-pdf-tools-production.up.railway.app"
     ]
+    # Optimize uploads
+    JSON_SORT_KEYS = False
+    SEND_FILE_MAX_AGE_DEFAULT = 0
+    PREFERRED_URL_SCHEME = 'https'
 
 class TestingConfig(Config):
     """Testing configuration"""
