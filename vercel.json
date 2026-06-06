@@ -1,13 +1,8 @@
 {
-  "experimentalServices": {
-    "frontend": {
-      "routePrefix": "/",
-      "framework": "vite"
-    },
-    "backend": {
-      "root": "backend",
-      "routePrefix": "/api",
-      "runtime": "python3.11"
-    }
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "env": {
+    "PYTHONUNBUFFERED": "1"
   }
 }
