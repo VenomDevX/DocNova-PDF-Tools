@@ -1,7 +1,0 @@
-{
-  "runtime": "python3.11",
-  "buildCommand": "pip install -r requirements.txt",
-  "env": {
-    "PYTHONUNBUFFERED": "1"
-  }
-}
