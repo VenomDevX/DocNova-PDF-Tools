@@ -40,7 +40,7 @@ export default function ToolsPage() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} style={{ marginTop: "1.75rem", position: "relative" }}>
             <Search size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--dn-t4)" }} />
             <input type="text" placeholder="Search tools..." value={search} onChange={e => setSearch(e.target.value)}
-              style={{ width: "100%", padding: "0.875rem 1rem 0.875rem 2.75rem", borderRadius: "14px", background: "var(--dn-bg-input)", border: "1px solid var(--dn-border)", color: "var(--dn-t1)", fontSize: "0.95rem", outline: "none", fontFamily: "'Inter',sans-serif", transition: "border-color 0.2s", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "0.875rem 1rem 0.875rem 2.75rem", borderRadius: "6px", background: "var(--dn-bg-input)", border: "1px solid var(--dn-border)", color: "var(--dn-t1)", fontSize: "0.95rem", outline: "none", fontFamily: "'Inter',sans-serif", transition: "border-color 0.2s", boxSizing: "border-box" }}
               onFocus={e => { e.target.style.borderColor = "rgba(59,130,246,0.5)"; }}
               onBlur={e => { e.target.style.borderColor = "var(--dn-border)"; }} />
           </motion.div>
@@ -75,14 +75,15 @@ export default function ToolsPage() {
                     <Link to={`/tools/${tool.id}`} style={{ textDecoration: "none" }}>
                       <motion.div
                         whileHover={{ y: -5, scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                        style={{ padding: "1.5rem", borderRadius: "20px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", cursor: "pointer", height: "100%", position: "relative", overflow: "hidden", boxShadow: "var(--dn-shadow)", transition: "border-color 0.2s" }}
+                        className="dn-card"
+                        style={{ padding: "1.5rem", borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", cursor: "pointer", height: "100%", position: "relative", overflow: "hidden", boxShadow: "var(--dn-shadow)", transition: "border-color 0.2s" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}35`; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--dn-border)"; }}
                       >
                         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: `linear-gradient(90deg,transparent,${tool.color}50,transparent)` }} />
                         <div style={{ position: "absolute", top: 0, right: 0, width: "80px", height: "80px", background: `radial-gradient(circle at top right,${tool.cardTint},transparent 70%)`, pointerEvents: "none" }} />
                         {tool.badge && <div style={{ position: "absolute", top: "1rem", right: "1rem", padding: "0.15rem 0.5rem", borderRadius: "999px", background: `${tool.color}20`, border: `1px solid ${tool.color}35`, color: tool.color, fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase" }}>{tool.badge}</div>}
-                        <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: tool.iconGrad, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem", boxShadow: `0 4px 14px ${tool.color}30` }}>
+                        <div style={{ width: "44px", height: "44px", borderRadius: "6px", background: tool.iconGrad, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem", boxShadow: `0 4px 14px ${tool.color}30` }}>
                           <tool.icon size={20} color="#fff" />
                         </div>
                         <div style={{ color: "var(--dn-t1)", fontWeight: 700, fontSize: "1rem", letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>{tool.label}</div>

@@ -7,7 +7,7 @@ type ImportMetaWithEnv = ImportMeta & {
   };
 };
 
-const API_BASE_URL = (import.meta as ImportMetaWithEnv).env?.VITE_API_URL || 'https://docnova-pdf-tools-production.up.railway.app';
+const API_BASE_URL = (import.meta as ImportMetaWithEnv).env?.VITE_API_URL || 'http://localhost:5000';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -285,10 +285,13 @@ class PDFApiService {
     }
   }
 
-  async jpgToPDF(files: File[]): Promise<Blob | null> {
+  async jpgToPDF(files: File[], params: Record<string, string> = {}): Promise<Blob | null> {
     try {
       const formData = new FormData();
       files.forEach(file => formData.append('files', file));
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) formData.append(key, value);
+      });
 
       const response = await fetch(`${this.baseURL}/api/jpg-to-pdf`, {
         method: 'POST',

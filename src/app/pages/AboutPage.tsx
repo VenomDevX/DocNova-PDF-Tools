@@ -86,7 +86,7 @@ export default function AboutPage() {
             viewport={{ once: true }}
             style={{
               padding: "3.5rem",
-              borderRadius: "32px",
+              borderRadius: "6px",
               background: "linear-gradient(135deg, rgba(10,132,255,0.1) 0%, rgba(90,200,250,0.05) 100%)",
               border: "1px solid rgba(10,132,255,0.2)",
               backdropFilter: "blur(20px)",
@@ -157,7 +157,7 @@ export default function AboutPage() {
                 whileHover={{ y: -4 }}
                 style={{
                   padding: "2rem",
-                  borderRadius: "24px",
+                  borderRadius: "6px",
                   background: "var(--dn-bg-card)",
                   border: "1px solid var(--dn-border)",
                   transition: "var(--dn-transition)",
@@ -166,7 +166,7 @@ export default function AboutPage() {
                 <div style={{
                   width: "48px",
                   height: "48px",
-                  borderRadius: "14px",
+                  borderRadius: "6px",
                   background: "rgba(10,132,255,0.12)",
                   border: "1px solid rgba(10,132,255,0.2)",
                   display: "flex",
@@ -225,7 +225,7 @@ export default function AboutPage() {
                 whileHover={{ y: -5, scale: 1.03 }}
                 style={{
                   padding: "2rem 1.5rem",
-                  borderRadius: "20px",
+                  borderRadius: "6px",
                   background: "var(--dn-bg-card)",
                   border: "1px solid var(--dn-border)",
                   transition: "var(--dn-transition)",
