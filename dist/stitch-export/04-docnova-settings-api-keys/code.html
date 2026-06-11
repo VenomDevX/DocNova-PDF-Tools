@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocNova - API Keys Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "tertiary-fixed": "#acedff",
+                    "on-surface": "#0b1c30",
+                    "on-secondary-fixed-variant": "#414658",
+                    "on-primary-container": "#eeefff",
+                    "on-background": "#0b1c30",
+                    "surface": "#f8f9ff",
+                    "surface-container": "#e5eeff",
+                    "on-primary-fixed": "#00174b",
+                    "outline": "#737686",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-bright": "#f8f9ff",
+                    "outline-variant": "#c3c6d7",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#d3e4fe",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed": "#161b2b",
+                    "on-error-container": "#93000a",
+                    "surface-tint": "#0053db",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-variant": "#d3e4fe",
+                    "primary-container": "#2563eb",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary": "#005e6e",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#cbdbf5",
+                    "on-secondary-container": "#5d6274",
+                    "background": "#f8f9ff",
+                    "tertiary-container": "#00788c",
+                    "secondary": "#595e70",
+                    "secondary-fixed": "#dee1f7",
+                    "on-surface-variant": "#434655",
+                    "on-tertiary-container": "#d7f6ff",
+                    "surface-container-low": "#eff4ff",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#dce9ff",
+                    "secondary-container": "#dbdff4",
+                    "inverse-surface": "#213145",
+                    "inverse-on-surface": "#eaf1ff",
+                    "secondary-fixed-dim": "#c2c6db",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "inverse-primary": "#b4c5ff",
+                    "primary": "#004ac6",
+                    "on-tertiary-fixed": "#001f26",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-md": "16px",
+                    "stack-sm": "8px",
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "gutter": "24px",
+                    "stack-lg": "32px",
+                    "container-max": "1280px",
+                    "margin-desktop": "40px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "body-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "display-md": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background flex h-screen overflow-hidden">
+<!-- Global App Shell: SideNavBar -->
+<nav class="h-screen w-64 flex flex-col bg-on-surface dark:bg-surface-container-lowest shadow-sm fixed left-0 top-0 py-stack-lg shrink-0 hidden md:flex z-50">
+<div class="px-gutter mb-stack-lg flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-extrabold text-surface-container-lowest leading-none">DocNova</h1>
+<p class="font-label-md text-label-md text-surface-variant/70 mt-1">AI Intelligence</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto px-4 flex flex-col gap-2">
+<!-- Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-transform font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-surface-bright transition-colors" style="font-variation-settings: 'FILL' 0;">home</span>
+                Home
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-transform font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-surface-bright transition-colors" style="font-variation-settings: 'FILL' 0;">description</span>
+                Documents
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-transform font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-surface-bright transition-colors" style="font-variation-settings: 'FILL' 0;">chat</span>
+                Conversations
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-transform font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-surface-bright transition-colors" style="font-variation-settings: 'FILL' 0;">search</span>
+                Search
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-transform font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-surface-bright transition-colors" style="font-variation-settings: 'FILL' 0;">database</span>
+                Extractions
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-transform font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-surface-bright transition-colors" style="font-variation-settings: 'FILL' 0;">analytics</span>
+                Analytics
+            </a>
+<div class="h-px bg-surface-variant/20 my-2"></div>
+<div class="px-4 py-2 text-[10px] uppercase tracking-widest text-surface-variant/50 font-semibold">System</div>
+<!-- Active -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 border-primary bg-primary-container/10 text-primary-fixed active:scale-95 transition-transform font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-xl text-primary-fixed" style="font-variation-settings: 'FILL' 1;">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-background">
+<!-- Mobile Top Nav (Hidden on Desktop) -->
+<header class="md:hidden flex justify-between items-center px-gutter w-full h-16 bg-surface-container-lowest border-b border-outline-variant shrink-0">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">DocNova</h1>
+<div class="flex gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined">menu</span></button>
+</div>
+</header>
+<!-- Settings Layout Canvas -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Settings Sub-Nav (Left 220px) -->
+<aside class="w-[220px] bg-surface-container-lowest border-r border-outline-variant hidden lg:flex flex-col py-stack-lg shrink-0 overflow-y-auto">
+<div class="px-gutter mb-stack-md">
+<h2 class="font-title-lg text-title-lg text-on-surface">Settings</h2>
+</div>
+<nav class="flex flex-col px-4 gap-1">
+<a class="px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]">person</span>
+                        Profile
+                    </a>
+<a class="px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]">corporate_fare</span>
+                        Organization
+                    </a>
+<a class="px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+                        Team Members
+                    </a>
+<a class="px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]">credit_card</span>
+                        Billing &amp; Plans
+                    </a>
+<div class="h-px bg-outline-variant my-3 mx-4"></div>
+<div class="px-4 py-2 font-label-md text-label-md text-on-surface-variant/70">DEVELOPER</div>
+<!-- Active Sub-Nav Item -->
+<a class="px-4 py-2.5 rounded-lg bg-surface-container-high text-primary font-semibold transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">key</span>
+                        API Keys
+                    </a>
+<a class="px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]">webhook</span>
+                        Webhooks
+                    </a>
+</nav>
+</aside>
+<!-- Settings Content (Right) -->
+<div class="flex-1 overflow-y-auto bg-surface relative">
+<div class="max-w-4xl mx-auto py-stack-lg px-gutter lg:px-12">
+<!-- Content Header -->
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-stack-lg border-b border-outline-variant pb-6">
+<div>
+<h2 class="font-title-lg text-title-lg font-bold text-on-surface">API Keys</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Use the DocNova API in your applications to build custom integrations.</p>
+</div>
+<button class="h-[44px] px-6 bg-primary-container text-on-primary font-body-sm text-body-sm font-semibold rounded-lg shadow-[0_4px_6px_-1px_rgba(10,15,30,0.1),0_2px_4px_-2px_rgba(10,15,30,0.05)] hover:bg-surface-tint transition-colors flex items-center justify-center gap-2 whitespace-nowrap shrink-0">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                            Generate New Key
+                        </button>
+</div>
+<!-- Warning Banner -->
+<div class="bg-[#FFFBEB] border border-[#FDE68A] rounded-lg p-4 flex gap-4 mb-stack-lg items-start shadow-sm">
+<span class="material-symbols-outlined text-[#D97706] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<h4 class="font-label-md text-label-md text-[#92400E] mb-1">Security Warning</h4>
+<p class="font-body-sm text-body-sm text-[#B45309]">Keep your API keys secret. Never expose them in frontend code (like React, Vue, or native apps) or public repositories. They grant full access to your organization's data.</p>
+</div>
+</div>
+<!-- API Keys Table Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-[0_4px_6px_-1px_rgba(10,15,30,0.1),0_2px_4px_-2px_rgba(10,15,30,0.05)] overflow-hidden mb-stack-lg">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-outline-variant">
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold">NAME</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold">SECRET KEY</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold">CREATED</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold">LAST USED</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold text-right">ACTIONS</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-outline-variant/50 hover:bg-surface/50 transition-colors h-[56px] group">
+<td class="py-3 px-6">
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">Production Key</div>
+<div class="font-label-md text-label-md text-on-surface-variant/70 mt-0.5">Live Environment</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex items-center gap-2">
+<code class="font-mono text-[13px] text-on-surface bg-surface-container py-1 px-2 rounded border border-outline-variant/30">dn_live_********************a8x9</code>
+</div>
+</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface-variant">Oct 12, 2023</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface-variant">2 hours ago</td>
+<td class="py-3 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-8 h-8 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low flex items-center justify-center transition-colors tooltip-trigger" title="Copy Key">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="w-8 h-8 rounded text-error/70 hover:text-error hover:bg-error-container/30 flex items-center justify-center transition-colors" title="Revoke Key">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface/50 transition-colors h-[56px] group">
+<td class="py-3 px-6">
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">Development Key</div>
+<div class="font-label-md text-label-md text-on-surface-variant/70 mt-0.5">Test Environment</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex items-center gap-2">
+<code class="font-mono text-[13px] text-on-surface bg-surface-container py-1 px-2 rounded border border-outline-variant/30">dn_test_********************4m2p</code>
+</div>
+</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface-variant">Nov 04, 2023</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface-variant">Never</td>
+<td class="py-3 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-8 h-8 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low flex items-center justify-center transition-colors tooltip-trigger" title="Copy Key">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="w-8 h-8 rounded text-error/70 hover:text-error hover:bg-error-container/30 flex items-center justify-center transition-colors" title="Revoke Key">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Rate Limits Info Banner -->
+<div class="bg-surface-container-low border border-primary-fixed rounded-lg p-5 flex gap-4 items-start">
+<span class="material-symbols-outlined text-primary shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">info</span>
+<div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-1">Current Rate Limits</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-3">Your API usage is governed by your current Pro plan subscription. Limits are applied across all keys simultaneously.</p>
+<div class="flex flex-wrap gap-4 mt-2">
+<div class="bg-surface-container-lowest px-4 py-2 rounded-md border border-outline-variant/50">
+<div class="font-label-md text-label-md text-on-surface-variant mb-0.5">HOURLY LIMIT</div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">1,000 requests / hour</div>
+</div>
+<div class="bg-surface-container-lowest px-4 py-2 rounded-md border border-outline-variant/50">
+<div class="font-label-md text-label-md text-on-surface-variant mb-0.5">MONTHLY LIMIT</div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface">50,000 requests / month</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

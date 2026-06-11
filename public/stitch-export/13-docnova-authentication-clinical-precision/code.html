@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocNova - Authentication</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "inverse-surface": "#213145",
+                        "on-surface-variant": "#434655",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#cbdbf5",
+                        "secondary": "#595e70",
+                        "background": "#f8f9ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-surface": "#0b1c30",
+                        "surface-variant": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-background": "#0b1c30",
+                        "surface-container-high": "#dce9ff",
+                        "outline": "#737686",
+                        "on-secondary-container": "#5d6274",
+                        "on-tertiary-container": "#d7f6ff",
+                        "secondary-container": "#dbdff4",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "surface-tint": "#0053db",
+                        "on-tertiary-fixed": "#001f26",
+                        "secondary-fixed": "#dee1f7",
+                        "tertiary": "#005e6e",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#acedff",
+                        "surface-container-low": "#eff4ff",
+                        "on-error-container": "#93000a",
+                        "surface": "#f8f9ff",
+                        "on-secondary-fixed-variant": "#414658",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-secondary-fixed": "#161b2b",
+                        "tertiary-container": "#00788c",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-fixed": "#00174b",
+                        "primary": "#004ac6",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#c2c6db",
+                        "on-primary-container": "#eeefff",
+                        "outline-variant": "#c3c6d7",
+                        "brand-navy": "#0A0F1E"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "container-max": "1280px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px",
+                        "stack-lg": "32px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-md": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    },
+                    "boxShadow": {
+                        "ambient": "0 4px 6px -1px rgba(10, 15, 30, 0.1), 0 2px 4px -2px rgba(10, 15, 30, 0.05)"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex antialiased">
+<!-- Left Panel (Brand Side) -->
+<div class="hidden lg:flex w-1/2 bg-[#0A0F1E] flex-col justify-between p-margin-desktop relative overflow-hidden">
+<!-- Optional Decorative Element -->
+<div class="absolute top-0 right-0 w-96 h-96 bg-primary opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+<!-- Top: Logo -->
+<div class="flex items-center gap-stack-sm z-10">
+<img alt="DocNova Logo" class="w-12 h-12 object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLt2y1fw69MYA3hx2zyWu3kZ-IpXKrMmWctvrUUvPSYSOd8HsXPVM84Nt5cPgMtGdxiEyq4bqs2Lk1nZYQ7F9STH8jXcLl6o97PB7u2hRjHYqu-P3EUBSj6Laty0VUehyVIZF_h3nSongineloDmoAD8wqahhHDTyODlS2aLro9x2F6xjJchkJkik44GK5Xj3OMbs3-VdiSPyBZEqQ_xSuhsObA62Mh6X87G9dkQBn89gn5-ROJwMX0fwns"/>
+<span class="font-title-lg text-title-lg text-white">DocNova</span>
+</div>
+<!-- Middle: Content -->
+<div class="flex flex-col gap-stack-lg max-w-md z-10">
+<div>
+<h1 class="text-[32px] leading-[40px] font-bold text-white mb-stack-sm tracking-tight">Document intelligence built for precision.</h1>
+<p class="font-body-lg text-body-lg text-secondary-fixed-dim">Trusted by leading legal and medical teams to analyze complex documents with surgical accuracy.</p>
+</div>
+<!-- Feature List -->
+<ul class="flex flex-col gap-stack-sm">
+<li class="flex items-center gap-stack-sm text-surface-container-highest font-body-md text-body-md">
+<span class="material-symbols-outlined text-[#10B981] text-[20px]" data-weight="fill">check_circle</span>
+                    Source-cited answers
+                </li>
+<li class="flex items-center gap-stack-sm text-surface-container-highest font-body-md text-body-md">
+<span class="material-symbols-outlined text-[#10B981] text-[20px]" data-weight="fill">check_circle</span>
+                    No model training on your data
+                </li>
+<li class="flex items-center gap-stack-sm text-surface-container-highest font-body-md text-body-md">
+<span class="material-symbols-outlined text-[#10B981] text-[20px]" data-weight="fill">check_circle</span>
+                    SOC 2 Type II compliant
+                </li>
+</ul>
+<!-- Testimonial Card -->
+<div class="bg-inverse-surface border border-outline/20 rounded-xl p-gutter shadow-ambient mt-stack-md">
+<p class="font-body-md text-body-md text-white italic mb-stack-sm">"DocNova halved our due diligence time while completely eliminating manual review errors. It's an indispensable part of our workflow."</p>
+<div class="flex items-center gap-stack-sm">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-white font-label-md text-label-md uppercase">
+                        JW
+                    </div>
+<div>
+<p class="font-body-sm text-body-sm text-white font-semibold">James W.</p>
+<p class="font-body-sm text-body-sm text-secondary-fixed-dim">M&amp;A Associate, Tier 1 Firm</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom: Copyright -->
+<div class="z-10 text-secondary-fixed-dim font-body-sm text-body-sm">
+            © 2024 DocNova Health Systems. All rights reserved.
+        </div>
+</div>
+<!-- Right Panel (Auth Side) -->
+<div class="w-full lg:w-1/2 flex items-center justify-center p-margin-mobile md:p-margin-desktop bg-surface relative">
+<!-- Mobile Logo (hidden on desktop) -->
+<div class="absolute top-margin-mobile left-margin-mobile lg:hidden flex items-center gap-stack-sm">
+<img alt="DocNova Logo" class="w-10 h-10 object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLt2y1fw69MYA3hx2zyWu3kZ-IpXKrMmWctvrUUvPSYSOd8HsXPVM84Nt5cPgMtGdxiEyq4bqs2Lk1nZYQ7F9STH8jXcLl6o97PB7u2hRjHYqu-P3EUBSj6Laty0VUehyVIZF_h3nSongineloDmoAD8wqahhHDTyODlS2aLro9x2F6xjJchkJkik44GK5Xj3OMbs3-VdiSPyBZEqQ_xSuhsObA62Mh6X87G9dkQBn89gn5-ROJwMX0fwns"/>
+<span class="font-title-lg text-title-lg text-on-surface">DocNova</span>
+</div>
+<!-- Form Container -->
+<div class="w-full max-w-[400px] bg-surface-container-lowest border border-[#E2E8F0] rounded-xl shadow-ambient p-gutter md:p-stack-lg">
+<!-- Tabs -->
+<div class="flex mb-stack-lg border-b border-outline-variant relative">
+<button class="w-1/2 pb-stack-sm font-label-md text-label-md text-primary border-b-2 border-primary text-center">
+                    SIGN IN
+                </button>
+<button class="w-1/2 pb-stack-sm font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors text-center">
+                    SIGN UP
+                </button>
+</div>
+<!-- Sign In State -->
+<div id="signin-view">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-stack-lg text-center">Welcome back</h2>
+<!-- OAuth -->
+<div class="flex flex-col gap-stack-sm mb-stack-lg">
+<button class="flex items-center justify-center gap-stack-sm w-full h-[44px] bg-surface-container-lowest border border-outline-variant rounded-md font-body-sm text-body-sm font-semibold text-on-surface hover:bg-surface-container-low transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+<img alt="Google" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5f3hbnRv4CwDsoTVTMnej8yIwKhKq_xTsvu4l7L9qsB3gsW8QgREVB00NiV7NRqX2gkEEn-5AjfYm1QJHhaqhmtQw3wQ-z4Kv5MDPQFGYnF-fnpIeHfOAvQEaaYUx44t1o4y6JOEkkkuZ_1rVgELRLBHOrAsUqYHAkPAk3saJKYQxuXSvOe3QoulgZN3iuxywpVCKuvPAq4NaNGjULP9b3ML_UYJE_uRc1V-b-iRZdS_LiBaqV4-ZzfSznJrHZ11FeiXAphi0qJM"/>
+                        Continue with Google
+                    </button>
+<button class="flex items-center justify-center gap-stack-sm w-full h-[44px] bg-surface-container-lowest border border-outline-variant rounded-md font-body-sm text-body-sm font-semibold text-on-surface hover:bg-surface-container-low transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+<img alt="Microsoft" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfrr6aBU6VkFbWqK-ReOGqj-9hG_h-iKUV3JkHYEi3zyombs3dvTLETfUjQLeRqWKi__NJtE8Sqhq1vmz0ZbwH1-XpB_KauHvXRiRY_yluVLZQL4JwRKJswnhrgtIWtvMjkB0jdpzcpAnVpHxIvrT7Dc2NM-nMxzwR1mikcUUMbMKDIsjCF6i-24MEOruEF6IxyNjVulAkYpii2yghg7NnZkP4Wix37BpgKEV0RUak54r__ca54oyEkXKtNlAqsp17KIlCjO6WT_4"/>
+                        Continue with Microsoft
+                    </button>
+</div>
+<!-- Divider -->
+<div class="relative flex py-5 items-center mb-stack-md">
+<div class="flex-grow border-t border-outline-variant"></div>
+<span class="flex-shrink-0 mx-4 font-body-sm text-body-sm text-secondary">or</span>
+<div class="flex-grow border-t border-outline-variant"></div>
+</div>
+<!-- Form -->
+<form class="flex flex-col gap-stack-md" onsubmit="event.preventDefault();">
+<!-- Email -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-unit" for="email">Email Address</label>
+<input class="w-full h-[44px] px-stack-sm border border-[#E2E8F0] rounded-md font-body-sm text-body-sm bg-surface-container-lowest focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-on-surface placeholder:text-secondary" id="email" placeholder="you@company.com" type="email"/>
+</div>
+<!-- Password -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-unit" for="password">Password</label>
+<div class="relative">
+<input class="w-full h-[44px] px-stack-sm pr-10 border border-[#E2E8F0] rounded-md font-body-sm text-body-sm bg-surface-container-lowest focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-on-surface placeholder:text-secondary" id="password" placeholder="••••••••" type="password"/>
+<button aria-label="Toggle password visibility" class="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-on-surface focus:outline-none" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Options Row -->
+<div class="flex items-center justify-between">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="w-4 h-4 rounded border-[#E2E8F0] text-primary focus:ring-primary/20 bg-surface-container-lowest" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Remember me</span>
+</label>
+<a class="font-body-sm text-body-sm text-primary hover:underline font-semibold" href="#">Forgot password?</a>
+</div>
+<!-- Submit -->
+<button class="w-full h-[44px] bg-[#2563EB] hover:bg-primary text-white font-body-sm text-body-sm font-semibold rounded-md transition-colors mt-unit focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" type="submit">
+                        Sign In
+                    </button>
+</form>
+<!-- Footer -->
+<p class="mt-stack-lg text-center font-body-sm text-body-sm text-on-surface-variant">
+                    Don't have an account? <a class="text-primary hover:underline font-semibold" href="#">Sign up free</a>
+</p>
+</div>
+</div>
+</div>
+</body></html>

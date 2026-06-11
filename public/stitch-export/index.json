@@ -1,0 +1,182 @@
+﻿[
+    {
+        "order":  1,
+        "title":  "DocNova Pricing - Clinical Precision",
+        "id":  "fa7a51516fe6489bb79f763dd8da7740",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\01-docnova-pricing-clinical-precision",
+        "width":  "2560",
+        "height":  "6364",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  2,
+        "title":  "DocNova Settings - Integrations",
+        "id":  "343a37a48831494cb9c67a3bbaa39ee4",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\02-docnova-settings-integrations",
+        "width":  "2560",
+        "height":  "2394",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  3,
+        "title":  "DocNova Settings - Security",
+        "id":  "d383238d324e4d04ade951fdb038a979",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\03-docnova-settings-security",
+        "width":  "2560",
+        "height":  "2482",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  4,
+        "title":  "DocNova Settings - API Keys",
+        "id":  "12e59da842e74ac486c5d8565ff373df",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\04-docnova-settings-api-keys",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  5,
+        "title":  "DocNova Analytics - Clinical Precision",
+        "id":  "8ab5f74b325d442aae2e2940e3a1d891",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\05-docnova-analytics-clinical-precision",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  6,
+        "title":  "DocNova Settings - Billing \u0026 Plan",
+        "id":  "c29360f3324b4bc085b769d46de8eee5",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\06-docnova-settings-billing-plan",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  7,
+        "title":  "DocNova Settings - Profile",
+        "id":  "d44cc6af7543405ea4a647185fe29283",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\07-docnova-settings-profile",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  8,
+        "title":  "DocNova Global Search - Clinical Precision",
+        "id":  "5029c1783ffb4efb80f36a1a5eff6103",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\08-docnova-global-search-clinical-precision",
+        "width":  "2560",
+        "height":  "2292",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  9,
+        "title":  "DocNova Conversations - Clinical Precision",
+        "id":  "4a0bf27388ea4424993b6bf5c5735c18",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\09-docnova-conversations-clinical-precision",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  10,
+        "title":  "DocNova Document Viewer - Clinical Precision",
+        "id":  "8d54a99a12e4404aa39f2d2a047d3e4a",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\10-docnova-document-viewer-clinical-precision",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  11,
+        "title":  "DocNova Document Library - Clinical Precision",
+        "id":  "84d014fea3b64bd5a17aacd979eec743",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\11-docnova-document-library-clinical-precision",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  12,
+        "title":  "DocNova Dashboard - Clinical Precision",
+        "id":  "5224a4d3509d4317b9b8e02b878dc771",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\12-docnova-dashboard-clinical-precision",
+        "width":  "2560",
+        "height":  "2630",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  13,
+        "title":  "DocNova Authentication - Clinical Precision",
+        "id":  "ae6e18fb60164fb08bc740b7d97d933c",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\13-docnova-authentication-clinical-precision",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  14,
+        "title":  "DocNova Home - Clinical Precision",
+        "id":  "417d158b70a6470a9a23d8ded50a0b6e",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\14-docnova-home-clinical-precision",
+        "width":  "2560",
+        "height":  "2156",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  15,
+        "title":  "DocNova Onboarding - Step 1: Workspace Setup",
+        "id":  "07d2c58a0aa2469296b722c09c672fba",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\15-docnova-onboarding-step-1-workspace-setup",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  16,
+        "title":  "DocNova Onboarding - Step 2: Upload Document",
+        "id":  "e1251bbc9ec2427d8311714bb491b3a6",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\16-docnova-onboarding-step-2-upload-document",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  17,
+        "title":  "DocNova Onboarding - Step 4: Choose Plan",
+        "id":  "2efc96c274fd4e969b3c7416c69a0194",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\17-docnova-onboarding-step-4-choose-plan",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    },
+    {
+        "order":  18,
+        "title":  "DocNova Onboarding - Step 3: Interactive Demo",
+        "id":  "3c4b7da4772e45ceb7058f23fc0baef1",
+        "folder":  "C:\\Users\\PARTH\\Desktop\\New folder (2)\\Design DocNova PDF Tools Website\\stitch-export\\18-docnova-onboarding-step-3-interactive-demo",
+        "width":  "2560",
+        "height":  "2048",
+        "screenshot":  "screen.png",
+        "html":  "code.html"
+    }
+]

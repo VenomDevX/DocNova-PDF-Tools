@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocNova - Documents</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#595e70",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#dce9ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#acedff",
+                        "surface-bright": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "surface-dim": "#cbdbf5",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "secondary-fixed-dim": "#c2c6db",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f8f9ff",
+                        "primary-container": "#2563eb",
+                        "surface-tint": "#0053db",
+                        "tertiary-container": "#00788c",
+                        "inverse-surface": "#213145",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary-fixed": "#001f26",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-container": "#eeefff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-secondary-container": "#5d6274",
+                        "on-tertiary-container": "#d7f6ff",
+                        "on-surface-variant": "#434655",
+                        "on-secondary-fixed-variant": "#414658",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#b4c5ff",
+                        "on-secondary-fixed": "#161b2b",
+                        "secondary-container": "#dbdff4",
+                        "surface-container": "#e5eeff",
+                        "on-primary-fixed": "#00174b",
+                        "on-background": "#0b1c30",
+                        "tertiary": "#005e6e",
+                        "surface-container-highest": "#d3e4fe",
+                        "inverse-on-surface": "#eaf1ff",
+                        "outline": "#737686",
+                        "on-surface": "#0b1c30",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "primary": "#004ac6",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "surface-variant": "#d3e4fe",
+                        "secondary-fixed": "#dee1f7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "container-max": "1280px",
+                        "margin-mobile": "16px",
+                        "unit": "4px",
+                        "margin-desktop": "40px",
+                        "stack-lg": "32px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "display-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-md": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .shadow-ambient {
+            box-shadow: 0 4px 6px -1px rgba(10, 15, 30, 0.1), 0 2px 4px -2px rgba(10, 15, 30, 0.05);
+        }
+        .card-hover:hover {
+            box-shadow: 0 10px 15px -3px rgba(10, 15, 30, 0.1), 0 4px 6px -2px rgba(10, 15, 30, 0.05);
+            transform: translateY(-2px);
+        }
+        .card-hover {
+            transition: all 0.2s ease-in-out;
+        }
+        .show-on-hover {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .group:hover .show-on-hover {
+            opacity: 1;
+        }
+        /* Custom scrollbar for better medical aesthetic */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen overflow-hidden flex selection:bg-primary/20 selection:text-primary">
+<!-- SideNavBar -->
+<nav aria-label="Sidebar" class="fixed left-0 top-0 h-full w-[240px] bg-[#0A0F1E] border-r border-outline-variant flex flex-col py-stack-lg z-20 transition-transform duration-300 md:translate-x-0 -translate-x-full">
+<div class="px-margin-mobile mb-stack-lg flex items-center gap-3">
+<img alt="DocNova Logo" class="w-8 h-8 rounded-md" src="https://lh3.googleusercontent.com/aida/AP1WRLt2y1fw69MYA3hx2zyWu3kZ-IpXKrMmWctvrUUvPSYSOd8HsXPVM84Nt5cPgMtGdxiEyq4bqs2Lk1nZYQ7F9STH8jXcLl6o97PB7u2hRjHYqu-P3EUBSj6Laty0VUehyVIZF_h3nSongineloDmoAD8wqahhHDTyODlS2aLro9x2F6xjJchkJkik44GK5Xj3OMbs3-VdiSPyBZEqQ_xSuhsObA62Mh6X87G9dkQBn89gn5-ROJwMX0fwns"/>
+<div>
+<div class="font-headline-md text-headline-md font-bold text-on-primary">DocNova</div>
+<div class="text-[10px] text-on-primary/60 uppercase tracking-wider font-semibold">Document Intelligence</div>
+</div>
+</div>
+<div class="px-margin-mobile mb-stack-md">
+<button class="w-full bg-primary-container hover:bg-primary-container/90 text-on-primary h-11 rounded-md font-body-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">add</span>
+                New Document
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto mt-stack-sm">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-margin-mobile py-2.5 text-on-secondary-container hover:text-on-primary hover:bg-primary/5 transition-colors font-body-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">home</span>
+                        Home
+                    </a>
+</li>
+<li>
+<a aria-current="page" class="flex items-center gap-3 px-margin-mobile py-2.5 border-l-4 border-primary bg-primary/10 text-on-primary font-semibold font-body-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">description</span>
+                        Documents
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-margin-mobile py-2.5 text-on-secondary-container hover:text-on-primary hover:bg-primary/5 transition-colors font-body-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">chat</span>
+                        Conversations
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-margin-mobile py-2.5 text-on-secondary-container hover:text-on-primary hover:bg-primary/5 transition-colors font-body-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">search</span>
+                        Search
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-margin-mobile py-2.5 text-on-secondary-container hover:text-on-primary hover:bg-primary/5 transition-colors font-body-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">content_paste_search</span>
+                        Extractions
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-margin-mobile py-2.5 text-on-secondary-container hover:text-on-primary hover:bg-primary/5 transition-colors font-body-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">analytics</span>
+                        Analytics
+                    </a>
+</li>
+</ul>
+</div>
+<div class="mt-auto px-margin-mobile pt-stack-md border-t border-white/10">
+<a class="flex items-center gap-3 py-2.5 text-on-secondary-container hover:text-on-primary hover:bg-primary/5 transition-colors font-body-sm rounded px-2 -mx-2" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col ml-[240px] w-[calc(100%-240px)] h-full relative">
+<!-- TopAppBar -->
+<header class="h-[60px] bg-surface-container-lowest border-b border-outline-variant shadow-sm flex justify-between items-center px-margin-desktop shrink-0 z-10">
+<div class="flex items-center gap-4 flex-1">
+<div class="font-title-lg text-title-lg text-on-surface">Documents</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="relative hidden lg:block mr-2">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="h-9 pl-9 pr-4 rounded-md border border-[#E2E8F0] bg-surface text-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all w-[240px]" placeholder="Search documents..." type="text"/>
+</div>
+<button aria-label="Notifications" class="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-md transition-colors">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+<button aria-label="Help" class="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-md transition-colors">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-md ml-2 cursor-pointer border border-primary-container/20">
+                    JD
+                </div>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<main class="flex-1 overflow-y-auto bg-background flex flex-col relative" id="main-scroll">
+<!-- Page Header Section -->
+<div class="px-margin-desktop py-stack-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+<div>
+<h1 class="text-[22px] font-bold text-[#0A0F1E] leading-tight">Documents</h1>
+<p class="text-[14px] text-[#64748B] mt-1 font-body-sm">127 documents · 2.4GB used of 10GB</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="h-11 px-4 border border-[#E2E8F0] bg-white text-on-surface hover:bg-surface-container-lowest rounded-md font-body-sm font-semibold flex items-center gap-2 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">create_new_folder</span>
+                        Create Folder
+                    </button>
+<button class="h-11 px-4 bg-primary-container hover:bg-primary-container/90 text-on-primary rounded-md font-body-sm font-semibold flex items-center gap-2 transition-colors shadow-sm" onclick="document.getElementById('upload-modal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[20px]">upload_file</span>
+                        Upload Document
+                    </button>
+</div>
+</div>
+<!-- Toolbar -->
+<div class="bg-white border-y border-[#E2E8F0] shadow-sm px-margin-desktop py-3 flex flex-wrap justify-between items-center gap-4 sticky top-0 z-10 shrink-0">
+<div class="flex items-center gap-3 flex-wrap">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="h-10 pl-9 pr-4 rounded-md border border-[#E2E8F0] bg-[#F8F9FC] text-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all w-[280px]" placeholder="Filter by name..." type="text"/>
+</div>
+<div class="h-6 w-px bg-[#E2E8F0] mx-1"></div>
+<button class="h-10 px-3 border border-[#E2E8F0] bg-white rounded-md text-body-sm text-on-surface flex items-center gap-2 hover:bg-surface transition-colors">
+<span class="material-symbols-outlined text-[18px] text-[#64748B]">description</span>
+                        File Type
+                        <span class="material-symbols-outlined text-[18px] text-[#64748B]">expand_more</span>
+</button>
+<button class="h-10 px-3 border border-[#E2E8F0] bg-white rounded-md text-body-sm text-on-surface flex items-center gap-2 hover:bg-surface transition-colors">
+<span class="material-symbols-outlined text-[18px] text-[#64748B]">task_alt</span>
+                        Status
+                        <span class="material-symbols-outlined text-[18px] text-[#64748B]">expand_more</span>
+</button>
+<button class="h-10 px-3 border border-[#E2E8F0] bg-white rounded-md text-body-sm text-on-surface flex items-center gap-2 hover:bg-surface transition-colors">
+<span class="material-symbols-outlined text-[18px] text-[#64748B]">calendar_today</span>
+                        Date
+                        <span class="material-symbols-outlined text-[18px] text-[#64748B]">expand_more</span>
+</button>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-body-sm text-on-surface flex items-center gap-1 hover:text-primary transition-colors pr-2 border-r border-[#E2E8F0]">
+                        Sort: Newest
+                        <span class="material-symbols-outlined text-[18px]">swap_vert</span>
+</button>
+<div class="flex bg-[#F8F9FC] border border-[#E2E8F0] rounded-md p-0.5">
+<button aria-label="Grid view" class="p-1.5 bg-white shadow-sm rounded text-primary">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+</button>
+<button aria-label="List view" class="p-1.5 text-on-surface-variant hover:text-on-surface rounded">
+<span class="material-symbols-outlined text-[20px]">view_list</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Document Grid -->
+<div class="p-margin-desktop pb-24 flex-1">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
+<!-- Card 1 (Selected State Example) -->
+<div class="group bg-white border border-primary ring-1 ring-primary rounded-xl p-5 shadow-ambient relative flex flex-col h-full">
+<div class="absolute top-4 left-4 z-10">
+<input checked="" class="w-5 h-5 rounded border-[#E2E8F0] text-primary focus:ring-primary cursor-pointer accent-primary" type="checkbox"/>
+</div>
+<div class="absolute top-4 right-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#10B9811A] text-[#10B981] uppercase tracking-wider">Processed</span>
+</div>
+<div class="w-16 h-16 bg-[#EF4444]/10 rounded-lg flex items-center justify-center mb-4 mx-auto mt-4 text-[#EF4444]">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<div class="text-center mb-4 flex-1">
+<h3 class="font-body-sm font-semibold text-[#0A0F1E] truncate mb-1" title="Patient_History_Q3_2023.pdf">Patient_History_Q3_2023.pdf</h3>
+<p class="text-[12px] text-[#64748B]">PDF · 24 pages · 2.4MB</p>
+<p class="text-[11px] text-[#94A3B8] mt-1">Oct 24, 2023</p>
+</div>
+<div class="flex items-center justify-center gap-2 border-t border-[#E2E8F0] pt-3">
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-primary transition-colors" title="Chat">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-primary transition-colors" title="Extract">
+<span class="material-symbols-outlined text-[18px]">content_paste_search</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-on-surface-variant transition-colors" title="More">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm card-hover relative flex flex-col h-full">
+<div class="absolute top-4 left-4 z-10 show-on-hover">
+<input class="w-5 h-5 rounded border-[#CBD5E1] text-primary focus:ring-primary cursor-pointer" type="checkbox"/>
+</div>
+<div class="absolute top-4 right-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F59E0B1A] text-[#D97706] uppercase tracking-wider">Processing</span>
+</div>
+<div class="w-16 h-16 bg-[#2563EB]/10 rounded-lg flex items-center justify-center mb-4 mx-auto mt-4 text-[#2563EB]">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div class="text-center mb-4 flex-1">
+<h3 class="font-body-sm font-semibold text-[#0A0F1E] truncate mb-1" title="Clinical_Trial_Results.docx">Clinical_Trial_Results.docx</h3>
+<p class="text-[12px] text-[#64748B]">DOCX · 12 pages · 1.1MB</p>
+<p class="text-[11px] text-[#94A3B8] mt-1">Oct 23, 2023</p>
+</div>
+<div class="flex items-center justify-center gap-2 border-t border-[#E2E8F0] pt-3 show-on-hover">
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-primary transition-colors" title="Chat">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-primary transition-colors" title="Extract">
+<span class="material-symbols-outlined text-[18px]">content_paste_search</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-on-surface-variant transition-colors" title="More">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm card-hover relative flex flex-col h-full">
+<div class="absolute top-4 left-4 z-10 show-on-hover">
+<input class="w-5 h-5 rounded border-[#CBD5E1] text-primary focus:ring-primary cursor-pointer" type="checkbox"/>
+</div>
+<div class="absolute top-4 right-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#10B9811A] text-[#10B981] uppercase tracking-wider">Processed</span>
+</div>
+<div class="w-16 h-16 bg-[#10B981]/10 rounded-lg flex items-center justify-center mb-4 mx-auto mt-4 text-[#10B981]">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">table</span>
+</div>
+<div class="text-center mb-4 flex-1">
+<h3 class="font-body-sm font-semibold text-[#0A0F1E] truncate mb-1" title="Blood_Test_Dataset.xlsx">Blood_Test_Dataset.xlsx</h3>
+<p class="text-[12px] text-[#64748B]">XLSX · 3 sheets · 4.5MB</p>
+<p class="text-[11px] text-[#94A3B8] mt-1">Oct 21, 2023</p>
+</div>
+<div class="flex items-center justify-center gap-2 border-t border-[#E2E8F0] pt-3 show-on-hover">
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-primary transition-colors" title="Chat">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-primary transition-colors" title="Extract">
+<span class="material-symbols-outlined text-[18px]">content_paste_search</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-container-low text-on-surface-variant transition-colors" title="More">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Card 4 (Failed) -->
+<div class="group bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm card-hover relative flex flex-col h-full">
+<div class="absolute top-4 left-4 z-10 show-on-hover">
+<input class="w-5 h-5 rounded border-[#CBD5E1] text-primary focus:ring-primary cursor-pointer" type="checkbox"/>
+</div>
+<div class="absolute top-4 right-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EF4444]/10 text-[#EF4444] uppercase tracking-wider">Failed</span>
+</div>
+<div class="w-16 h-16 bg-[#EF4444]/10 rounded-lg flex items-center justify-center mb-4 mx-auto mt-4 text-[#EF4444]">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<div class="text-center mb-4 flex-1">
+<h3 class="font-body-sm font-semibold text-[#0A0F1E] truncate mb-1" title="Corrupted_Scan.pdf">Corrupted_Scan.pdf</h3>
+<p class="text-[12px] text-[#64748B]">PDF · Unknown · 0.5MB</p>
+<p class="text-[11px] text-[#94A3B8] mt-1">Oct 20, 2023</p>
+</div>
+<div class="flex items-center justify-center gap-2 border-t border-[#E2E8F0] pt-3 show-on-hover">
+<button class="text-[12px] font-semibold text-primary hover:text-primary-container">Retry Processing</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bulk Action Bar (Fixed Bottom) -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 ml-[120px] bg-[#0A0F1E] shadow-xl rounded-xl px-4 py-3 flex items-center gap-6 z-30 transition-transform shadow-ambient">
+<div class="flex items-center gap-2">
+<span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">3</span>
+<span class="text-white font-body-sm">documents selected</span>
+</div>
+<div class="h-6 w-px bg-white/20"></div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-md hover:bg-white/10 text-white font-body-sm transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">chat</span>
+                        Chat with all
+                    </button>
+<button class="px-3 py-1.5 rounded-md hover:bg-white/10 text-white font-body-sm transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">content_paste_search</span>
+                        Extract from all
+                    </button>
+<button class="px-3 py-1.5 rounded-md hover:bg-white/10 text-white font-body-sm transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">download</span>
+                        Download
+                    </button>
+<div class="h-4 w-px bg-white/20 mx-1"></div>
+<button class="w-8 h-8 rounded-md hover:bg-[#EF4444]/20 text-white hover:text-[#EF4444] transition-colors flex items-center justify-center" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="w-8 h-8 rounded-md hover:bg-white/10 text-white/70 hover:text-white transition-colors flex items-center justify-center ml-2" title="Close">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+<!-- Upload Modal Overlay (Hidden by default, showing state for design representation) -->
+<div class="fixed inset-0 bg-[#0A0F1E]/60 z-50 flex items-center justify-center backdrop-blur-sm hidden" id="upload-modal">
+<div class="bg-white rounded-xl shadow-2xl w-full max-w-[560px] flex flex-col" onclick="event.stopPropagation()">
+<!-- Modal Header -->
+<div class="px-6 py-4 border-b border-[#E2E8F0] flex justify-between items-center">
+<h2 class="text-[18px] font-bold text-[#0A0F1E]">Upload Documents</h2>
+<button class="text-on-surface-variant hover:text-[#0A0F1E] transition-colors" onclick="document.getElementById('upload-modal').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-8">
+<!-- Dropzone -->
+<div class="border-2 border-dashed border-[#CBD5E1] rounded-lg bg-[#F8F9FC] p-8 flex flex-col items-center justify-center text-center hover:bg-surface-container-low hover:border-primary transition-colors cursor-pointer group mb-6">
+<div class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">cloud_upload</span>
+</div>
+<p class="font-semibold text-[#0A0F1E] font-body-sm mb-1">Drag &amp; drop files here</p>
+<p class="text-[12px] text-[#64748B] mb-4">Support for PDF, DOCX, XLSX, TXT (Max 50MB)</p>
+<button class="h-9 px-4 border border-[#E2E8F0] bg-white text-on-surface hover:bg-surface-container-lowest rounded-md font-body-sm font-semibold shadow-sm pointer-events-none">
+                        Browse files
+                    </button>
+</div>
+<!-- Active Upload State -->
+<div class="space-y-3">
+<div class="p-3 border border-[#E2E8F0] rounded-lg bg-white flex items-center gap-3">
+<div class="text-[#EF4444]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-center mb-1">
+<span class="font-body-sm font-semibold text-[#0A0F1E] truncate text-[13px]">Discharge_Summary_Doe_J.pdf</span>
+<span class="text-[11px] text-[#64748B] font-semibold">67%</span>
+</div>
+<div class="w-full bg-[#E2E8F0] rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full" style="width: 67%"></div>
+</div>
+</div>
+<button class="text-[#94A3B8] hover:text-[#EF4444] transition-colors p-1">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="px-6 py-4 border-t border-[#E2E8F0] bg-[#F8F9FC] flex justify-end gap-3 rounded-b-xl">
+<button class="h-10 px-4 text-on-surface-variant hover:bg-black/5 rounded-md font-body-sm font-semibold transition-colors" onclick="document.getElementById('upload-modal').classList.add('hidden')">
+                    Cancel
+                </button>
+<button class="h-10 px-6 bg-primary-container text-on-primary rounded-md font-body-sm font-semibold opacity-50 cursor-not-allowed">
+                    Done
+                </button>
+</div>
+</div>
+</div>
+</body></html>

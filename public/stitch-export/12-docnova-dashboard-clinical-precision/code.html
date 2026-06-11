@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocNova - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#d7f6ff",
+                    "on-secondary-fixed": "#161b2b",
+                    "on-primary-container": "#eeefff",
+                    "primary": "#004ac6",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline-variant": "#c3c6d7",
+                    "surface-container-low": "#eff4ff",
+                    "on-secondary-container": "#5d6274",
+                    "inverse-on-surface": "#eaf1ff",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "inverse-primary": "#b4c5ff",
+                    "background": "#f8f9ff",
+                    "outline": "#737686",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#213145",
+                    "tertiary-container": "#00788c",
+                    "secondary-fixed": "#dee1f7",
+                    "on-surface": "#0b1c30",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#c2c6db",
+                    "on-secondary-fixed-variant": "#414658",
+                    "on-primary-fixed": "#00174b",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#dbdff4",
+                    "surface": "#f8f9ff",
+                    "surface-container-highest": "#d3e4fe",
+                    "surface-container-high": "#dce9ff",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#d3e4fe",
+                    "on-surface-variant": "#434655",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#005e6e",
+                    "surface-container": "#e5eeff",
+                    "on-background": "#0b1c30",
+                    "primary-container": "#2563eb",
+                    "secondary": "#595e70",
+                    "on-error": "#ffffff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "primary-fixed": "#dbe1ff",
+                    "surface-tint": "#0053db",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "surface-bright": "#f8f9ff",
+                    "on-tertiary-fixed": "#001f26",
+                    "surface-dim": "#cbdbf5",
+                    "tertiary-fixed": "#acedff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "container-max": "1280px",
+                    "stack-lg": "32px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "40px",
+                    "stack-sm": "8px",
+                    "unit": "4px",
+                    "stack-md": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "display-md": [
+                            "Inter"
+                    ],
+                    "label-md": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "title-lg": [
+                            "Inter"
+                    ],
+                    "headline-lg-mobile": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "headline-lg": [
+                            "30px",
+                            {
+                                    "lineHeight": "38px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-md": [
+                            "36px",
+                            {
+                                    "lineHeight": "44px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-md": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "title-lg": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #F8F9FC; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(10, 15, 30, 0.1), 0 2px 4px -2px rgba(10, 15, 30, 0.05); }
+    </style>
+</head>
+<body class="text-on-surface font-body-md bg-background antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-full py-stack-lg fixed left-0 top-0 w-[240px] bg-[#0A0F1E] dark:bg-[#0A0F1E] border-r border-outline-variant dark:border-outline z-50">
+<div class="px-gutter mb-stack-lg flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary font-bold">D</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">DocNova</h1>
+<p class="font-label-md text-label-md text-on-secondary-container/70">Document Intelligence</p>
+</div>
+</div>
+<div class="px-gutter mb-stack-md">
+<button class="w-full h-[44px] bg-primary-container text-white rounded-md font-body-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="add" style="font-variation-settings: 'FILL' 0;">add</span>
+                New Document
+            </button>
+</div>
+<ul class="flex flex-col flex-1 px-3 gap-1">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md border-l-4 border-primary bg-primary/10 text-on-primary font-semibold transition-all duration-200 scale-98" href="#">
+<span class="material-symbols-outlined" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-body-md text-body-md">Home</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-md text-on-secondary-container/70 dark:text-on-secondary-fixed-variant hover:text-on-primary hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="description" style="font-variation-settings: 'FILL' 0;">description</span>
+<span class="font-body-md text-body-md">Documents</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-md text-on-secondary-container/70 dark:text-on-secondary-fixed-variant hover:text-on-primary hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="chat" style="font-variation-settings: 'FILL' 0;">chat</span>
+<span class="font-body-md text-body-md">Conversations</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-md text-on-secondary-container/70 dark:text-on-secondary-fixed-variant hover:text-on-primary hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="search" style="font-variation-settings: 'FILL' 0;">search</span>
+<span class="font-body-md text-body-md">Search</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-md text-on-secondary-container/70 dark:text-on-secondary-fixed-variant hover:text-on-primary hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="content_paste_search" style="font-variation-settings: 'FILL' 0;">content_paste_search</span>
+<span class="font-body-md text-body-md">Extractions</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-md text-on-secondary-container/70 dark:text-on-secondary-fixed-variant hover:text-on-primary hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="analytics" style="font-variation-settings: 'FILL' 0;">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto px-3">
+<a class="flex items-center gap-3 px-4 py-2 rounded-md text-on-secondary-container/70 dark:text-on-secondary-fixed-variant hover:text-on-primary hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Wrapper -->
+<div class="md:ml-[240px] flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 h-[60px] left-[240px] bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm z-40 flex justify-between items-center px-margin-desktop">
+<div class="flex-1 flex items-center">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search" style="font-variation-settings: 'FILL' 0;">search</span>
+<input class="w-full h-10 pl-10 pr-4 rounded-md border border-outline-variant bg-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-sm text-body-sm outline-none" placeholder="Search documents..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="help" style="font-variation-settings: 'FILL' 0;">help</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="account_circle" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="flex-1 pt-[60px] p-margin-desktop max-w-[1440px] mx-auto w-full flex flex-col gap-stack-lg">
+<!-- Section 1: Welcome Row -->
+<section class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Good morning, Jane.</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">You have 3 documents processing and 2 conversations active.</p>
+</div>
+<button class="h-[44px] px-6 bg-primary-container text-white rounded-md font-body-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined" data-icon="upload" style="font-variation-settings: 'FILL' 0;">upload</span>
+                    Upload Document
+                </button>
+</section>
+<!-- Section 2: Stats Row -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Stat Card 1 -->
+<div class="bg-surface-container-lowest border border-[#E2E8F0] rounded-[16px] p-6 card-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total Documents</p>
+<p class="font-display-md text-display-md text-on-surface mt-1">127</p>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="description" style="font-variation-settings: 'FILL' 0;">description</span>
+</div>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm">
+<span class="text-[#10B981] font-semibold flex items-center"><span class="material-symbols-outlined text-[16px] mr-1" data-icon="trending_up">trending_up</span> ↑ 8</span>
+<span class="text-on-surface-variant">this week</span>
+</div>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-surface-container-lowest border border-[#E2E8F0] rounded-[16px] p-6 card-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Conversations</p>
+<p class="font-display-md text-display-md text-on-surface mt-1">43</p>
+</div>
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/10 flex items-center justify-center text-tertiary-container">
+<span class="material-symbols-outlined" data-icon="chat" style="font-variation-settings: 'FILL' 0;">chat</span>
+</div>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm">
+<span class="text-[#10B981] font-semibold flex items-center"><span class="material-symbols-outlined text-[16px] mr-1" data-icon="trending_up">trending_up</span> ↑ 3</span>
+<span class="text-on-surface-variant">this week</span>
+</div>
+</div>
+<!-- Stat Card 3 -->
+<div class="bg-surface-container-lowest border border-[#E2E8F0] rounded-[16px] p-6 card-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Data Extractions</p>
+<p class="font-display-md text-display-md text-on-surface mt-1">891</p>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined" data-icon="content_paste_search" style="font-variation-settings: 'FILL' 0;">content_paste_search</span>
+</div>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm">
+<span class="text-[#10B981] font-semibold flex items-center"><span class="material-symbols-outlined text-[16px] mr-1" data-icon="trending_up">trending_up</span> ↑ 42</span>
+<span class="text-on-surface-variant">this week</span>
+</div>
+</div>
+<!-- Stat Card 4 -->
+<div class="bg-surface-container-lowest border border-[#E2E8F0] rounded-[16px] p-6 card-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Pages Processed</p>
+<p class="font-display-md text-display-md text-on-surface mt-1">3,240</p>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="auto_stories" style="font-variation-settings: 'FILL' 0;">auto_stories</span>
+</div>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm">
+<span class="text-[#10B981] font-semibold flex items-center"><span class="material-symbols-outlined text-[16px] mr-1" data-icon="trending_up">trending_up</span> ↑ 156</span>
+<span class="text-on-surface-variant">this week</span>
+</div>
+</div>
+</section>
+<!-- Section 3: Main Grid (60/40 Split) -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Recent Documents (7 cols) -->
+<div class="lg:col-span-7 bg-surface-container-lowest border border-[#E2E8F0] rounded-[16px] card-shadow overflow-hidden flex flex-col">
+<div class="p-6 border-b border-[#E2E8F0] flex justify-between items-center bg-surface-bright">
+<h3 class="font-title-lg text-title-lg text-on-surface">Recent Documents</h3>
+<button class="text-primary font-label-md text-label-md hover:underline">View All</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-[#E2E8F0]">
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold">Name</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold">Date Added</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold">Status</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm">
+<!-- Row 1 -->
+<tr class="border-b border-[#E2E8F0] hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-[#ef4444]" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-semibold text-on-surface group-hover:text-primary transition-colors cursor-pointer">Q3 Financial Report.pdf</span>
+</td>
+<td class="py-4 px-6 text-on-surface-variant">2 hrs ago</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#10B9811A] text-[#10B981]">Ready</span>
+</td>
+<td class="py-4 px-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[20px]" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-[#E2E8F0] hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-[#3b82f6]" data-icon="description">description</span>
+<span class="font-semibold text-on-surface group-hover:text-primary transition-colors cursor-pointer">Service Agreement 2024.docx</span>
+</td>
+<td class="py-4 px-6 text-on-surface-variant">5 hrs ago</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-container-highest text-primary flex gap-1">
+<span class="material-symbols-outlined text-[14px] animate-spin" data-icon="sync">sync</span> Processing
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[20px]" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="border-b border-[#E2E8F0] hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-[#10b981]" data-icon="table_view">table_view</span>
+<span class="font-semibold text-on-surface group-hover:text-primary transition-colors cursor-pointer">Market Research Data.xlsx</span>
+</td>
+<td class="py-4 px-6 text-on-surface-variant">Yesterday</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#10B9811A] text-[#10B981]">Ready</span>
+</td>
+<td class="py-4 px-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[20px]" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="border-b border-[#E2E8F0] hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-[#ef4444]" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-semibold text-on-surface group-hover:text-primary transition-colors cursor-pointer">Patient Record Anonymized.pdf</span>
+</td>
+<td class="py-4 px-6 text-on-surface-variant">Yesterday</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-error-container text-error">Error</span>
+</td>
+<td class="py-4 px-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[20px]" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-[#f59e0b]" data-icon="slideshow">slideshow</span>
+<span class="font-semibold text-on-surface group-hover:text-primary transition-colors cursor-pointer">All Hands Deck Q3.pptx</span>
+</td>
+<td class="py-4 px-6 text-on-surface-variant">2 days ago</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#10B9811A] text-[#10B981]">Ready</span>
+</td>
+<td class="py-4 px-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[20px]" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right Column: Actions & Conversations (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-stack-lg">
+<!-- Quick Actions Card -->
+<div class="bg-surface-container-lowest border border-[#E2E8F0] rounded-[16px] p-6 card-shadow">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-4">Quick Actions</h3>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex flex-col items-center justify-center p-4 rounded-lg border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-all text-on-surface gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="upload_file">upload_file</span>
+<span class="font-body-sm text-body-sm font-semibold">Upload</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 rounded-lg border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-all text-on-surface gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="chat_bubble">chat_bubble</span>
+<span class="font-body-sm text-body-sm font-semibold">Chat</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 rounded-lg border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-all text-on-surface gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="content_paste_search">content_paste_search</span>
+<span class="font-body-sm text-body-sm font-semibold">Extract</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 rounded-lg border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-all text-on-surface gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="api">api</span>
+<span class="font-body-sm text-body-sm font-semibold">Connect</span>
+</button>
+</div>
+</div>
+<!-- Recent Conversations Card -->
+<div class="bg-surface-container-lowest border border-[#E2E8F0] rounded-[16px] card-shadow overflow-hidden flex-1 flex flex-col">
+<div class="p-6 border-b border-[#E2E8F0] flex justify-between items-center bg-surface-bright">
+<h3 class="font-title-lg text-title-lg text-on-surface">Recent Conversations</h3>
+</div>
+<div class="p-0">
+<!-- Convo 1 -->
+<div class="p-4 border-b border-[#E2E8F0] hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<p class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Q3 Financial Report</p>
+<span class="font-label-md text-label-md text-on-surface-variant whitespace-nowrap ml-2">10m ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">"What were the primary drivers for revenue growth in EMEA?"</p>
+</div>
+<!-- Convo 2 -->
+<div class="p-4 border-b border-[#E2E8F0] hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<p class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Service Agreement 2024</p>
+<span class="font-label-md text-label-md text-on-surface-variant whitespace-nowrap ml-2">1h ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">"Summarize the termination clauses and notice periods."</p>
+</div>
+<!-- Convo 3 -->
+<div class="p-4 hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<p class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Market Research Data</p>
+<span class="font-label-md text-label-md text-on-surface-variant whitespace-nowrap ml-2">Yesterday</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">"Extract all competitor pricing mentioned in section 4."</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Upload Dropzone -->
+<section class="mt-4">
+<div class="border-2 border-dashed border-outline-variant hover:border-primary bg-surface-container-lowest hover:bg-surface-container-low transition-all rounded-[16px] p-12 flex flex-col items-center justify-center text-center cursor-pointer group">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[32px]" data-icon="cloud_upload">cloud_upload</span>
+</div>
+<h4 class="font-title-lg text-title-lg font-semibold text-on-surface mb-2">Drop documents anywhere to upload</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">or click to browse files. Supports PDF, DOCX, XLSX, PPTX.</p>
+</div>
+</section>
+</main>
+</div>
+</body></html>

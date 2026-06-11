@@ -1,0 +1,423 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>DocIntel AI - Search</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#dee1f7",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#001f26",
+                        "on-secondary-container": "#5d6274",
+                        "on-primary-fixed": "#00174b",
+                        "primary-container": "#2563eb",
+                        "inverse-primary": "#b4c5ff",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#cbdbf5",
+                        "surface-bright": "#f8f9ff",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "outline-variant": "#c3c6d7",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "on-secondary-fixed-variant": "#414658",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "on-background": "#0b1c30",
+                        "inverse-surface": "#213145",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-surface": "#0b1c30",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-high": "#dce9ff",
+                        "tertiary": "#005e6e",
+                        "surface-container-low": "#eff4ff",
+                        "outline": "#737686",
+                        "on-primary-container": "#eeefff",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary-fixed": "#161b2b",
+                        "primary": "#004ac6",
+                        "surface": "#f8f9ff",
+                        "on-surface-variant": "#434655",
+                        "secondary": "#595e70",
+                        "background": "#f8f9ff",
+                        "tertiary-container": "#00788c",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#d7f6ff",
+                        "tertiary-fixed": "#acedff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-tint": "#0053db",
+                        "secondary-fixed-dim": "#c2c6db",
+                        "secondary-container": "#dbdff4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "unit": "4px",
+                        "stack-sm": "8px",
+                        "margin-mobile": "16px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-md": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+        .shadow-ambient { box-shadow: 0 4px 6px -1px rgba(10, 15, 30, 0.1), 0 2px 4px -2px rgba(10, 15, 30, 0.05); }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex antialiased">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-on-background dark:bg-on-background border-r border-outline-variant shadow-sm flex flex-col h-full py-6 z-20">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">science</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-surface">DocNova</h1>
+<p class="font-label-md text-label-md text-surface-variant">Enterprise Tier</p>
+</div>
+</div>
+<div class="px-6 mb-6">
+<button class="w-full h-11 bg-primary-container text-on-primary-container rounded-md font-label-md text-label-md flex items-center justify-center gap-2 hover:bg-primary transition-colors">
+<span class="material-symbols-outlined">add</span>
+                New Extraction
+            </button>
+</div>
+<ul class="flex-1 px-4 space-y-1 overflow-y-auto">
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-surface-variant hover:text-surface hover:bg-secondary-container/5 transition-all duration-200 ease-in-out font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">home</span>
+                    Home
+                </a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-surface-variant hover:text-surface hover:bg-secondary-container/5 transition-all duration-200 ease-in-out font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">description</span>
+                    Documents
+                </a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-surface-variant hover:text-surface hover:bg-secondary-container/5 transition-all duration-200 ease-in-out font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">forum</span>
+                    Conversations
+                </a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 border-primary bg-secondary-container/10 text-primary font-bold transition-all duration-200 ease-in-out font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined fill">search</span>
+                    Search
+                </a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-surface-variant hover:text-surface hover:bg-secondary-container/5 transition-all duration-200 ease-in-out font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">database</span>
+                    Extractions
+                </a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-surface-variant hover:text-surface hover:bg-secondary-container/5 transition-all duration-200 ease-in-out font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+                    Analytics
+                </a>
+</li>
+</ul>
+<div class="px-6 mt-auto pt-6 border-t border-outline-variant/20">
+<div class="flex items-center gap-3">
+<img alt="User Profile" class="w-10 h-10 rounded-full bg-surface-container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-l2-ziDY9PBJE-HZlHdNr1TPW6y-L--8j_VVwgbhaM0ORHlTeOpXOTKNuUaRuc2I-kBYbOHom-vztDYDOmelsLrqjJdfhDCx1PrNebuy4QJDcayeBenjNczUo3RYxcLnhwmZIQ7Dj3PLR6L3Od1BqO94ylW9xHX717J1SF7pMp6tQgI1hDpmSsrpRa4l2qOLTVpK0d2kt5JGhRHT38EiG7VNtnGYP96l12XIBiLMAthUwzjoJyTsoz9o_5Q_q_VzuaaudbtN3Ydk">
+<div class="overflow-hidden">
+<p class="font-label-md text-label-md text-surface truncate">Dr. Sarah Jenkins</p>
+<p class="font-body-sm text-body-sm text-surface-variant truncate">Chief Medical Officer</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-64 min-h-screen bg-background pb-12">
+<!-- TopAppBar -->
+<header class="h-16 fixed top-0 right-0 left-64 bg-surface dark:bg-surface-container border-b border-outline-variant shadow-sm flex justify-between items-center px-gutter w-[calc(100%-16rem)] z-10 transition-colors">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Workspace</h2>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="pt-24 px-gutter max-w-container-max mx-auto space-y-stack-lg">
+<!-- Hero Search Bar -->
+<div class="max-w-3xl mx-auto">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="block w-full h-16 pl-12 pr-40 rounded-full border-outline-variant bg-surface-container-lowest shadow-ambient focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-50 font-body-lg text-body-lg text-on-surface transition-all placeholder:text-outline" placeholder="Search across all your documents..." type="text" value="revenue Q3">
+<div class="absolute inset-y-0 right-2 flex items-center">
+<button class="flex items-center gap-2 bg-surface-container-low text-primary px-3 py-1.5 rounded-full border border-primary-fixed hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined fill text-sm">spark</span>
+<span class="font-label-md text-label-md">AI Search</span>
+<kbd class="ml-1 px-1.5 py-0.5 rounded bg-surface-container text-xs text-on-surface-variant font-mono">⌘K</kbd>
+</button>
+</div>
+</div>
+</div>
+<!-- Filter Row -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-outline-variant pb-4">
+<div class="flex flex-wrap items-center gap-2">
+<button class="px-4 py-2 rounded-full bg-on-surface text-surface font-label-md text-label-md transition-colors">All</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors">Documents</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors">Conversations</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors">Extractions</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors">Pages</button>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Sort by:</span>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-md hover:bg-surface-container-low font-label-md text-label-md text-on-surface transition-colors">
+                        Relevance
+                        <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+</div>
+<!-- Main Layout: 2 Columns -->
+<div class="flex flex-col lg:flex-row gap-gutter">
+<!-- Left Column: Search Results -->
+<div class="flex-1 space-y-stack-md">
+<!-- AI Answer Card -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant shadow-ambient overflow-hidden flex">
+<div class="w-1 bg-primary"></div>
+<div class="p-6 flex-1 space-y-4">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined fill">spark</span>
+<h3 class="font-title-lg text-title-lg text-on-surface">AI Answer</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                                Based on the documents provided, Q3 revenue for FY23 was $42.5M, representing a 14% year-over-year increase. The primary driver for this growth was the expansion of the enterprise software division, which accounted for $18.2M. However, operating margins decreased slightly due to increased R&amp;D investments during the same period.
+                            </p>
+<div class="pt-4 border-t border-outline-variant/50">
+<span class="font-label-md text-label-md text-outline block mb-2">Based on:</span>
+<div class="flex flex-wrap gap-2">
+<a class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-surface-container-lowest border border-outline-variant hover:border-primary transition-colors text-xs font-medium text-on-surface" href="#">
+<span class="material-symbols-outlined text-[14px] text-primary">picture_as_pdf</span>
+                                        Q3_Financial_Report_Final.pdf
+                                    </a>
+<a class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-surface-container-lowest border border-outline-variant hover:border-primary transition-colors text-xs font-medium text-on-surface" href="#">
+<span class="material-symbols-outlined text-[14px] text-tertiary">description</span>
+                                        Q3_Earnings_Call_Transcript.docx
+                                    </a>
+</div>
+</div>
+</div>
+</div>
+<!-- Results Count -->
+<div class="pt-2">
+<p class="font-body-sm text-body-sm text-on-surface-variant">24 results for <span class="font-semibold text-on-surface">"revenue Q3"</span></p>
+</div>
+<!-- Result Cards -->
+<div class="space-y-4">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-ambient p-5 hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-error-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-error">picture_as_pdf</span>
+</div>
+<div>
+<h4 class="font-title-lg text-title-lg text-on-surface hover:text-primary cursor-pointer transition-colors">Q3_Financial_Report_Final.pdf</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-[10px]">PDF</span>
+<span class="font-body-sm text-xs text-outline">•</span>
+<span class="font-body-sm text-xs text-outline">Oct 15, 2023, 14:30</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg mb-4 text-sm text-on-surface-variant border border-outline-variant/30">
+                                ...The consolidated <mark class="bg-primary/20 text-on-surface font-medium px-1 rounded">revenue</mark> for <mark class="bg-primary/20 text-on-surface font-medium px-1 rounded">Q3</mark> reached a record high, driven by strong performance in the North American market...
+                            </div>
+<div class="flex flex-wrap items-center gap-3 pt-2">
+<span class="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary-fixed/30 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">find_in_page</span> Page 7
+                                </span>
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors">Open Document</button>
+<span class="text-outline-variant text-xs">•</span>
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors">Ask about this</button>
+<span class="text-outline-variant text-xs">•</span>
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors">Extract</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-ambient p-5 hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">description</span>
+</div>
+<div>
+<h4 class="font-title-lg text-title-lg text-on-surface hover:text-primary cursor-pointer transition-colors">Q3_Earnings_Call_Transcript.docx</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-[10px]">DOCX</span>
+<span class="font-body-sm text-xs text-outline">•</span>
+<span class="font-body-sm text-xs text-outline">Oct 16, 2023, 09:15</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg mb-4 text-sm text-on-surface-variant border border-outline-variant/30">
+                                ...CEO: Looking specifically at our <mark class="bg-primary/20 text-on-surface font-medium px-1 rounded">revenue</mark> targets for <mark class="bg-primary/20 text-on-surface font-medium px-1 rounded">Q3</mark>, we anticipated a slight dip due to seasonality, but we actually overperformed...
+                            </div>
+<div class="flex flex-wrap items-center gap-3 pt-2">
+<span class="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary-fixed/30 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">find_in_page</span> Page 2
+                                </span>
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors">Open Document</button>
+<span class="text-outline-variant text-xs">•</span>
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors">Ask about this</button>
+<span class="text-outline-variant text-xs">•</span>
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors">Extract</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Filters Panel -->
+<aside class="w-full lg:w-[280px] shrink-0">
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-ambient p-5 sticky top-24">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">filter_list</span>
+                            Filters
+                        </h3>
+<!-- Filter Group: File Type -->
+<div class="mb-6">
+<h4 class="font-label-md text-label-md text-outline mb-3 uppercase tracking-wider">File Type</h4>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 transition-colors" type="checkbox">
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">PDF Documents</span>
+<span class="ml-auto text-xs text-outline">18</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 transition-colors" type="checkbox">
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">Word (DOCX)</span>
+<span class="ml-auto text-xs text-outline">4</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 transition-colors" type="checkbox">
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">Excel (XLSX)</span>
+<span class="ml-auto text-xs text-outline">2</span>
+</label>
+</div>
+</div>
+<!-- Filter Group: Date Range -->
+<div class="mb-6">
+<h4 class="font-label-md text-label-md text-outline mb-3 uppercase tracking-wider">Date Range</h4>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="border-outline-variant text-primary focus:ring-primary w-4 h-4 transition-colors" name="date" type="radio">
+<span class="font-body-sm text-body-sm text-on-surface">Any time</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="border-outline-variant text-primary focus:ring-primary w-4 h-4 transition-colors" name="date" type="radio">
+<span class="font-body-sm text-body-sm text-on-surface">This week</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="border-outline-variant text-primary focus:ring-primary w-4 h-4 transition-colors" name="date" type="radio">
+<span class="font-body-sm text-body-sm text-on-surface">This month</span>
+</label>
+</div>
+</div>
+<!-- Filter Group: Status -->
+<div class="mb-6">
+<h4 class="font-label-md text-label-md text-outline mb-3 uppercase tracking-wider">Status</h4>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 transition-colors" type="checkbox">
+<span class="font-body-sm text-body-sm text-on-surface">Ready</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 transition-colors" type="checkbox">
+<span class="font-body-sm text-body-sm text-on-surface">Processing</span>
+</label>
+</div>
+</div>
+<!-- Recent Searches -->
+<div class="pt-6 border-t border-outline-variant">
+<h4 class="font-label-md text-label-md text-outline mb-3 uppercase tracking-wider">Recent Searches</h4>
+<ul class="space-y-2">
+<li class="">
+<a class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">history</span>
+<span class="font-body-sm text-sm truncate">revenue Q3</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">history</span>
+<span class="font-body-sm text-sm truncate">contract termination</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">history</span>
+<span class="font-body-sm text-sm truncate">employee benefits</span>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</main>
+
+
+</body></html>

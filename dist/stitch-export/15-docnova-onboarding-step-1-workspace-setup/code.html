@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Welcome &amp; Workspace Setup - DocNova Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#414658",
+                    "surface-container": "#e5eeff",
+                    "surface-variant": "#d3e4fe",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-background": "#0b1c30",
+                    "inverse-surface": "#213145",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "surface-container-high": "#dce9ff",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "on-surface": "#0b1c30",
+                    "tertiary": "#005e6e",
+                    "surface-container-low": "#eff4ff",
+                    "outline": "#737686",
+                    "on-tertiary-fixed": "#001f26",
+                    "on-secondary-container": "#5d6274",
+                    "on-primary-fixed": "#00174b",
+                    "secondary-fixed": "#dee1f7",
+                    "error-container": "#ffdad6",
+                    "on-tertiary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#b4c5ff",
+                    "primary-container": "#2563eb",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline-variant": "#c3c6d7",
+                    "surface-bright": "#f8f9ff",
+                    "on-secondary": "#ffffff",
+                    "surface-dim": "#cbdbf5",
+                    "tertiary-container": "#00788c",
+                    "background": "#f8f9ff",
+                    "on-tertiary-container": "#d7f6ff",
+                    "on-error": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "tertiary-fixed": "#acedff",
+                    "secondary-fixed-dim": "#c2c6db",
+                    "secondary-container": "#dbdff4",
+                    "surface-tint": "#0053db",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#eeefff",
+                    "on-secondary-fixed": "#161b2b",
+                    "primary": "#004ac6",
+                    "secondary": "#595e70",
+                    "on-surface-variant": "#434655",
+                    "surface": "#f8f9ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "unit": "4px",
+                    "stack-sm": "8px",
+                    "gutter": "24px",
+                    "container-max": "1280px",
+                    "stack-lg": "32px",
+                    "margin-desktop": "40px",
+                    "stack-md": "16px"
+            },
+            "fontFamily": {
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "display-md": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8F9FC; }
+        .shadow-natural { box-shadow: 0 4px 6px -1px rgba(10, 15, 30, 0.1), 0 2px 4px -2px rgba(10, 15, 30, 0.05); }
+        .input-glow:focus { border-color: #2563EB; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); outline: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-on-surface">
+<!-- Top Bar -->
+<header class="w-full h-16 flex items-center justify-between px-gutter border-b border-outline-variant bg-surface-container-lowest z-10 sticky top-0">
+<!-- Logo -->
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<span class="font-title-lg text-title-lg font-black tracking-tight">DocNova</span>
+</div>
+<!-- Progress Bar (Center) -->
+<nav aria-label="Progress" class="hidden md:flex items-center absolute left-1/2 -translate-x-1/2">
+<ol class="flex items-center space-x-4" role="list">
+<!-- Step 1: Active -->
+<li>
+<div class="flex items-center">
+<span aria-current="step" class="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary-container bg-surface-container-lowest">
+<span class="text-body-sm font-body-sm font-semibold text-primary-container">1</span>
+</span>
+</div>
+</li>
+<!-- Step 2: Inactive -->
+<li>
+<div class="flex items-center">
+<div class="absolute w-8 h-[2px] -ml-6 bg-outline-variant/30"></div>
+<span class="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-outline-variant bg-surface-container-lowest ml-2">
+<span class="text-body-sm font-body-sm font-semibold text-outline">2</span>
+</span>
+</div>
+</li>
+<!-- Step 3: Inactive -->
+<li>
+<div class="flex items-center">
+<div class="absolute w-8 h-[2px] -ml-6 bg-outline-variant/30"></div>
+<span class="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-outline-variant bg-surface-container-lowest ml-2">
+<span class="text-body-sm font-body-sm font-semibold text-outline">3</span>
+</span>
+</div>
+</li>
+<!-- Step 4: Inactive -->
+<li>
+<div class="flex items-center">
+<div class="absolute w-8 h-[2px] -ml-6 bg-outline-variant/30"></div>
+<span class="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-outline-variant bg-surface-container-lowest ml-2">
+<span class="text-body-sm font-body-sm font-semibold text-outline">4</span>
+</span>
+</div>
+</li>
+</ol>
+</nav>
+<!-- Skip Action -->
+<a class="font-body-sm text-body-sm text-secondary hover:text-primary transition-colors" href="#">Skip setup</a>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow flex items-center justify-center py-12 px-margin-mobile md:px-gutter">
+<div class="w-full max-w-[560px] mx-auto flex flex-col gap-stack-lg">
+<!-- Header Section -->
+<div class="text-center space-y-2">
+<div class="text-[48px] leading-none mb-4 animate-bounce" style="animation-duration: 2s; animation-iteration-count: infinite;">👋</div>
+<h1 class="font-display-md text-display-md text-on-surface">Welcome to DocNova, Jane.</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Let's set up your workspace in under 2 minutes.</p>
+</div>
+<!-- Workspace Setup Card -->
+<div class="bg-surface-container-lowest border border-[#E2E8F0] rounded-xl shadow-natural p-6 md:p-8 space-y-6">
+<form class="space-y-6">
+<!-- Workspace Name Input -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="workspace-name">Workspace Name</label>
+<input class="w-full h-[44px] px-4 font-body-md text-body-md text-on-surface border border-[#E2E8F0] rounded-md bg-surface-container-lowest input-glow transition-all" id="workspace-name" name="workspace-name" placeholder="Acme Legal Team" type="text"/>
+</div>
+<!-- Industry Select -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="industry">Industry</label>
+<div class="relative">
+<select class="w-full h-[44px] pl-4 pr-10 font-body-md text-body-md text-on-surface border border-[#E2E8F0] rounded-md bg-surface-container-lowest input-glow appearance-none transition-all" id="industry" name="industry">
+<option disabled="" selected="" value="">Select an industry...</option>
+<option value="legal">Legal</option>
+<option value="finance">Finance</option>
+<option value="healthcare">Healthcare</option>
+<option value="consulting">Consulting</option>
+<option value="other">Other</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Team Size Radio Grid -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-3">Team Size</label>
+<div class="grid grid-cols-2 gap-4">
+<!-- Selected Option -->
+<label class="relative flex cursor-pointer rounded-lg border-2 border-primary-container bg-[#EFF6FF] p-4 shadow-sm focus:outline-none transition-all">
+<input checked="" class="sr-only" name="team-size" type="radio" value="just-me"/>
+<span class="flex flex-1">
+<span class="flex flex-col">
+<span class="block font-body-md text-body-md font-semibold text-primary-container">Just me</span>
+</span>
+</span>
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</label>
+<!-- Unselected Option -->
+<label class="relative flex cursor-pointer rounded-lg border border-[#E2E8F0] bg-surface-container-lowest p-4 shadow-sm hover:border-outline-variant focus:outline-none transition-all">
+<input class="sr-only" name="team-size" type="radio" value="2-10"/>
+<span class="flex flex-1">
+<span class="flex flex-col">
+<span class="block font-body-md text-body-md font-medium text-on-surface">2-10</span>
+</span>
+</span>
+</label>
+<!-- Unselected Option -->
+<label class="relative flex cursor-pointer rounded-lg border border-[#E2E8F0] bg-surface-container-lowest p-4 shadow-sm hover:border-outline-variant focus:outline-none transition-all">
+<input class="sr-only" name="team-size" type="radio" value="11-50"/>
+<span class="flex flex-1">
+<span class="flex flex-col">
+<span class="block font-body-md text-body-md font-medium text-on-surface">11-50</span>
+</span>
+</span>
+</label>
+<!-- Unselected Option -->
+<label class="relative flex cursor-pointer rounded-lg border border-[#E2E8F0] bg-surface-container-lowest p-4 shadow-sm hover:border-outline-variant focus:outline-none transition-all">
+<input class="sr-only" name="team-size" type="radio" value="50+"/>
+<span class="flex flex-1">
+<span class="flex flex-col">
+<span class="block font-body-md text-body-md font-medium text-on-surface">50+</span>
+</span>
+</span>
+</label>
+</div>
+</div>
+</form>
+</div>
+<!-- Footer Actions -->
+<div class="flex items-center justify-between mt-2">
+<button class="font-body-md text-body-md text-outline cursor-not-allowed flex items-center gap-1 opacity-50" disabled="">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span> Back
+                </button>
+<button class="h-[44px] px-6 bg-primary-container text-white font-body-sm text-body-sm font-semibold rounded-md flex items-center gap-2 hover:bg-primary transition-colors shadow-sm" type="button">
+                    Continue <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+</body></html>
