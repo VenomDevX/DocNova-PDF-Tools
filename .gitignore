@@ -8,3 +8,5 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 __pycache__/
 *.pyc
+.codex
+.DS_Store
