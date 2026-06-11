@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocNova - Security Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "tertiary-fixed": "#acedff",
+                    "on-surface": "#0b1c30",
+                    "on-secondary-fixed-variant": "#414658",
+                    "on-primary-container": "#eeefff",
+                    "on-background": "#0b1c30",
+                    "surface": "#f8f9ff",
+                    "surface-container": "#e5eeff",
+                    "on-primary-fixed": "#00174b",
+                    "outline": "#737686",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-bright": "#f8f9ff",
+                    "outline-variant": "#c3c6d7",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#d3e4fe",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed": "#161b2b",
+                    "on-error-container": "#93000a",
+                    "surface-tint": "#0053db",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-variant": "#d3e4fe",
+                    "primary-container": "#2563eb",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary": "#005e6e",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#cbdbf5",
+                    "on-secondary-container": "#5d6274",
+                    "background": "#f8f9ff",
+                    "tertiary-container": "#00788c",
+                    "secondary": "#595e70",
+                    "secondary-fixed": "#dee1f7",
+                    "on-surface-variant": "#434655",
+                    "on-tertiary-container": "#d7f6ff",
+                    "surface-container-low": "#eff4ff",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#dce9ff",
+                    "secondary-container": "#dbdff4",
+                    "inverse-surface": "#213145",
+                    "inverse-on-surface": "#eaf1ff",
+                    "secondary-fixed-dim": "#c2c6db",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "inverse-primary": "#b4c5ff",
+                    "primary": "#004ac6",
+                    "on-tertiary-fixed": "#001f26",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-md": "16px",
+                    "stack-sm": "8px",
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "gutter": "24px",
+                    "stack-lg": "32px",
+                    "container-max": "1280px",
+                    "margin-desktop": "40px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "body-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "display-md": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shadow-ambient {
+            box-shadow: 0 4px 6px -1px rgba(10, 15, 30, 0.1), 0 2px 4px -2px rgba(10, 15, 30, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 flex flex-col bg-on-surface dark:bg-surface-container-lowest fixed left-0 top-0 py-stack-lg shrink-0 shadow-sm z-20">
+<div class="px-gutter mb-stack-lg flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined filled text-[20px]" data-icon="medical_services">medical_services</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-extrabold text-surface-container-lowest tracking-tight">DocNova</h1>
+<p class="font-label-md text-label-md text-surface-variant/70">AI Intelligence</p>
+</div>
+</div>
+<ul class="flex-1 flex flex-col gap-1 w-full mt-stack-md">
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-body-md text-body-md">Home</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-body-md text-body-md">Documents</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="font-body-md text-body-md">Conversations</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-body-md text-body-md">Search</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+<span class="font-body-md text-body-md">Extractions</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 border-l-4 border-primary bg-primary-container/10 text-primary-fixed active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined filled" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md font-semibold">Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="w-full h-16 bg-surface-container-lowest dark:bg-surface-container-low flex justify-between items-center px-gutter shrink-0 z-10 sticky top-0">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md p-0 placeholder-outline w-64" placeholder="Search docnova..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-margin-desktop flex gap-gutter max-w-container-max mx-auto w-full">
+<!-- Left Settings Nav -->
+<aside class="w-[220px] shrink-0">
+<div class="sticky top-[104px]">
+<h2 class="font-title-lg text-title-lg mb-stack-md text-on-surface">Settings</h2>
+<nav class="flex flex-col gap-1">
+<a class="px-4 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
+                            Profile
+                        </a>
+<a class="px-4 py-2.5 rounded-md bg-primary-container/10 text-primary hover:bg-primary-container/20 transition-colors font-body-sm text-body-sm font-semibold flex items-center gap-3" href="#">
+<span class="material-symbols-outlined filled text-[20px]" data-icon="lock">lock</span>
+                            Security
+                        </a>
+<a class="px-4 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications_active">notifications_active</span>
+                            Notifications
+                        </a>
+<a class="px-4 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="group">group</span>
+                            Team Members
+                        </a>
+<a class="px-4 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-sm text-body-sm flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="credit_card">credit_card</span>
+                            Billing
+                        </a>
+</nav>
+</div>
+</aside>
+<!-- Right Settings Content -->
+<section class="flex-1 max-w-3xl flex flex-col gap-stack-lg">
+<div>
+<h3 class="font-title-lg text-title-lg text-on-surface">Security</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Protect your account</p>
+</div>
+<!-- Change Password Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-6 shadow-ambient">
+<h4 class="font-body-md text-body-md font-semibold text-on-surface mb-6">Change Password</h4>
+<form class="flex flex-col gap-5 max-w-md">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Current Password</label>
+<input class="w-full h-11 px-3 border border-outline-variant rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-sm text-body-sm text-on-surface" placeholder="Enter current password" type="password"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">New Password</label>
+<input class="w-full h-11 px-3 border border-outline-variant rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-sm text-body-sm text-on-surface" placeholder="Enter new password" type="password"/>
+<!-- Password Strength Bar -->
+<div class="mt-3 flex items-center gap-2">
+<div class="flex-1 h-1.5 rounded-full bg-surface-container-highest overflow-hidden flex">
+<div class="w-1/3 bg-error h-full"></div>
+<div class="w-1/3 bg-primary-container h-full"></div>
+<div class="w-1/3 bg-surface-container-highest h-full"></div>
+</div>
+<span class="font-label-md text-[10px] text-on-surface-variant w-12 text-right">Medium</span>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Confirm Password</label>
+<input class="w-full h-11 px-3 border border-outline-variant rounded-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-sm text-body-sm text-on-surface" placeholder="Confirm new password" type="password"/>
+</div>
+<div class="mt-2">
+<button class="h-11 px-6 bg-primary-container text-on-primary font-body-sm text-body-sm font-semibold rounded-md hover:bg-surface-tint transition-colors w-fit" type="button">Update Password</button>
+</div>
+</form>
+</div>
+<!-- Two-Factor Auth Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-6 shadow-ambient">
+<div class="flex justify-between items-start mb-6">
+<div>
+<div class="flex items-center gap-3">
+<h4 class="font-body-md text-body-md font-semibold text-on-surface">Two-Factor Authentication</h4>
+<span class="px-2.5 py-0.5 rounded-full bg-[#10B9811A] text-[#10B981] font-label-md text-[11px] font-semibold border border-[#10B981]/20">Enabled</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 max-w-md">Add an extra layer of security to your account. We'll ask for a code when you sign in from a new device.</p>
+</div>
+<button class="px-4 py-2 border border-outline-variant rounded-md font-body-sm text-body-sm font-semibold text-on-surface hover:bg-surface-container-low transition-colors">Manage 2FA</button>
+</div>
+<div class="pt-6 border-t border-outline-variant flex items-center justify-between">
+<div>
+<h5 class="font-body-sm text-body-sm font-semibold text-on-surface">Require 2FA on login</h5>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Always prompt for authentication code</p>
+</div>
+<!-- Toggle Switch -->
+<button aria-checked="true" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-primary-container transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" role="switch" type="button">
+<span class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+</div>
+<!-- Active Sessions Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-0 shadow-ambient overflow-hidden">
+<div class="p-6 pb-4 border-b border-outline-variant">
+<h4 class="font-body-md text-body-md font-semibold text-on-surface">Active Sessions</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Manage the devices currently logged into your account.</p>
+</div>
+<ul class="divide-y divide-outline-variant">
+<!-- Session 1 -->
+<li class="p-6 flex items-center justify-between hover:bg-surface-container-low/50 transition-colors">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary shrink-0 mt-1">
+<span class="material-symbols-outlined" data-icon="laptop_mac">laptop_mac</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h5 class="font-body-sm text-body-sm font-semibold text-on-surface">Chrome on MacOS</h5>
+<span class="px-2 py-0.5 rounded-full bg-[#10B9811A] text-[#10B981] font-label-md text-[10px] font-semibold">Current session</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">San Francisco · 192.168.1.1</p>
+</div>
+</div>
+<button class="font-body-sm text-body-sm text-error hover:text-error/80 font-medium transition-colors">Revoke</button>
+</li>
+<!-- Session 2 -->
+<li class="p-6 flex items-center justify-between hover:bg-surface-container-low/50 transition-colors">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant shrink-0 mt-1">
+<span class="material-symbols-outlined" data-icon="phone_iphone">phone_iphone</span>
+</div>
+<div>
+<h5 class="font-body-sm text-body-sm font-semibold text-on-surface">Safari on iPhone</h5>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">London · 10.0.0.1</p>
+</div>
+</div>
+<button class="font-body-sm text-body-sm text-error hover:text-error/80 font-medium transition-colors">Revoke</button>
+</li>
+</ul>
+</div>
+</section>
+</main>
+</div>
+</body></html>

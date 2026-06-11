@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocNova - Billing &amp; Plan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "tertiary-fixed": "#acedff",
+                        "on-surface": "#0b1c30",
+                        "on-secondary-fixed-variant": "#414658",
+                        "on-primary-container": "#eeefff",
+                        "on-background": "#0b1c30",
+                        "surface": "#f8f9ff",
+                        "surface-container": "#e5eeff",
+                        "on-primary-fixed": "#00174b",
+                        "outline": "#737686",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-bright": "#f8f9ff",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#d3e4fe",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#161b2b",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#0053db",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#d3e4fe",
+                        "primary-container": "#2563eb",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary": "#005e6e",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#cbdbf5",
+                        "on-secondary-container": "#5d6274",
+                        "background": "#f8f9ff",
+                        "tertiary-container": "#00788c",
+                        "secondary": "#595e70",
+                        "secondary-fixed": "#dee1f7",
+                        "on-surface-variant": "#434655",
+                        "on-tertiary-container": "#d7f6ff",
+                        "surface-container-low": "#eff4ff",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#dce9ff",
+                        "secondary-container": "#dbdff4",
+                        "inverse-surface": "#213145",
+                        "inverse-on-surface": "#eaf1ff",
+                        "secondary-fixed-dim": "#c2c6db",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "inverse-primary": "#b4c5ff",
+                        "primary": "#004ac6",
+                        "on-tertiary-fixed": "#001f26",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "stack-lg": "32px",
+                        "container-max": "1280px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-md": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 flex flex-col bg-on-surface dark:bg-surface-container-lowest shadow-sm fixed left-0 top-0 py-stack-lg shrink-0 z-50 md:flex hidden">
+<div class="px-gutter mb-stack-lg">
+<h1 class="font-headline-md text-headline-md font-extrabold text-surface-container-lowest">DocNova</h1>
+<p class="font-label-md text-label-md text-surface-variant/70 mt-1 uppercase tracking-wider">AI Intelligence</p>
+</div>
+<div class="flex-1 overflow-y-auto w-full">
+<ul class="flex flex-col space-y-unit w-full px-4">
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="home">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Documents</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="chat">chat</span>
+<span class="font-label-md text-label-md">Conversations</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="search">search</span>
+<span class="font-label-md text-label-md">Search</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="database">database</span>
+<span class="font-label-md text-label-md">Extractions</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-surface-bright hover:bg-surface-variant/10 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="analytics">analytics</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg border-l-4 border-primary bg-primary-container/10 text-primary-fixed active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="px-gutter mt-auto pt-4 border-t border-surface-variant/20">
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface font-bold">
+                    DR
+                </div>
+<div class="ml-3">
+<p class="font-body-sm text-body-sm text-surface-bright font-semibold">Dr. Reynolds</p>
+<p class="font-label-md text-label-md text-surface-variant/70">Cardiology</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="w-full h-16 bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center px-gutter shrink-0 z-40 transition-all duration-200 ease-in-out">
+<div class="flex items-center">
+<button class="md:hidden mr-4 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low p-2 rounded-lg">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="font-headline-md text-headline-md font-bold text-on-surface hidden md:block">DocNova Settings</div>
+</div>
+<div class="flex items-center space-x-2">
+<div class="relative hidden sm:block mr-4">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-64 h-10 pl-10 pr-4 rounded-lg border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm text-on-surface" placeholder="Search settings..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors p-2 rounded-lg">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors p-2 rounded-lg">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors p-2 rounded-lg">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Settings Layout -->
+<div class="flex-1 overflow-hidden flex flex-col md:flex-row bg-background">
+<!-- Settings Left Nav -->
+<aside class="w-full md:w-[220px] bg-surface-container-lowest border-r border-outline-variant shrink-0 overflow-y-auto">
+<div class="py-stack-md px-4">
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-4 px-2">Account Settings</p>
+<nav class="space-y-1">
+<a class="flex items-center px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-on-surface-variant group-hover:text-primary transition-colors" data-icon="person">person</span>
+<span class="font-body-sm text-body-sm">Profile</span>
+</a>
+<a class="flex items-center px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-on-surface-variant group-hover:text-primary transition-colors" data-icon="security">security</span>
+<span class="font-body-sm text-body-sm">Security</span>
+</a>
+<a class="flex items-center px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-on-surface-variant group-hover:text-primary transition-colors" data-icon="notifications_active">notifications_active</span>
+<span class="font-body-sm text-body-sm">Notifications</span>
+</a>
+<a class="flex items-center px-3 py-2.5 rounded-lg bg-primary-container/10 text-primary-container font-medium border-l-2 border-primary transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-primary-container" data-icon="credit_card" style="font-variation-settings: 'FILL' 1;">credit_card</span>
+<span class="font-body-sm text-body-sm">Billing &amp; Plan</span>
+</a>
+<a class="flex items-center px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-on-surface-variant group-hover:text-primary transition-colors" data-icon="api">api</span>
+<span class="font-body-sm text-body-sm">API Keys</span>
+</a>
+</nav>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mt-8 mb-4 px-2">Workspace</p>
+<nav class="space-y-1">
+<a class="flex items-center px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-on-surface-variant group-hover:text-primary transition-colors" data-icon="group">group</span>
+<span class="font-body-sm text-body-sm">Team Members</span>
+</a>
+<a class="flex items-center px-3 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-on-surface-variant group-hover:text-primary transition-colors" data-icon="integration_instructions">integration_instructions</span>
+<span class="font-body-sm text-body-sm">Integrations</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- Settings Content Canvas -->
+<main class="flex-1 overflow-y-auto p-gutter lg:p-margin-desktop bg-background">
+<div class="max-w-4xl mx-auto space-y-stack-lg">
+<!-- Header -->
+<div>
+<h2 class="font-title-lg text-title-lg text-on-surface font-bold">Billing &amp; Plan</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Manage your subscription, usage limits, and payment methods.</p>
+</div>
+<!-- Current Plan Card -->
+<section class="bg-surface-container-lowest rounded-xl border-2 border-primary-container p-6 md:p-8 shadow-[0_4px_6px_-1px_rgba(10,15,30,0.1),0_2px_4px_-2px_rgba(10,15,30,0.05)] relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-container/5 rounded-bl-full -mr-8 -mt-8 pointer-events-none"></div>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Pro Plan</h3>
+<span class="px-2.5 py-1 rounded-full bg-primary-container/10 text-primary-container font-label-md text-label-md tracking-wide">MOST POPULAR</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Ideal for specialized clinics and medium-sized practices.</p>
+</div>
+<div class="text-left md:text-right">
+<div class="flex items-baseline gap-1">
+<span class="font-display-md text-display-md text-on-surface">$29</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/ month</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Next billing date: Oct 15, 2024</p>
+</div>
+</div>
+<!-- Usage Meters -->
+<div class="space-y-6 mb-8 border-t border-outline-variant/30 pt-6">
+<h4 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-4">Current Cycle Usage</h4>
+<!-- Documents -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Documents Processed</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">127 <span class="text-outline">/ 500</span></span>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary-container rounded-full" style="width: 25.4%"></div>
+</div>
+</div>
+<!-- Storage -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Secure Storage</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">2.4GB <span class="text-outline">/ 10GB</span></span>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary-container rounded-full" style="width: 24%"></div>
+</div>
+</div>
+<!-- API Calls -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">API Calls</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">8,430 <span class="text-outline">/ 50,000</span></span>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 16.86%"></div>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-outline-variant/30">
+<button class="h-[44px] px-6 bg-primary-container text-on-primary font-body-sm text-body-sm font-semibold rounded-lg hover:bg-primary transition-colors flex items-center justify-center shadow-sm">
+                                Upgrade to Enterprise
+                            </button>
+<button class="h-[44px] px-6 bg-transparent border border-error text-error font-body-sm text-body-sm font-semibold rounded-lg hover:bg-error-container/20 transition-colors flex items-center justify-center">
+                                Cancel Plan
+                            </button>
+</div>
+</section>
+<!-- Payment Method & Billing Details Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-stack-lg">
+<!-- Payment Method Card -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 shadow-[0_4px_6px_-1px_rgba(10,15,30,0.1),0_2px_4px_-2px_rgba(10,15,30,0.05)]">
+<h3 class="font-title-lg text-title-lg text-on-surface font-bold mb-4">Payment Method</h3>
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant/50">
+<div class="flex items-center gap-4">
+<div class="w-12 h-8 bg-surface-container-lowest rounded border border-outline-variant flex items-center justify-center relative overflow-hidden">
+<!-- Mock Visa Logo -->
+<div class="font-bold text-[#1434CB] text-lg italic tracking-tighter">VISA</div>
+</div>
+<div>
+<p class="font-body-sm text-body-sm font-medium text-on-surface">•••• •••• •••• 4242</p>
+<p class="font-label-md text-label-md text-on-surface-variant">Expires 12/26</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-tertiary-container/10 text-tertiary-container font-label-md text-label-md tracking-wide">DEFAULT</span>
+</div>
+<div class="mt-6">
+<button class="h-[40px] px-4 bg-transparent border border-outline-variant text-on-surface font-body-sm text-body-sm font-semibold rounded-lg hover:bg-surface-container-low transition-colors w-full sm:w-auto">
+                                    Update Payment Method
+                                </button>
+</div>
+</section>
+<!-- Billing Info Card -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 shadow-[0_4px_6px_-1px_rgba(10,15,30,0.1),0_2px_4px_-2px_rgba(10,15,30,0.05)]">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-title-lg text-title-lg text-on-surface font-bold">Billing Information</h3>
+<button class="text-primary-container hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="space-y-4">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Company Name</p>
+<p class="font-body-sm text-body-sm font-medium text-on-surface">Reynolds Cardiology Group LLC</p>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Billing Address</p>
+<p class="font-body-sm text-body-sm text-on-surface">
+                                        1400 Medical Plaza Drive<br/>
+                                        Suite 400<br/>
+                                        Boston, MA 02115
+                                    </p>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Tax ID / VAT</p>
+<p class="font-body-sm text-body-sm text-on-surface">US-123456789</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Billing History Table -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0_4px_6px_-1px_rgba(10,15,30,0.1),0_2px_4px_-2px_rgba(10,15,30,0.05)] overflow-hidden mb-stack-lg">
+<div class="p-6 border-b border-outline-variant bg-surface-container-lowest">
+<h3 class="font-title-lg text-title-lg text-on-surface font-bold">Billing History</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Download past invoices and receipts.</p>
+</div>
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse min-w-[600px]">
+<thead>
+<tr class="bg-surface border-b border-outline-variant">
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">Date</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">Description</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">Amount</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">Status</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold text-right">Invoice</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-lowest transition-colors h-[56px]">
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Sep 15, 2024</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Pro Plan Subscription</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface font-medium">$29.00</td>
+<td class="py-3 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#10B9811A] text-[#10B981]">Paid</span>
+</td>
+<td class="py-3 px-6 text-right">
+<button class="text-on-surface-variant hover:text-primary-container transition-colors" title="Download PDF">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-lowest transition-colors h-[56px]">
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Aug 15, 2024</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Pro Plan Subscription</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface font-medium">$29.00</td>
+<td class="py-3 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#10B9811A] text-[#10B981]">Paid</span>
+</td>
+<td class="py-3 px-6 text-right">
+<button class="text-on-surface-variant hover:text-primary-container transition-colors" title="Download PDF">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-lowest transition-colors h-[56px]">
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Jul 15, 2024</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Pro Plan Subscription</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface font-medium">$29.00</td>
+<td class="py-3 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#10B9811A] text-[#10B981]">Paid</span>
+</td>
+<td class="py-3 px-6 text-right">
+<button class="text-on-surface-variant hover:text-primary-container transition-colors" title="Download PDF">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-lowest transition-colors h-[56px]">
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Jun 15, 2024</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Pro Plan Subscription</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface font-medium">$29.00</td>
+<td class="py-3 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#10B9811A] text-[#10B981]">Paid</span>
+</td>
+<td class="py-3 px-6 text-right">
+<button class="text-on-surface-variant hover:text-primary-container transition-colors" title="Download PDF">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors h-[56px]">
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">May 15, 2024</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface">Pro Plan Subscription</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface font-medium">$29.00</td>
+<td class="py-3 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#10B9811A] text-[#10B981]">Paid</span>
+</td>
+<td class="py-3 px-6 text-right">
+<button class="text-on-surface-variant hover:text-primary-container transition-colors" title="Download PDF">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</body></html>

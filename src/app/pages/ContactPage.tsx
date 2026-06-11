@@ -5,7 +5,7 @@ import { Mail, MessageSquare, Send, CheckCircle2, MapPin, Clock } from "lucide-r
 const inputStyle = {
   width: "100%",
   padding: "0.875rem 1rem",
-  borderRadius: "12px",
+  borderRadius: "6px",
   background: "var(--dn-bg-input)",
   border: "1px solid var(--dn-border)",
   color: "var(--dn-t1)",
@@ -106,7 +106,7 @@ export default function ContactPage() {
                     alignItems: "flex-start",
                     gap: "0.875rem",
                     padding: "1.25rem",
-                    borderRadius: "16px",
+                    borderRadius: "6px",
                     background: "var(--dn-bg-card)",
                     border: "1px solid var(--dn-border)",
                     transition: "var(--dn-transition)",
@@ -116,7 +116,7 @@ export default function ContactPage() {
                   <div style={{
                     width: "36px",
                     height: "36px",
-                    borderRadius: "10px",
+                    borderRadius: "6px",
                     background: "rgba(10,132,255,0.12)",
                     border: "1px solid rgba(10,132,255,0.2)",
                     display: "flex",
@@ -146,7 +146,7 @@ export default function ContactPage() {
             >
               <div style={{
                 padding: "2.5rem",
-                borderRadius: "28px",
+                borderRadius: "6px",
                 background: "var(--dn-bg-card)",
                 border: "1px solid var(--dn-border)",
                 backdropFilter: "blur(20px)",
@@ -283,7 +283,7 @@ export default function ContactPage() {
                         whileTap={!sending ? { scale: 0.98 } : {}}
                         style={{
                           padding: "0.9rem 2rem",
-                          borderRadius: "14px",
+                          borderRadius: "6px",
                           background: sending
                             ? "rgba(10,132,255,0.4)"
                             : "linear-gradient(135deg, #0a84ff 0%, #5ac8fa 100%)",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, CheckCircle2, Download, Eye, FileStack, Loader2, Upload, X } from "lucide-react";
 import { categoryMeta, type Tool } from "../../data/tools";
@@ -19,6 +19,7 @@ interface OutputFile {
 
 export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [files, setFiles] = useState<MergeFile[]>([]);
   const [queue, setQueue] = useState<QueuePage[]>([]);
   const [isDraggingUpload, setIsDraggingUpload] = useState(false);
@@ -116,6 +117,33 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
       }
     }
   };
+
+  useEffect(() => {
+    if (location.state?.sourceFileUrl) {
+      const { sourceFileUrl, sourceFileName } = location.state;
+      window.history.replaceState({}, document.title);
+      
+      setProcessing(true);
+      setErrorMsg("Loading file...");
+      
+      fetch(sourceFileUrl)
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to load previous file");
+          return res.blob();
+        })
+        .then(blob => {
+          setErrorMsg("");
+          const file = new File([blob], sourceFileName || "document.pdf", { type: blob.type });
+          handleFiles([file]);
+        })
+        .catch(err => {
+          setErrorMsg(err.message || "Failed to load the passed file.");
+        })
+        .finally(() => {
+          setProcessing(false);
+        });
+    }
+  }, [location.state]);
 
   const togglePage = (page: PreviewPage) => {
     setOutput(null);
@@ -258,7 +286,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
         </Link>
 
         <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.5rem" }}>
-          <div style={{ width: 60, height: 60, borderRadius: 18, background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42` }}>
+          <div style={{ width: 60, height: 60, borderRadius: "4px", background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42` }}>
             <FileStack size={28} color="#fff" />
           </div>
           <div>
@@ -283,7 +311,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
           onClick={() => inputRef.current?.click()}
           style={{
             minHeight: 168,
-            borderRadius: 22,
+            borderRadius: "4px",
             border: `2px dashed ${isDraggingUpload ? "#60a5fa" : "var(--dn-border2)"}`,
             background: isDraggingUpload ? "rgba(37,99,235,0.12)" : "var(--dn-bg-card)",
             display: "grid",
@@ -296,7 +324,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
         >
           <input ref={inputRef} type="file" accept=".pdf" multiple style={{ display: "none" }} onChange={event => event.target.files && handleFiles(Array.from(event.target.files))} />
           <div>
-            <div style={{ width: 58, height: 58, margin: "0 auto 0.85rem", borderRadius: 16, display: "grid", placeItems: "center", background: "rgba(37,99,235,0.16)", color: "#93c5fd", boxShadow: "0 0 30px rgba(59,130,246,0.22)" }}>
+            <div style={{ width: 58, height: 58, margin: "0 auto 0.85rem", borderRadius: "4px", display: "grid", placeItems: "center", background: "rgba(37,99,235,0.16)", color: "#93c5fd", boxShadow: "0 0 30px rgba(59,130,246,0.22)" }}>
               <Upload size={26} />
             </div>
             <div style={{ color: "var(--dn-t1)", fontWeight: 800 }}>Upload PDFs or drop them here</div>
@@ -307,7 +335,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
         <AnimatePresence>
           {errorMsg && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginBottom: "1rem", padding: "0.85rem 1rem", borderRadius: 14, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.22)", color: "#f87171", fontSize: "0.86rem" }}>
+              style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginBottom: "1rem", padding: "0.85rem 1rem", borderRadius: "4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.22)", color: "#f87171", fontSize: "0.86rem" }}>
               <X size={16} /> {errorMsg}
             </motion.div>
           )}
@@ -342,7 +370,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
               disabled={processing || queue.length === 0}
               style={{
                 border: "none",
-                borderRadius: 14,
+                borderRadius: "4px",
                 background: queue.length === 0 ? "rgba(71,85,105,0.5)" : "linear-gradient(135deg,#2563eb,#60a5fa)",
                 color: "#fff",
                 padding: "0.9rem 1.25rem",
@@ -379,7 +407,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
         )}
 
         {output && (
-          <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: "1.25rem", borderRadius: 22, border: "1px solid rgba(34,197,94,0.24)", background: "var(--dn-bg-card)", padding: "1rem", boxShadow: "var(--dn-shadow)" }}>
+          <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: "1.25rem", borderRadius: "4px", border: "1px solid rgba(34,197,94,0.24)", background: "var(--dn-bg-card)", padding: "1rem", boxShadow: "var(--dn-shadow)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
               <CheckCircle2 size={22} color="#22c55e" />
               <div style={{ flex: 1, minWidth: 220 }}>
@@ -394,7 +422,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
                 <Download size={16} /> Download PDF
               </button>
             </div>
-            <div style={{ height: 520, borderRadius: 16, overflow: "hidden", border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)" }}>
+            <div style={{ height: 520, borderRadius: "4px", overflow: "hidden", border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)" }}>
               <object data={output.url} type="application/pdf" width="100%" height="100%">
                 <div style={{ display: "grid", placeItems: "center", height: "100%", color: "var(--dn-t3)" }}>
                   <Eye size={18} /> Preview is ready. Use Download PDF to save it.

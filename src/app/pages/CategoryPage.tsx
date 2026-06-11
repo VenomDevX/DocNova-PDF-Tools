@@ -47,7 +47,8 @@ export default function CategoryPage() {
                 <Link to={`/tools/${tool.id}`} style={{ textDecoration: "none" }}>
                   <motion.div
                     whileHover={{ y: -6, scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    style={{ padding: "1.75rem", borderRadius: "22px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: "var(--dn-shadow)", transition: "border-color 0.2s, box-shadow 0.2s" }}
+                    className="dn-card"
+                    style={{ padding: "1.75rem", borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: "var(--dn-shadow)", transition: "border-color 0.2s" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}35`; (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 40px ${tool.color}15`; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--dn-border)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--dn-shadow)"; }}
                   >
@@ -60,7 +61,7 @@ export default function CategoryPage() {
                     )}
 
                     {/* Icon */}
-                    <div style={{ width: "52px", height: "52px", borderRadius: "15px", background: tool.iconGrad, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.25rem", boxShadow: `0 6px 20px ${tool.color}35` }}>
+                    <div style={{ width: "52px", height: "52px", borderRadius: "6px", background: tool.iconGrad, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.25rem", boxShadow: `0 6px 20px ${tool.color}35` }}>
                       <tool.icon size={24} color="#fff" />
                     </div>
 

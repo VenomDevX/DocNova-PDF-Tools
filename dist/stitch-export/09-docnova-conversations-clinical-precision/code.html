@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocNova - Conversations</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Custom scrollbar for clinical precision feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-primary": "#b4c5ff",
+                      "primary-container": "#2563eb",
+                      "error-container": "#ffdad6",
+                      "on-surface-variant": "#434655",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "primary-fixed": "#dbe1ff",
+                      "on-secondary-fixed": "#161b2b",
+                      "secondary-fixed-dim": "#c2c6db",
+                      "surface-container-low": "#eff4ff",
+                      "on-background": "#0b1c30",
+                      "secondary-container": "#dbdff4",
+                      "inverse-on-surface": "#eaf1ff",
+                      "on-error": "#ffffff",
+                      "background": "#f8f9ff",
+                      "surface-variant": "#d3e4fe",
+                      "outline": "#737686",
+                      "tertiary-fixed": "#acedff",
+                      "on-tertiary-container": "#d7f6ff",
+                      "error": "#ba1a1a",
+                      "inverse-surface": "#213145",
+                      "surface-container-highest": "#d3e4fe",
+                      "secondary-fixed": "#dee1f7",
+                      "tertiary-container": "#00788c",
+                      "on-tertiary": "#ffffff",
+                      "surface": "#f8f9ff",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "tertiary": "#005e6e",
+                      "on-tertiary-fixed": "#001f26",
+                      "outline-variant": "#c3c6d7",
+                      "on-primary-fixed": "#00174b",
+                      "surface-container": "#e5eeff",
+                      "on-primary-container": "#eeefff",
+                      "surface-container-high": "#dce9ff",
+                      "surface-bright": "#f8f9ff",
+                      "on-primary": "#ffffff",
+                      "secondary": "#595e70",
+                      "surface-dim": "#cbdbf5",
+                      "surface-tint": "#0053db",
+                      "on-secondary-container": "#5d6274",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "primary": "#004ac6",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-secondary-fixed-variant": "#414658",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "on-surface": "#0b1c30"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "stack-md": "16px",
+                      "stack-sm": "8px",
+                      "container-max": "1280px",
+                      "stack-lg": "32px",
+                      "margin-desktop": "40px"
+              },
+              "fontFamily": {
+                      "body-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "title-lg": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "display-md": ["Inter"],
+                      "headline-lg-mobile": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "display-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "display-md": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen flex overflow-hidden">
+<!-- Shared SideNavBar Component -->
+<div class="relative flex h-full w-[280px] flex-col bg-surface border-r border-outline-variant shrink-0" style='font-family: Inter, "Noto Sans", sans-serif;'>
+<div class="flex h-full flex-col p-4 justify-between">
+<div class="flex flex-col gap-6">
+<div class="flex gap-3 px-2">
+<div class="bg-primary-container text-on-primary-container aspect-square rounded-full size-10 flex items-center justify-center font-bold text-lg">
+                        D
+                    </div>
+<div class="flex flex-col justify-center">
+<h1 class="text-on-surface text-base font-semibold leading-tight">DocNova</h1>
+<p class="text-secondary text-xs font-normal leading-tight">AI Document Assistant</p>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<div class="text-on-surface-variant flex items-center" data-icon="House">
+<span class="material-symbols-outlined">house</span>
+</div>
+<p class="text-on-surface text-sm font-medium">Dashboard</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<div class="text-on-surface-variant flex items-center" data-icon="FileText">
+<span class="material-symbols-outlined">circles_ext</span>
+</div>
+<p class="text-on-surface text-sm font-medium">Documents</p>
+</div>
+<!-- Active State -->
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-surface-container-high cursor-pointer border-l-4 border-primary-container">
+<div class="text-primary-container flex items-center" data-icon="ImageSquare" data-weight="fill">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">crop_square</span>
+</div>
+<p class="text-on-surface text-sm font-semibold">Conversations</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<div class="text-on-surface-variant flex items-center" data-icon="Chat">
+<span class="material-symbols-outlined">chat</span>
+</div>
+<p class="text-on-surface text-sm font-medium">Analytics</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 border-t border-outline-variant pt-4">
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<div class="text-on-surface-variant flex items-center" data-icon="Gear">
+<span class="material-symbols-outlined">clear</span>
+</div>
+<p class="text-on-surface text-sm font-medium">Settings</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background">
+<!-- Page Header -->
+<header class="h-20 shrink-0 border-b border-outline-variant px-margin-desktop flex items-center justify-between bg-surface z-10 shadow-[0_4px_6px_-1px_rgba(10,15,30,0.05)]">
+<div class="flex flex-col justify-center">
+<h1 class="headline-md text-on-surface m-0 leading-tight">Conversations</h1>
+<p class="body-sm text-secondary m-0">43 conversations across 31 documents</p>
+</div>
+<button class="bg-primary-container text-on-primary-container hover:bg-primary transition-colors h-[44px] px-6 rounded-lg font-label-md flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                New Conversation
+            </button>
+</header>
+<!-- 2-Column Split Layout -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left Column: Conversation List -->
+<aside class="w-[320px] shrink-0 border-r border-outline-variant bg-surface flex flex-col">
+<!-- Search Bar -->
+<div class="p-4 border-b border-outline-variant">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-outline text-[20px]">search</span>
+<input class="w-full h-[34px] bg-surface-container-lowest border border-outline-variant rounded-md pl-10 pr-3 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow" placeholder="Search conversations..." type="text"/>
+</div>
+</div>
+<!-- List Grouping -->
+<div class="flex-1 overflow-y-auto">
+<!-- Date Group -->
+<div class="px-4 py-2 mt-2">
+<span class="label-md text-secondary uppercase tracking-wider">Today</span>
+</div>
+<!-- Active List Item -->
+<div class="relative bg-surface-container border-l-4 border-primary-container p-4 cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-[16px] text-error shrink-0">picture_as_pdf</span>
+<span class="text-sm font-semibold text-on-surface truncate">Q3_Financial_Report.pdf</span>
+</div>
+<span class="text-xs text-secondary shrink-0 ml-2">10:42 AM</span>
+</div>
+<p class="text-sm text-on-surface-variant line-clamp-2 pr-6">Summarize the risk factors associated with international expansion.</p>
+<div class="absolute bottom-4 right-4 bg-primary-fixed text-primary-container text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            3
+                        </div>
+</div>
+<!-- Inactive List Item -->
+<div class="relative bg-surface p-4 cursor-pointer hover:bg-surface-container border-b border-outline-variant transition-colors group">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-[16px] text-primary shrink-0">description</span>
+<span class="text-sm font-medium text-on-surface group-hover:text-primary-container transition-colors truncate">Marketing_Strategy_2025.docx</span>
+</div>
+<span class="text-xs text-secondary shrink-0 ml-2">2:15 PM</span>
+</div>
+<p class="text-sm text-on-surface-variant line-clamp-1">What were the main expense categories?</p>
+</div>
+<!-- Date Group -->
+<div class="px-4 py-2 mt-4">
+<span class="label-md text-secondary uppercase tracking-wider">Yesterday</span>
+</div>
+<!-- Inactive List Item -->
+<div class="relative bg-surface p-4 cursor-pointer hover:bg-surface-container border-b border-outline-variant transition-colors group">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-[16px] text-error shrink-0">picture_as_pdf</span>
+<span class="text-sm font-medium text-on-surface group-hover:text-primary-container transition-colors truncate">Patient_Intake_Guidelines.pdf</span>
+</div>
+<span class="text-xs text-secondary shrink-0 ml-2">Nov 12</span>
+</div>
+<p class="text-sm text-on-surface-variant line-clamp-1">List all required identification forms.</p>
+</div>
+</div>
+</aside>
+<!-- Right Column: Conversation Detail -->
+<section class="flex-1 flex flex-col bg-surface-container-lowest relative">
+<!-- Detail Header -->
+<div class="h-16 shrink-0 px-6 border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-error-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-error-container">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<h2 class="text-base font-semibold text-on-surface leading-tight">Q3_Financial_Report.pdf</h2>
+<span class="text-xs text-secondary mt-0.5">32 Pages • 2.4 MB • Last modified 2 days ago</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-9 h-9 rounded flex items-center justify-center text-secondary hover:bg-surface-container hover:text-on-surface transition-colors" title="Open Document">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+</button>
+<button class="w-9 h-9 rounded flex items-center justify-center text-secondary hover:bg-surface-container hover:text-on-surface transition-colors" title="Export Chat">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<div class="w-px h-5 bg-outline-variant mx-1"></div>
+<button class="w-9 h-9 rounded flex items-center justify-center text-secondary hover:bg-error-container hover:text-error transition-colors" title="Delete Conversation">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Message Thread Area -->
+<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-8 scroll-smooth pb-24">
+<!-- Date Separator -->
+<div class="flex items-center justify-center">
+<span class="bg-surface-container px-3 py-1 rounded-full text-xs font-semibold text-secondary">Today, 10:15 AM</span>
+</div>
+<!-- User Message 1 -->
+<div class="flex justify-end w-full">
+<div class="max-w-[75%] bg-primary-container text-on-primary-container rounded-2xl rounded-tr-sm p-4 shadow-sm">
+<p class="text-sm leading-relaxed">What was the total revenue for Q3 2024?</p>
+</div>
+</div>
+<!-- AI Message 1 -->
+<div class="flex justify-start w-full gap-4">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center shrink-0 shadow-sm mt-1">
+<span class="material-symbols-outlined text-[18px] text-on-secondary-container">auto_awesome</span>
+</div>
+<div class="max-w-[80%] flex flex-col gap-2">
+<div class="text-sm text-on-surface leading-relaxed pt-1">
+                                Based on the financial report, the total revenue for Q3 2024 was <strong>$4.2 million</strong>.
+                            </div>
+<!-- Citation Chip -->
+<div class="self-start mt-1">
+<button class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface border border-outline-variant text-xs text-secondary hover:bg-surface-container transition-colors cursor-pointer shadow-[0_1px_2px_rgba(10,15,30,0.05)]">
+<span class="material-symbols-outlined text-[14px]">find_in_page</span>
+                                    Source: Page 7
+                                </button>
+</div>
+</div>
+</div>
+<!-- User Message 2 -->
+<div class="flex justify-end w-full mt-4">
+<div class="max-w-[75%] bg-primary-container text-on-primary-container rounded-2xl rounded-tr-sm p-4 shadow-sm">
+<p class="text-sm leading-relaxed">What were the main expense categories?</p>
+</div>
+</div>
+<!-- AI Message 2 with Table -->
+<div class="flex justify-start w-full gap-4">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center shrink-0 shadow-sm mt-1">
+<span class="material-symbols-outlined text-[18px] text-on-secondary-container">auto_awesome</span>
+</div>
+<div class="max-w-[85%] flex flex-col gap-3">
+<div class="text-sm text-on-surface leading-relaxed pt-1">
+                                The main expense categories for Q3 2024 are broken down as follows:
+                            </div>
+<!-- Inline Table -->
+<div class="overflow-hidden border border-outline-variant rounded-lg bg-surface mt-2">
+<table class="w-full text-left text-sm">
+<thead class="bg-surface-container-low border-b border-outline-variant text-on-surface-variant font-semibold">
+<tr>
+<th class="px-4 py-2.5">Category</th>
+<th class="px-4 py-2.5 text-right">Amount (USD)</th>
+<th class="px-4 py-2.5 text-right">% of Total</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant text-on-surface">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-4 py-2.5">Research &amp; Development</td>
+<td class="px-4 py-2.5 text-right font-medium">$1,250,000</td>
+<td class="px-4 py-2.5 text-right text-secondary">42%</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-4 py-2.5">Sales &amp; Marketing</td>
+<td class="px-4 py-2.5 text-right font-medium">$850,000</td>
+<td class="px-4 py-2.5 text-right text-secondary">28%</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-4 py-2.5">Administrative</td>
+<td class="px-4 py-2.5 text-right font-medium">$450,000</td>
+<td class="px-4 py-2.5 text-right text-secondary">15%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="self-start mt-1">
+<button class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface border border-outline-variant text-xs text-secondary hover:bg-surface-container transition-colors cursor-pointer shadow-[0_1px_2px_rgba(10,15,30,0.05)]">
+<span class="material-symbols-outlined text-[14px]">find_in_page</span>
+                                    Source: Page 12
+                                </button>
+</div>
+</div>
+</div>
+<!-- User Message 3 -->
+<div class="flex justify-end w-full mt-4">
+<div class="max-w-[75%] bg-primary-container text-on-primary-container rounded-2xl rounded-tr-sm p-4 shadow-sm">
+<p class="text-sm leading-relaxed">Summarize the risk factors</p>
+</div>
+</div>
+<!-- AI Message 3 with Bullets -->
+<div class="flex justify-start w-full gap-4">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center shrink-0 shadow-sm mt-1">
+<span class="material-symbols-outlined text-[18px] text-on-secondary-container">auto_awesome</span>
+</div>
+<div class="max-w-[80%] flex flex-col gap-2">
+<div class="text-sm text-on-surface leading-relaxed pt-1">
+<p class="mb-2">The report highlights three primary risk factors for the upcoming fiscal year:</p>
+<ul class="list-disc pl-5 space-y-1.5 text-on-surface-variant marker:text-primary">
+<li><strong>Supply Chain Volatility:</strong> Potential disruptions in raw material sourcing due to geopolitical tensions in key manufacturing regions.</li>
+<li><strong>Regulatory Changes:</strong> Anticipated shifts in healthcare compliance standards that may require additional operational expenditure.</li>
+<li><strong>Market Competition:</strong> Increased aggressive pricing strategies from emerging competitors in the domestic market.</li>
+</ul>
+</div>
+<div class="self-start mt-2">
+<button class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface border border-outline-variant text-xs text-secondary hover:bg-surface-container transition-colors cursor-pointer shadow-[0_1px_2px_rgba(10,15,30,0.05)]">
+<span class="material-symbols-outlined text-[14px]">find_in_page</span>
+                                    Source: Page 24-25
+                                </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Chat Input Area (High Fidelity) -->
+<div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest to-transparent pt-12 pointer-events-none">
+<div class="pointer-events-auto bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_4px_12px_-2px_rgba(10,15,30,0.08),0_2px_6px_-2px_rgba(10,15,30,0.04)] focus-within:border-primary-container focus-within:ring-4 focus-within:ring-primary-fixed focus-within:ring-opacity-50 transition-all duration-200">
+<!-- Context Chip Area -->
+<div class="px-4 pt-3 pb-1 flex items-center gap-2">
+<div class="inline-flex items-center gap-1.5 bg-surface-container px-2.5 py-1 rounded-md border border-outline-variant/50">
+<span class="material-symbols-outlined text-[14px] text-error">picture_as_pdf</span>
+<span class="text-xs font-medium text-on-surface-variant truncate max-w-[150px]">Q3_Financial_Report.pdf</span>
+<button class="ml-1 text-secondary hover:text-error transition-colors flex items-center justify-center w-4 h-4 rounded-full hover:bg-error-container/50">
+<span class="material-symbols-outlined text-[12px]">close</span>
+</button>
+</div>
+</div>
+<!-- Textarea and Actions -->
+<div class="flex items-end p-2 pl-4">
+<textarea class="flex-1 bg-transparent border-none resize-none focus:ring-0 text-on-surface body-md placeholder:text-outline py-2 min-h-[44px] max-h-32 m-0" placeholder="Ask a question about this document..." rows="1"></textarea>
+<div class="flex items-center gap-1 pb-1 pr-1 pl-2">
+<button class="w-10 h-10 rounded-lg text-secondary hover:bg-surface-container hover:text-on-surface transition-colors flex items-center justify-center" title="Attach file">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container hover:bg-primary shadow-sm transition-colors flex items-center justify-center ml-1" title="Send message">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+</div>
+<div class="text-center mt-3">
+<span class="text-[11px] text-secondary">AI-generated responses may contain inaccuracies. Verify critical information.</span>
+</div>
+</div>
+</section>
+</div>
+</main>
+<script>
+        // Simple auto-resize for textarea to match high-fidelity requirement
+        const textarea = document.querySelector('textarea');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if(this.value === '') {
+                this.style.height = '44px';
+            }
+        });
+    </script>
+</body></html>

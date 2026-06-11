@@ -20,8 +20,8 @@ export default function TermsPage() {
             <div style={{ display: "inline-block", padding: "0.35rem 0.9rem", borderRadius: "999px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", color: "#60a5fa", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "1.25rem" }}>Legal</div>
             <h1 style={{ fontSize: "clamp(2.5rem,5vw,4rem)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: "1rem", color: "var(--dn-t1)" }}>Terms of Service</h1>
             <p style={{ color: "var(--dn-t3)", fontSize: "0.95rem", lineHeight: 1.7 }}>Last updated: June 4, 2026 · Effective immediately</p>
-            <div style={{ marginTop: "2rem", padding: "1.5rem", borderRadius: "18px", background: "linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.04) 100%)", border: "1px solid rgba(59,130,246,0.18)", display: "flex", alignItems: "center", gap: "1rem" }}>
-              <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ marginTop: "2rem", padding: "1.5rem", borderRadius: "6px", background: "linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.04) 100%)", border: "1px solid rgba(59,130,246,0.18)", display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{ width: "44px", height: "44px", borderRadius: "6px", background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <FileText size={20} color="#3b82f6" />
               </div>
               <p style={{ color: "var(--dn-t2)", fontSize: "0.9rem", lineHeight: 1.6 }}>
@@ -33,9 +33,9 @@ export default function TermsPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             {sections.map((section, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.04 * i }}
-                style={{ padding: "2rem", borderRadius: "20px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", transition: "var(--dn-transition)", boxShadow: "var(--dn-shadow)" }}>
+                style={{ padding: "2rem", borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", transition: "var(--dn-transition)", boxShadow: "var(--dn-shadow)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                  <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: "36px", height: "36px", borderRadius: "6px", background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <section.icon size={16} color="#3b82f6" />
                   </div>
                   <h2 style={{ fontSize: "1.05rem", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--dn-t1)" }}>{section.title}</h2>

@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import {
   AlertCircle,
@@ -136,6 +136,7 @@ const previewCache = new Map<string, PreviewItem[]>();
 
 export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [files, setFiles] = useState<WorkflowFile[]>([]);
   const [selectionOrder, setSelectionOrder] = useState<string[]>([]);
   const [settings, setSettings] = useState<ToolSettings>(defaultSettings);
@@ -268,6 +269,30 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
       void loadPreviewForFile(source);
     });
   }, [acceptsMultiple, files, loadPreviewForFile, output, replaceTargetId, tool]);
+
+  useEffect(() => {
+    if (location.state?.sourceFileUrl) {
+      const { sourceFileUrl, sourceFileName } = location.state;
+      window.history.replaceState({}, document.title);
+      
+      setStatus("processing");
+      setProcessingLabel("Loading file...");
+      
+      fetch(sourceFileUrl)
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to load previous file");
+          return res.blob();
+        })
+        .then(blob => {
+          const file = new File([blob], sourceFileName || "document.pdf", { type: blob.type });
+          addFiles([file]);
+        })
+        .catch(err => {
+          setErrorMsg(err.message || "Failed to load the passed file.");
+          setStatus("idle");
+        });
+    }
+  }, [addFiles, location.state]);
 
   const removeFile = (fileId: string) => {
     const target = files.find(file => file.id === fileId);
@@ -425,7 +450,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
         </Link>
 
         <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.5rem" }}>
-          <div style={{ width: 60, height: 60, borderRadius: 18, background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42`, flexShrink: 0 }}>
+          <div style={{ width: 60, height: 60, borderRadius: "4px", background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42`, flexShrink: 0 }}>
             <tool.icon size={28} color="#fff" />
           </div>
           <div style={{ minWidth: 0 }}>
@@ -451,7 +476,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
           onClick={() => inputRef.current?.click()}
           style={{
             minHeight: 168,
-            borderRadius: 22,
+            borderRadius: "4px",
             border: `2px dashed ${isDraggingUpload ? tool.color : "var(--dn-border2)"}`,
             background: isDraggingUpload ? `${tool.color}14` : "var(--dn-bg-card)",
             display: "grid",
@@ -474,7 +499,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
             }}
           />
           <div>
-            <div style={{ width: 58, height: 58, margin: "0 auto 0.85rem", borderRadius: 16, display: "grid", placeItems: "center", background: `${tool.color}18`, color: tool.color, boxShadow: `0 0 30px ${tool.color}24` }}>
+            <div style={{ width: 58, height: 58, margin: "0 auto 0.85rem", borderRadius: "4px", display: "grid", placeItems: "center", background: `${tool.color}18`, color: tool.color, boxShadow: `0 0 30px ${tool.color}24` }}>
               <Upload size={26} />
             </div>
             <div style={{ color: "var(--dn-t1)", fontWeight: 800 }}>{isDraggingUpload ? "Drop files here" : `Upload ${tool.label} files`}</div>
@@ -487,7 +512,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
         <AnimatePresence>
           {errorMsg && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginBottom: "1rem", padding: "0.85rem 1rem", borderRadius: 14, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.22)", color: "#f87171", fontSize: "0.86rem" }}>
+              style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginBottom: "1rem", padding: "0.85rem 1rem", borderRadius: "4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.22)", color: "#f87171", fontSize: "0.86rem" }}>
               <AlertCircle size={16} /> <span style={{ flex: 1 }}>{errorMsg}</span>
               <button type="button" onClick={() => setErrorMsg("")} style={{ border: "none", background: "transparent", color: "#f87171", cursor: "pointer", display: "grid", placeItems: "center" }}>
                 <X size={15} />
@@ -551,7 +576,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                   disabled={status === "processing"}
                   style={{
                     border: "none",
-                    borderRadius: 14,
+                    borderRadius: "4px",
                     background: `linear-gradient(135deg,${tool.color},#60a5fa)`,
                     color: "#fff",
                     padding: "0.9rem 1.25rem",
@@ -571,7 +596,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleReset}
-                  style={{ border: "1px solid var(--dn-border)", borderRadius: 14, background: "var(--dn-bg-card)", color: "var(--dn-t2)", padding: "0.9rem 1rem", fontWeight: 750, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+                  style={{ border: "1px solid var(--dn-border)", borderRadius: "4px", background: "var(--dn-bg-card)", color: "var(--dn-t2)", padding: "0.9rem 1rem", fontWeight: 750, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
                 >
                   <X size={16} /> Clear
                 </motion.button>
@@ -589,7 +614,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
               )}
             </div>
 
-            <aside className="dn-sticky-panel" style={{ ...panelStyle, borderRadius: 20, padding: "1rem", position: "sticky", top: 96 }}>
+            <aside className="dn-sticky-panel" style={{ ...panelStyle, borderRadius: "4px", padding: "1rem", position: "sticky", top: 96 }}>
               <WorkflowSteps status={status} hasFiles={files.length > 0} hasSelection={selectedItems.length > 0} hasOutput={!!output} />
               <div style={{ height: 1, background: "var(--dn-border)", margin: "1rem 0" }} />
               <div style={{ display: "grid", gap: "0.7rem" }}>
@@ -624,7 +649,7 @@ export function SelectionToolbar({
   onInvert: () => void;
 }) {
   return (
-    <div style={{ ...panelStyle, borderRadius: 18, padding: "1rem", display: "flex", gap: "0.65rem", flexWrap: "wrap", alignItems: "center" }}>
+    <div style={{ ...panelStyle, borderRadius: "4px", padding: "1rem", display: "flex", gap: "0.65rem", flexWrap: "wrap", alignItems: "center" }}>
       <ToolbarButton onClick={onSelectAll}>Select All</ToolbarButton>
       <ToolbarButton onClick={onDeselectAll}>Deselect All</ToolbarButton>
       <ToolbarButton onClick={onInvert}>Invert Selection</ToolbarButton>
@@ -661,7 +686,7 @@ export function UniversalFilePreview({
   return (
     <>
       {files.map(file => (
-        <section key={file.id} style={{ ...panelStyle, borderRadius: 20, padding: "1rem" }}>
+        <section key={file.id} style={{ ...panelStyle, borderRadius: "4px", padding: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
             <FileKindIcon kind={file.kind} />
               <div style={{ minWidth: 0, flex: 1 }}>
@@ -685,7 +710,7 @@ export function UniversalFilePreview({
 
           {file.loading && <PreviewSkeleton />}
           {file.error && (
-            <div style={{ color: "#f87171", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: 12, padding: "0.85rem", fontSize: "0.84rem" }}>
+            <div style={{ color: "#f87171", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: "4px", padding: "0.85rem", fontSize: "0.84rem" }}>
               {file.error}
             </div>
           )}
@@ -756,7 +781,7 @@ export function PageThumbnailGrid({
               position: "relative",
               border: selected ? "2px solid #3b82f6" : "1px solid rgba(148,163,184,0.18)",
               background: selected ? "rgba(37,99,235,0.12)" : "var(--dn-bg-card)",
-              borderRadius: 14,
+              borderRadius: "4px",
               padding: "0.45rem",
               cursor: "pointer",
               boxShadow: selected ? "0 0 28px rgba(59,130,246,0.28)" : "var(--dn-shadow)",
@@ -781,7 +806,7 @@ export function PageThumbnailGrid({
                 width: 30,
                 height: 30,
                 border: "1px solid rgba(96,165,250,0.32)",
-                borderRadius: 9,
+                borderRadius: "4px",
                 background: "rgba(2,6,23,0.72)",
                 color: "#bfdbfe",
                 display: "grid",
@@ -822,7 +847,7 @@ export function ToolSettingsPanel({
   const remainingItems = tool.id === "delete-pages" ? allItems.filter(item => !selectedItems.some(selected => selected.id === item.id)) : selectedItems;
 
   return (
-    <section style={{ ...panelStyle, borderRadius: 20, padding: "1rem" }}>
+    <section style={{ ...panelStyle, borderRadius: "4px", padding: "1rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginBottom: "0.9rem" }}>
         <Settings size={17} color="var(--dn-t3)" />
         <div>
@@ -856,7 +881,7 @@ export function ToolSettingsPanel({
 
         {tool.id === "delete-pages" && (
           <>
-            <div style={{ padding: "0.85rem", borderRadius: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: "0.82rem", fontWeight: 700 }}>
+            <div style={{ padding: "0.85rem", borderRadius: "4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: "0.82rem", fontWeight: 700 }}>
               Warning: selected pages will be removed.
             </div>
             <PreviewStrip title="Remaining pages preview" items={remainingItems} empty="Select pages to delete and the remaining document appears here." />
@@ -983,7 +1008,7 @@ export function ProcessingModal({ open, progress, label, color }: { open: boolea
             }
           `}</style>
           <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, y: 10 }}
-            style={{ width: "min(92vw, 430px)", minHeight: 248, borderRadius: 24, background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "0 28px 90px rgba(0,0,0,0.42)", padding: "1.5rem", display: "grid", placeItems: "center", textAlign: "center" }}>
+            style={{ width: "min(92vw, 430px)", minHeight: 248, borderRadius: "4px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "0 28px 90px rgba(0,0,0,0.42)", padding: "1.5rem", display: "grid", placeItems: "center", textAlign: "center" }}>
             <div style={{ width: "100%" }}>
               <div style={{ width: 72, height: 72, margin: "0 auto 1rem", borderRadius: "50%", display: "grid", placeItems: "center", background: `${color}12`, position: "relative" }}>
                 <div style={{ position: "absolute", inset: 8, borderRadius: "50%", border: "3px solid rgba(148,163,184,0.18)", borderTopColor: color, animation: "spin 0.82s linear infinite" }} />
@@ -1013,7 +1038,7 @@ export function OutputPreviewPanel({ tool, output, onDownload }: { tool: Tool; o
   const [activeItem, setActiveItem] = useState<OutputPreviewItem | null>(output.items[0] || null);
 
   return (
-    <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: "0.25rem", borderRadius: 22, border: "1px solid rgba(34,197,94,0.24)", background: "var(--dn-bg-card)", padding: "1rem", boxShadow: "var(--dn-shadow)" }}>
+    <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: "0.25rem", borderRadius: "4px", border: "1px solid rgba(34,197,94,0.24)", background: "var(--dn-bg-card)", padding: "1rem", boxShadow: "var(--dn-shadow)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <CheckCircle2 size={22} color="#22c55e" />
         <div style={{ flex: 1, minWidth: 220 }}>
@@ -1028,7 +1053,7 @@ export function OutputPreviewPanel({ tool, output, onDownload }: { tool: Tool; o
           <div style={{ display: "grid", gap: "0.55rem", maxHeight: 520, overflow: "auto" }}>
             {output.items.map(item => (
               <button key={item.id} type="button" onClick={() => setActiveItem(item)}
-                style={{ display: "flex", alignItems: "center", gap: "0.6rem", textAlign: "left", borderRadius: 12, border: activeItem?.id === item.id ? "1px solid #60a5fa" : "1px solid var(--dn-border)", background: activeItem?.id === item.id ? "rgba(37,99,235,0.12)" : "var(--dn-bg-subtle)", color: "var(--dn-t2)", padding: "0.55rem", cursor: "pointer" }}>
+                style={{ display: "flex", alignItems: "center", gap: "0.6rem", textAlign: "left", borderRadius: "4px", border: activeItem?.id === item.id ? "1px solid #60a5fa" : "1px solid var(--dn-border)", background: activeItem?.id === item.id ? "rgba(37,99,235,0.12)" : "var(--dn-bg-subtle)", color: "var(--dn-t2)", padding: "0.55rem", cursor: "pointer" }}>
                 <FileKindIcon kind={item.kind === "archive" ? "generic" : item.kind} compact />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: "0.78rem", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
@@ -1039,7 +1064,7 @@ export function OutputPreviewPanel({ tool, output, onDownload }: { tool: Tool; o
           </div>
         )}
 
-        <div style={{ minHeight: 420, borderRadius: 16, overflow: "hidden", border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)" }}>
+        <div style={{ minHeight: 420, borderRadius: "4px", overflow: "hidden", border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)" }}>
           {activeItem ? <OutputPreviewSurface item={activeItem} /> : <EmptyPanel text="Output preview is ready." />}
         </div>
       </div>
@@ -1047,7 +1072,7 @@ export function OutputPreviewPanel({ tool, output, onDownload }: { tool: Tool; o
       {output.summary.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.65rem", marginTop: "1rem" }}>
           {output.summary.map(item => (
-            <div key={item.label} style={{ minWidth: 150, borderRadius: 12, border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", padding: "0.75rem" }}>
+            <div key={item.label} style={{ minWidth: 150, borderRadius: "4px", border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", padding: "0.75rem" }}>
               <div style={{ color: "var(--dn-t4)", fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>{item.label}</div>
               <div style={{ color: "var(--dn-t1)", fontSize: "0.9rem", fontWeight: 850, marginTop: "0.2rem" }}>{item.value}</div>
             </div>
@@ -1083,12 +1108,12 @@ function QueuePanel({
   onRemove: (id: string) => void;
 }) {
   return (
-    <section style={{ ...panelStyle, borderRadius: 20, padding: "1rem" }}>
+    <section style={{ ...panelStyle, borderRadius: "4px", padding: "1rem" }}>
       <div style={{ color: "var(--dn-t1)", fontWeight: 850, marginBottom: "0.75rem" }}>{title}</div>
       <div style={{ display: "grid", gap: "0.55rem" }}>
         {items.map((item, index) => (
           <motion.div key={item.id} layout draggable onDragStart={() => onDragStart(item.id)} onDragOver={event => event.preventDefault()} onDrop={() => onDropOnItem(item.id)}
-            style={{ display: "grid", gridTemplateColumns: "18px 44px minmax(0,1fr) 28px", alignItems: "center", gap: "0.55rem", padding: "0.45rem", borderRadius: 12, border: draggingId === item.id ? "1px solid #60a5fa" : "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", cursor: "grab" }}>
+            style={{ display: "grid", gridTemplateColumns: "18px 44px minmax(0,1fr) 28px", alignItems: "center", gap: "0.55rem", padding: "0.45rem", borderRadius: "4px", border: draggingId === item.id ? "1px solid #60a5fa" : "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", cursor: "grab" }}>
             <GripVertical size={14} color="var(--dn-t4)" />
             <MiniPreview item={item} />
             <div style={{ minWidth: 0 }}>
@@ -1120,7 +1145,7 @@ function WorkflowSteps({ status, hasFiles, hasSelection, hasOutput }: { status: 
       <div style={{ display: "grid", gap: "0.55rem" }}>
         {steps.map(([label, done], index) => (
           <div key={label} style={{ display: "flex", alignItems: "center", gap: "0.6rem", color: done ? "var(--dn-t1)" : "var(--dn-t4)", fontSize: "0.82rem" }}>
-            <div style={{ width: 24, height: 24, borderRadius: 8, display: "grid", placeItems: "center", background: done ? "rgba(34,197,94,0.16)" : "var(--dn-bg-subtle)", color: done ? "#4ade80" : "var(--dn-t4)", border: "1px solid var(--dn-border)" }}>
+            <div style={{ width: 24, height: 24, borderRadius: "4px", display: "grid", placeItems: "center", background: done ? "rgba(34,197,94,0.16)" : "var(--dn-bg-subtle)", color: done ? "#4ade80" : "var(--dn-t4)", border: "1px solid var(--dn-border)" }}>
               {done ? <Check size={13} /> : index + 1}
             </div>
             {label}
@@ -1134,7 +1159,7 @@ function WorkflowSteps({ status, hasFiles, hasSelection, hasOutput }: { status: 
 function PreviewSurface({ item, rotation = 0 }: { item: PreviewItem; rotation?: number }) {
   if (item.thumbnail) {
     return (
-      <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: 10, background: "#fff", display: "grid", placeItems: "center", overflow: "hidden" }}>
+      <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "4px", background: "#fff", display: "grid", placeItems: "center", overflow: "hidden" }}>
         <img src={item.thumbnail} alt={item.label} style={{ width: "100%", height: "100%", objectFit: "contain", transform: `rotate(${rotation}deg)`, transition: "transform 0.2s ease" }} />
       </div>
     );
@@ -1142,14 +1167,14 @@ function PreviewSurface({ item, rotation = 0 }: { item: PreviewItem; rotation?: 
 
   if (item.kind === "pdf") {
     return (
-      <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: 10, background: "linear-gradient(90deg,#ffffff,#f1f5f9,#ffffff)", border: "1px solid rgba(148,163,184,0.24)", display: "grid", placeItems: "center", color: "#94a3b8", fontWeight: 850, fontSize: "0.74rem" }}>
+      <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "4px", background: "linear-gradient(90deg,#ffffff,#f1f5f9,#ffffff)", border: "1px solid rgba(148,163,184,0.24)", display: "grid", placeItems: "center", color: "#94a3b8", fontWeight: 850, fontSize: "0.74rem" }}>
         Generating...
       </div>
     );
   }
 
   return (
-    <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: 10, background: "linear-gradient(180deg,rgba(15,23,42,0.94),rgba(30,41,59,0.88))", border: "1px solid rgba(148,163,184,0.18)", display: "grid", placeItems: "center", padding: "0.8rem", textAlign: "center" }}>
+    <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "4px", background: "linear-gradient(180deg,rgba(15,23,42,0.94),rgba(30,41,59,0.88))", border: "1px solid rgba(148,163,184,0.18)", display: "grid", placeItems: "center", padding: "0.8rem", textAlign: "center" }}>
       <div>
         <FileKindIcon kind={item.kind} />
         <div style={{ color: "var(--dn-t2)", fontWeight: 850, fontSize: "0.78rem", marginTop: "0.6rem" }}>{item.label}</div>
@@ -1207,7 +1232,7 @@ function PreviewModal({
 }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(2,6,23,0.72)", backdropFilter: "blur(18px)", display: "grid", placeItems: "center", padding: fullscreen ? 0 : "2rem" }}>
-      <div onClick={event => event.stopPropagation()} style={{ width: fullscreen ? "100vw" : "min(92vw, 900px)", height: fullscreen ? "100vh" : "auto", maxHeight: fullscreen ? "100vh" : "92vh", borderRadius: fullscreen ? 0 : 20, border: "1px solid var(--dn-border)", background: "var(--dn-bg-card)", boxShadow: "var(--dn-shadow)", overflow: "hidden" }}>
+      <div onClick={event => event.stopPropagation()} style={{ width: fullscreen ? "100vw" : "min(92vw, 900px)", height: fullscreen ? "100vh" : "auto", maxHeight: fullscreen ? "100vh" : "92vh", borderRadius: fullscreen ? 0 : "4px", border: "1px solid var(--dn-border)", background: "var(--dn-bg-card)", boxShadow: "var(--dn-shadow)", overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.85rem 1rem", borderBottom: "1px solid var(--dn-border)" }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ color: "var(--dn-t1)", fontWeight: 850, fontSize: "0.92rem" }}>{item.label}</div>
@@ -1234,7 +1259,7 @@ function PreviewStrip({ title, items, empty }: { title: string; items: PreviewIt
     <div>
       <div style={{ color: "var(--dn-t3)", fontSize: "0.78rem", fontWeight: 800, marginBottom: "0.55rem" }}>{title}</div>
       {items.length === 0 ? (
-        <div style={{ border: "1px dashed var(--dn-border2)", borderRadius: 12, color: "var(--dn-t4)", fontSize: "0.78rem", padding: "0.85rem", background: "var(--dn-bg-subtle)" }}>{empty}</div>
+        <div style={{ border: "1px dashed var(--dn-border2)", borderRadius: "4px", color: "var(--dn-t4)", fontSize: "0.78rem", padding: "0.85rem", background: "var(--dn-bg-subtle)" }}>{empty}</div>
       ) : (
         <div style={{ display: "flex", gap: "0.55rem", overflowX: "auto", paddingBottom: "0.2rem" }}>
           {items.slice(0, 12).map(item => (
@@ -1252,10 +1277,10 @@ function PreviewStrip({ title, items, empty }: { title: string; items: PreviewIt
 
 function MiniPreview({ item }: { item: PreviewItem }) {
   if (item.thumbnail) {
-    return <img src={item.thumbnail} alt="" style={{ width: 44, height: 56, objectFit: "cover", borderRadius: 7, background: "#fff", border: "1px solid var(--dn-border)" }} />;
+    return <img src={item.thumbnail} alt="" style={{ width: 44, height: 56, objectFit: "cover", borderRadius: "4px", background: "#fff", border: "1px solid var(--dn-border)" }} />;
   }
   return (
-    <div style={{ width: 44, height: 56, borderRadius: 7, background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", display: "grid", placeItems: "center" }}>
+    <div style={{ width: 44, height: 56, borderRadius: "4px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", display: "grid", placeItems: "center" }}>
       <FileKindIcon kind={item.kind} compact />
     </div>
   );
@@ -1265,7 +1290,7 @@ function PreviewSkeleton() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: "0.9rem" }}>
       {Array.from({ length: 6 }).map((_, index) => (
-        <div key={index} style={{ height: 198, borderRadius: 14, background: "linear-gradient(90deg,var(--dn-bg-subtle),rgba(148,163,184,0.12),var(--dn-bg-subtle))", border: "1px solid var(--dn-border)", opacity: 0.86 }} />
+        <div key={index} style={{ height: 198, borderRadius: "4px", background: "linear-gradient(90deg,var(--dn-bg-subtle),rgba(148,163,184,0.12),var(--dn-bg-subtle))", border: "1px solid var(--dn-border)", opacity: 0.86 }} />
       ))}
     </div>
   );
@@ -1276,7 +1301,7 @@ function FileKindIcon({ kind, compact }: { kind: PreviewKind; compact?: boolean 
   const style: React.CSSProperties = {
     width: compact ? 30 : 38,
     height: compact ? 30 : 38,
-    borderRadius: compact ? 8 : 10,
+    borderRadius: compact ? "4px" : "4px",
     background: "rgba(59,130,246,0.14)",
     display: "inline-grid",
     placeItems: "center",
@@ -1296,7 +1321,7 @@ function ToolbarButton({ children, onClick }: { children: React.ReactNode; onCli
 
 function IconButton({ children, label, onClick, danger }: { children: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button type="button" aria-label={label} title={label} onClick={event => { event.stopPropagation(); onClick(); }} style={{ width: 30, height: 30, border: "none", borderRadius: 9, display: "grid", placeItems: "center", background: danger ? "rgba(239,68,68,0.12)" : "rgba(148,163,184,0.12)", color: danger ? "#f87171" : "var(--dn-t3)", cursor: "pointer" }}>
+    <button type="button" aria-label={label} title={label} onClick={event => { event.stopPropagation(); onClick(); }} style={{ width: 30, height: 30, border: "none", borderRadius: "4px", display: "grid", placeItems: "center", background: danger ? "rgba(239,68,68,0.12)" : "rgba(148,163,184,0.12)", color: danger ? "#f87171" : "var(--dn-t3)", cursor: "pointer" }}>
       {children}
     </button>
   );
@@ -1308,7 +1333,7 @@ function Segmented({ label, value, options, onChange }: { label: string; value: 
       <div style={{ color: "var(--dn-t3)", fontSize: "0.78rem", fontWeight: 800, marginBottom: "0.5rem" }}>{label}</div>
       <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
         {options.map(([optionValue, optionLabel]) => (
-          <button key={optionValue} type="button" onClick={() => onChange(optionValue)} style={{ border: value === optionValue ? "1px solid #60a5fa" : "1px solid var(--dn-border)", background: value === optionValue ? "rgba(37,99,235,0.16)" : "var(--dn-bg-subtle)", color: value === optionValue ? "#bfdbfe" : "var(--dn-t3)", borderRadius: 10, padding: "0.5rem 0.7rem", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer" }}>
+          <button key={optionValue} type="button" onClick={() => onChange(optionValue)} style={{ border: value === optionValue ? "1px solid #60a5fa" : "1px solid var(--dn-border)", background: value === optionValue ? "rgba(37,99,235,0.16)" : "var(--dn-bg-subtle)", color: value === optionValue ? "#bfdbfe" : "var(--dn-t3)", borderRadius: "4px", padding: "0.5rem 0.7rem", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer" }}>
             {optionLabel}
           </button>
         ))}
@@ -1358,7 +1383,7 @@ function SizeEstimate({ files, level }: { files: WorkflowFile[]; level: string }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ borderRadius: 12, border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", padding: "0.7rem" }}>
+    <div style={{ borderRadius: "4px", border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", padding: "0.7rem" }}>
       <div style={{ color: "var(--dn-t4)", fontSize: "0.66rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
       <div style={{ color: "var(--dn-t1)", fontSize: "0.86rem", fontWeight: 850, marginTop: "0.18rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
     </div>
@@ -1373,7 +1398,7 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   boxSizing: "border-box",
   padding: "0.75rem 0.85rem",
-  borderRadius: 10,
+  borderRadius: "4px",
   background: "var(--dn-bg-input)",
   border: "1px solid var(--dn-border)",
   color: "var(--dn-t1)",
@@ -1569,10 +1594,12 @@ async function processTool(
     case "image-to-pdf": {
       const selectedFileIds = new Set(selectedItems.map(item => item.fileId));
       const imageFiles = files.filter(file => selectedFileIds.has(file.id)).map(file => file.file);
-      const blob = await pdfApi.jpgToPDF(imageFiles.length ? imageFiles : files.map(file => file.file));
+      const blob = await pdfApi.jpgToPDF(imageFiles.length ? imageFiles : files.map(file => file.file), pickSettings(settings, ["pageSize", "orientation", "margins"]));
       return makeSingleOutput(blob, "images.pdf", "pdf", [
         { label: "Images", value: String(imageFiles.length || files.length) },
-        { label: "Page size", value: settings.pageSize },
+        { label: "Page Size", value: settings.pageSize },
+        { label: "Orientation", value: settings.orientation },
+        { label: "Margins", value: settings.margins },
       ]);
     }
     case "pdf-ocr":
