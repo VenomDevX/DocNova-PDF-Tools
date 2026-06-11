@@ -78,7 +78,7 @@ export default function ResultPage() {
           initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          style={{ width: "min(92vw, 430px)", minHeight: 260, borderRadius: 24, background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "0 28px 90px rgba(0,0,0,0.38)", padding: "1.75rem", display: "grid", placeItems: "center", textAlign: "center", willChange: "opacity, transform" }}
+          style={{ width: "min(92vw, 430px)", minHeight: 260, borderRadius: "4px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "0 28px 90px rgba(0,0,0,0.38)", padding: "1.75rem", display: "grid", placeItems: "center", textAlign: "center", willChange: "opacity, transform" }}
         >
           <div style={{ width: "100%" }}>
             <div style={{ width: 74, height: 74, margin: "0 auto 1.1rem", borderRadius: "50%", display: "grid", placeItems: "center", position: "relative", background: "rgba(59,130,246,0.12)" }}>
@@ -113,17 +113,16 @@ export default function ResultPage() {
     return (
       <div style={{ minHeight: "100vh", paddingTop: 110, display: "grid", placeItems: "center", background: "var(--dn-bg)", color: "var(--dn-t1)", paddingInline: "1.5rem" }}>
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-          style={{ width: "min(100%, 460px)", borderRadius: 22, border: "1px solid var(--dn-border)", background: "var(--dn-bg-card)", boxShadow: "var(--dn-shadow)", padding: "1.25rem", textAlign: "center" }}>
-          <div style={{ width: 50, height: 50, borderRadius: 16, background: "rgba(239,68,68,0.12)", color: "#f87171", display: "grid", placeItems: "center", margin: "0 auto 0.9rem" }}>
+          style={{ width: "min(100%, 460px)", borderRadius: "4px", border: "1px solid var(--dn-border)", background: "var(--dn-bg-card)", boxShadow: "var(--dn-shadow)", padding: "1.25rem", textAlign: "center" }}>
+          <div style={{ width: 50, height: 50, borderRadius: "4px", background: "rgba(239,68,68,0.12)", color: "#f87171", display: "grid", placeItems: "center", margin: "0 auto 0.9rem" }}>
             <AlertCircle size={24} />
           </div>
           <h1 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 900 }}>Result not available</h1>
           <p style={{ color: "var(--dn-t3)", lineHeight: 1.6, margin: "0.6rem 0 1rem" }}>{error || "This result may have expired or been deleted."}</p>
-          <Link to="/tools" style={{ textDecoration: "none" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", borderRadius: 999, background: "linear-gradient(135deg,#1d4ed8,#60a5fa)", color: "#fff", padding: "0.72rem 1rem", fontWeight: 900 }}>
-              <RotateCcw size={16} /> Start over
-            </div>
-          </Link>
+          <motion.button onClick={() => navigate("/tools")} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", borderRadius: "4px", border: "none", cursor: "pointer", background: "linear-gradient(135deg,#1d4ed8,#60a5fa)", color: "#fff", padding: "0.72rem 1rem", fontWeight: 900 }}>
+            <RotateCcw size={16} /> Start over
+          </motion.button>
         </motion.div>
       </div>
     );

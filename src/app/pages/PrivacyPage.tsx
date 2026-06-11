@@ -133,7 +133,7 @@ export default function PrivacyPage() {
             <div style={{
               marginTop: "2rem",
               padding: "1.5rem",
-              borderRadius: "20px",
+              borderRadius: "6px",
               background: "linear-gradient(135deg, rgba(10,132,255,0.1) 0%, rgba(90,200,250,0.05) 100%)",
               border: "1px solid rgba(10,132,255,0.2)",
               display: "flex",
@@ -143,7 +143,7 @@ export default function PrivacyPage() {
               <div style={{
                 width: "44px",
                 height: "44px",
-                borderRadius: "12px",
+                borderRadius: "6px",
                 background: "rgba(10,132,255,0.15)",
                 border: "1px solid rgba(10,132,255,0.3)",
                 display: "flex",
@@ -170,7 +170,7 @@ export default function PrivacyPage() {
                 transition={{ delay: 0.05 * i }}
                 style={{
                   padding: "2rem",
-                  borderRadius: "20px",
+                  borderRadius: "6px",
                   background: "var(--dn-bg-card)",
                   border: "1px solid var(--dn-border)",
                   transition: "var(--dn-transition)",
@@ -180,7 +180,7 @@ export default function PrivacyPage() {
                   <div style={{
                     width: "36px",
                     height: "36px",
-                    borderRadius: "10px",
+                    borderRadius: "6px",
                     background: "rgba(10,132,255,0.1)",
                     display: "flex",
                     alignItems: "center",
