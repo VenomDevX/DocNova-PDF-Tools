@@ -241,13 +241,13 @@ export function Navbar() {
 
           <div className="dn-desktop-nav" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
             <Link to="/auth" style={{ textDecoration: "none", marginLeft: "0.25rem" }}>
-              <div style={{ padding: "0.45rem 1rem", height: "34px", display: "flex", alignItems: "center", borderRadius: "6px", color: "var(--dn-nav-text)", fontWeight: 500, fontSize: "0.85rem", cursor: "pointer", transition: "color 0.15s" }}>
+              <div style={{ padding: "0.45rem 1rem", height: "34px", display: "flex", alignItems: "center", borderRadius: "6px", color: "var(--dn-nav-text)", fontWeight: 500, fontSize: "0.85rem", cursor: "pointer", transition: "color 0.15s", whiteSpace: "nowrap" }}>
                 Sign In
               </div>
             </Link>
             <Link to="/auth" style={{ textDecoration: "none" }}>
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                style={{ padding: "0.45rem 1.1rem", height: "34px", display: "flex", alignItems: "center", borderRadius: "6px", background: "#2563eb", color: "#fff", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer", boxShadow: "0 2px 8px rgba(37,99,235,0.3)" }}>
+                style={{ padding: "0.45rem 1.1rem", height: "34px", display: "flex", alignItems: "center", borderRadius: "6px", background: "#2563eb", color: "#fff", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer", boxShadow: "0 2px 8px rgba(37,99,235,0.3)", whiteSpace: "nowrap" }}>
                 Get Started
               </motion.div>
             </Link>
