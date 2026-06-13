@@ -10,3 +10,5 @@ __pycache__/
 *.pyc
 .codex
 .DS_Store
+Black theme video/
+White Theme video/
