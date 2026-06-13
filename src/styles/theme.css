@@ -233,3 +233,52 @@
 @media (max-width: 480px) {
   .popular-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Custom Scrollbars ────────────────────────────── */
+
+/* Default (Light) Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* soft blue-gray */
+  border-radius: 10px;
+  border: 2px solid var(--background);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* darker blue-gray */
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #2563eb; /* DocNova primary blue */
+}
+
+/* Dark Mode Scrollbar */
+.dark ::-webkit-scrollbar-track,
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #030B1A; /* dark navy */
+}
+
+.dark ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #123B8A; /* deep blue */
+  border-radius: 10px;
+  border: 2px solid #030B1A; /* match track */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #1D4ED8; /* brighter blue */
+}
+
+.dark ::-webkit-scrollbar-thumb:active,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:active {
+  background: #2563eb; /* accent blue */
+}

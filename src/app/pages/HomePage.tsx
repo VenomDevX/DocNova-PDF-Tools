@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import { motion, useInView, AnimatePresence } from "motion/react";
 import {
@@ -82,19 +82,96 @@ function AppMockup() {
 
 /* ── Hero ─────────────────────────────────────────────────── */
 function HeroSection() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  /* Reset failure state when theme changes so the new video can try to load */
+  useEffect(() => {
+    setVideoFailed(false);
+  }, [theme]);
+
+  /* Ensure autoplay works across browsers */
+  useEffect(() => {
+    if (videoRef.current && !videoFailed) {
+      videoRef.current.load();
+      videoRef.current.play().catch(() => {
+        /* Autoplay blocked — fallback to static background */
+      });
+    }
+  }, [theme, videoFailed]);
+
+  const videoSrc = isDark ? "/videos/dark-hero-bg.mp4" : "/videos/light-hero-bg.mp4";
+
   return (
-    <section style={{ position: "relative", minHeight: "calc(100vh - 0px)", display: "flex", alignItems: "center", overflow: "hidden", background: "var(--dn-bg)", padding: "96px 2rem 80px", transition: "var(--dn-transition)" }}>
+    <section style={{
+      position: "relative",
+      /* Pull up behind the 60px fixed navbar */
+      marginTop: "-60px",
+      paddingTop: "0",
+      minHeight: "calc(100vh)",
+      display: "flex", alignItems: "center",
+      overflow: "hidden",
+      background: isDark ? "#0a0e1a" : "#f0f4ff",
+      transition: "var(--dn-transition)",
+    }}>
+      {/* ── Theme-aware video background ────────────────── */}
+      {!videoFailed && (
+        <>
+          <video
+            ref={videoRef}
+            key={theme} /* Force remount on theme change for clean source swap */
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onError={() => setVideoFailed(true)}
+            style={{
+              position: "absolute",
+              top: 0, left: 0,
+              width: "100%", height: "100%",
+              objectFit: "cover",
+              zIndex: 0,
+              pointerEvents: "none",
+              opacity: isDark ? 0.55 : 0.4,
+            }}
+          >
+            <source src={videoSrc} type="video/mp4" />
+          </video>
+          {/* Overlay for text readability — different gradient per theme */}
+          <div style={{
+            position: "absolute",
+            top: 0, left: 0,
+            width: "100%", height: "100%",
+            background: isDark
+              ? "linear-gradient(180deg, rgba(10,14,26,0.72) 0%, rgba(10,14,26,0.55) 40%, rgba(10,14,26,0.78) 100%)"
+              : "linear-gradient(180deg, rgba(240,244,255,0.78) 0%, rgba(240,244,255,0.55) 40%, rgba(240,244,255,0.82) 100%)",
+            zIndex: 1,
+            pointerEvents: "none",
+          }} />
+        </>
+      )}
+
       <style>{`
         @keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(37,99,235,0.18)}50%{box-shadow:0 0 44px rgba(37,99,235,0.38)}}
         .hero-2col{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1280px;margin:0 auto;width:100%}
         .hero-right{display:block}
         @media(max-width:900px){.hero-2col{grid-template-columns:1fr!important;gap:3rem}.hero-right{display:none!important}}
       `}</style>
-      <div className="hero-2col">
+
+      {/* ── Hero content (above video) ─────────────────── */}
+      <div className="hero-2col" style={{
+        position: "relative",
+        zIndex: 2,
+        /* Restore the original content padding; extra top to compensate for margin-top pull */
+        padding: "156px 2rem 80px",
+      }}>
         {/* Left */}
         <div>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0.9rem", borderRadius: "6px", background: "#dbe1ff", border: "1px solid #b4c5ff", color: "#00174b", fontSize: "0.73rem", fontWeight: 600, marginBottom: "1.5rem", letterSpacing: "0.04em" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0.9rem", borderRadius: "6px", background: isDark ? "rgba(37,99,235,0.15)" : "#dbe1ff", border: isDark ? "1px solid rgba(59,130,246,0.3)" : "1px solid #b4c5ff", color: isDark ? "#93bbff" : "#00174b", fontSize: "0.73rem", fontWeight: 600, marginBottom: "1.5rem", letterSpacing: "0.04em" }}>
               <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#2563eb" }} />
               Now in Public Beta · 38 Free PDF Tools
             </div>
@@ -116,13 +193,13 @@ function HeroSection() {
             </Link>
             <Link to="/tools" style={{ textDecoration: "none" }}>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.75rem 1.5rem", borderRadius: "6px", background: "var(--dn-bg-input)", border: "1px solid var(--dn-t3)", color: "var(--dn-t3)", fontWeight: 500, fontSize: "0.8rem", letterSpacing: "0.045em", textTransform: "uppercase", cursor: "pointer" }}>
+                style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.75rem 1.5rem", borderRadius: "6px", background: isDark ? "rgba(255,255,255,0.06)" : "var(--dn-bg-input)", border: isDark ? "1px solid rgba(255,255,255,0.18)" : "1px solid var(--dn-t3)", color: isDark ? "rgba(255,255,255,0.85)" : "var(--dn-t3)", fontWeight: 500, fontSize: "0.8rem", letterSpacing: "0.045em", textTransform: "uppercase", cursor: "pointer" }}>
                 <Play size={12} fill="currentColor" /> See a Live Demo
               </motion.div>
             </Link>
           </motion.div>
           {/* Trust strip */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} style={{ borderTop: "1px solid var(--dn-border)", paddingTop: "1.5rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} style={{ borderTop: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid var(--dn-border)", paddingTop: "1.5rem", display: "flex", alignItems: "center", gap: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
               {[imgAv1, imgAv2, imgAv3].map((src, i) => (
                 <div key={i} style={{ width: "32px", height: "32px", borderRadius: "6px", overflow: "hidden", border: "2px solid var(--dn-bg)", marginRight: i < 2 ? "-10px" : 0, position: "relative", zIndex: 3 - i }}>
@@ -144,9 +221,9 @@ function HeroSection() {
       {/* Stats bar */}
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
         className="dn-card"
-        style={{ position: "absolute", bottom: "2rem", left: "50%", transform: "translateX(-50%)", display: "flex", gap: 0, borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border2)", overflow: "hidden", boxShadow: "var(--dn-shadow)", whiteSpace: "nowrap" }}>
+        style={{ position: "absolute", bottom: "2rem", left: "50%", transform: "translateX(-50%)", display: "flex", gap: 0, borderRadius: "6px", background: isDark ? "rgba(15,20,35,0.85)" : "var(--dn-bg-card)", border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid var(--dn-border2)", overflow: "hidden", boxShadow: "var(--dn-shadow)", whiteSpace: "nowrap", zIndex: 2, backdropFilter: isDark ? "blur(12px)" : "none" }}>
         {[{ val: "38+", label: "Tools" }, { val: "∞", label: "Files" }, { val: "$0", label: "Cost" }, { val: "1 hr", label: "Auto-delete" }].map((s, i) => (
-          <div key={s.val} style={{ padding: "0.875rem 1.5rem", textAlign: "center", borderRight: i < 3 ? "1px solid var(--dn-border)" : "none" }}>
+          <div key={s.val} style={{ padding: "0.875rem 1.5rem", textAlign: "center", borderRight: i < 3 ? `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "var(--dn-border)"}` : "none" }}>
             <div style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.04em", background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.val}</div>
             <div style={{ fontSize: "0.65rem", color: "var(--dn-t4)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: "0.1rem" }}>{s.label}</div>
           </div>

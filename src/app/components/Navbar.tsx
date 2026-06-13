@@ -154,6 +154,8 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isHomePage = location.pathname === "/";
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -176,15 +178,23 @@ export function Navbar() {
 
   const isDark = theme === "dark";
 
+  /* On homepage at top: fully transparent. Otherwise: normal. */
+  const heroTransparent = isHomePage && !scrolled;
+
   return (
     <>
       <nav style={{
         height: "60px",
-        background: scrolled ? "var(--dn-nav-bg)" : (isDark ? "rgba(0,0,0,0.5)" : "rgba(248,249,252,0.85)"),
-        borderBottom: `1px solid ${scrolled ? "var(--dn-nav-border)" : "transparent"}`,
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        transition: "background 0.3s ease, border-color 0.3s ease",
+        background: heroTransparent
+          ? "transparent"
+          : scrolled ? "var(--dn-nav-bg)" : (isDark ? "rgba(0,0,0,0.5)" : "rgba(248,249,252,0.85)"),
+        borderBottom: heroTransparent
+          ? "1px solid transparent"
+          : `1px solid ${scrolled ? "var(--dn-nav-border)" : "transparent"}`,
+        boxShadow: heroTransparent ? "none" : (scrolled ? "0 1px 3px rgba(0,0,0,0.06)" : "none"),
+        backdropFilter: heroTransparent ? "none" : "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: heroTransparent ? "none" : "blur(20px) saturate(180%)",
+        transition: "background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease",
         fontFamily: "'Inter', sans-serif",
         display: "flex",
         alignItems: "center",
