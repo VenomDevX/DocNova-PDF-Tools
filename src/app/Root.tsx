@@ -113,7 +113,7 @@ function Layout() {
           </div>
         )}
         <Outlet key={location.pathname} />
-        <Footer />
+        {location.pathname !== "/ai-tools/chat" && <Footer />}
       </main>
     </div>
   );
