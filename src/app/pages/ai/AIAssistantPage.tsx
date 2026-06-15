@@ -206,12 +206,9 @@ void main() {
   }, [isDark]);
 
   return (
-    <div style={{
-      minHeight: "100vh",
+    <div className="absolute inset-0 flex flex-col" style={{
       background: "transparent",
       color: "var(--dn-t1)",
-      display: "flex",
-      flexDirection: "column",
       fontFamily: "'Inter', sans-serif"
     }}>
       <style>{`
