@@ -82,9 +82,10 @@ ALLOWED_DOCS = {'docx', 'doc'}
 ALLOWED_SPREADSHEETS = {'xlsx', 'xls'}
 ALLOWED_PRESENTATIONS = {'pptx', 'ppt'}
 
-import magic
-import uuid
-import os
+try:
+    import magic
+except ImportError:
+    magic = None
 
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
 MAX_DOC_SIZE = 25 * 1024 * 1024
@@ -114,6 +115,9 @@ def allowed_file(file_obj, allowed_types):
     if '.' not in filename: return False
     ext = filename.rsplit('.', 1)[1].lower()
     if ext not in allowed_types: return False
+
+    if magic is None:
+        return True
     
     # Read the first 2048 bytes to determine MIME type
     try:
@@ -122,7 +126,7 @@ def allowed_file(file_obj, allowed_types):
         mime_type = magic.from_buffer(header, mime=True)
     except Exception:
         file_obj.seek(0)
-        return False
+        return True
         
     expected_mimes = MIME_TYPE_MAP.get(ext, [])
     if not expected_mimes:

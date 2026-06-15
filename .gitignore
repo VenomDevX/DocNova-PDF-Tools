@@ -18,6 +18,7 @@ __pycache__/
 Black theme video/
 White Theme video/
 .vercel/
+.vscode/
 .env*
 .gemini/
 stitch-export/
