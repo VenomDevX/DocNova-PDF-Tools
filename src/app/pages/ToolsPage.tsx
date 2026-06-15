@@ -22,9 +22,15 @@ export default function ToolsPage() {
   };
 
   return (
-    <div style={{ color: "var(--dn-t1)", paddingTop: "100px", minHeight: "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ position: "relative", color: "var(--dn-t1)", paddingTop: "100px", minHeight: "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif" }}>
+      {/* Background Glow Effect */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)", width: "1000px", height: "1000px", background: "radial-gradient(circle, rgba(37,99,235,0.08) 0%, rgba(37,99,235,0.02) 40%, transparent 70%)", filter: "blur(80px)" }} />
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "1400px", height: "800px", background: "radial-gradient(ellipse, rgba(59,130,246,0.04) 0%, transparent 60%)", filter: "blur(100px)" }} />
+      </div>
+
       {/* Header */}
-      <section style={{ padding: "2.5rem 1.5rem 3rem", textAlign: "center" }}>
+      <section style={{ position: "relative", zIndex: 1, padding: "2.5rem 1.5rem 3rem", textAlign: "center" }}>
         <div style={{ maxWidth: "700px", margin: "0 auto" }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div style={{ display: "inline-block", padding: "0.3rem 0.85rem", borderRadius: "999px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", color: "#60a5fa", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "1.25rem" }}>
@@ -58,7 +64,7 @@ export default function ToolsPage() {
       </section>
 
       {/* Grid */}
-      <section ref={ref} style={{ padding: "0 1.5rem 6rem" }}>
+      <section ref={ref} style={{ position: "relative", zIndex: 1, padding: "0 1.5rem 6rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           {filtered.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--dn-t4)", padding: "4rem 0" }}>
