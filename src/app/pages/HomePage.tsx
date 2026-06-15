@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
-import { Footer } from "../components/Footer";
 import { motion, useInView, AnimatePresence } from "motion/react";
 import {
   ArrowRight, Zap, Shield, Globe,
@@ -596,7 +595,6 @@ export default function HomePage() {
       <TestimonialsSection />
       <FAQSection />
       <CTASection />
-      <Footer />
     </div>
   );
 }

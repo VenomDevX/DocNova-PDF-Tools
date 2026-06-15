@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Navbar } from "./components/Navbar";
 import { Sidebar } from "./components/Sidebar";
+import { Footer } from "./components/Footer";
 import { SidebarProvider, useSidebar } from "./context/SidebarContext";
 import "../styles/fonts.css";
 
@@ -112,6 +113,7 @@ function Layout() {
           </div>
         )}
         <Outlet key={location.pathname} />
+        <Footer />
       </main>
     </div>
   );
