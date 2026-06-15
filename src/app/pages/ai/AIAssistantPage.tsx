@@ -25,7 +25,26 @@ export default function AIAssistantPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [model, setModel] = useState("gemini-3.5-flash");
-  
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+        setIsModelDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const models = [
+    { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
+    { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+    { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash" },
+    { id: "gemini-2.0-flash-lite", name: "Gemini 2.0 Flash Lite" },
+  ];
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -456,22 +475,46 @@ void main() {
                     <Paperclip size={18} />
                   </button>
                   
-                  {/* AI Model Selector Merged Inside */}
-                  <div className="relative flex items-center group/select">
-                    <select 
-                      value={model} 
-                      onChange={(e) => setModel(e.target.value)}
-                      className="appearance-none bg-transparent border border-transparent hover:border-[var(--dn-border2)] hover:bg-[var(--dn-bg-subtle)] focus:border-[var(--dn-border)] focus:bg-[var(--dn-bg-subtle)] text-[var(--dn-t2)] font-medium text-[12px] rounded-lg pl-3 pr-8 py-1.5 outline-none transition-all cursor-pointer"
+                  {/* Custom AI Model Selector */}
+                  <div className="relative flex items-center" ref={modelDropdownRef}>
+                    <button 
+                      type="button"
+                      onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                      className="flex items-center gap-2 bg-transparent border border-transparent hover:border-[var(--dn-border2)] hover:bg-[var(--dn-bg-subtle)] focus:border-[var(--dn-border)] focus:bg-[var(--dn-bg-subtle)] text-[var(--dn-t2)] font-medium text-[12px] rounded-lg pl-3 pr-2 py-1.5 outline-none transition-all cursor-pointer"
                     >
-                      <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
-                      <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                      <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                      <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                      <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
-                    </select>
-                    <div className="absolute right-2 pointer-events-none text-[var(--dn-t3)] group-hover/select:text-[var(--dn-t2)]">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                    </div>
+                      <Sparkles size={14} className="text-blue-500" />
+                      <span>{models.find(m => m.id === model)?.name || "Gemini 3.5 Flash"}</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 text-[var(--dn-t3)] ${isModelDropdownOpen ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    
+                    <AnimatePresence>
+                      {isModelDropdownOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute bottom-full left-0 mb-2 w-[180px] bg-[var(--dn-bg)]/95 backdrop-blur-md border border-[var(--dn-border2)] shadow-2xl rounded-xl overflow-hidden z-50"
+                        >
+                          <div className="py-1.5 flex flex-col">
+                            {models.map((m) => (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => {
+                                  setModel(m.id);
+                                  setIsModelDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-[12px] transition-colors flex items-center justify-between ${model === m.id ? 'bg-blue-500/10 text-blue-500 font-medium' : 'text-[var(--dn-t2)] hover:bg-[var(--dn-bg-subtle)] hover:text-[var(--dn-t1)]'}`}
+                              >
+                                <span>{m.name}</span>
+                                {model === m.id && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
