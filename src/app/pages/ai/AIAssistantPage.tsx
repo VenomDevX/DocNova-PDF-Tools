@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Bot, User, Send, Loader2, Sparkles, Paperclip, Mic, FileText, Settings, Shield, RefreshCw, Zap, AlignLeft, Info, HelpCircle, Layers } from "lucide-react";
+import { Bot, User, Send, Loader2, Sparkles, Paperclip, Mic, FileText, Settings, Shield, RefreshCw, Zap, AlignLeft, Info, HelpCircle, Layers, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { chatWithAI } from "../../../services/pdfApi";
 
@@ -280,101 +280,103 @@ void main() {
       <main className="flex-1 flex overflow-hidden w-full relative z-10 pt-[60px]">
         
         {/* Center Panel: Chat Canvas */}
-        <section className="flex-1 flex flex-col relative min-w-0 px-4 md:px-8 pt-4 pb-2 mx-auto max-w-3xl h-full">
-          {/* Hero Header */}
-          <div className="flex flex-col items-center justify-center mb-3 shrink-0 relative">
-            <div className="w-12 h-12 mb-2 relative flex items-center justify-center">
-              <div className="absolute inset-0 w-full h-full" id="animated-svg-ANIMATION_3" style={{ display: 'block' }}>
-                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <radialGradient cx="50%" cy="50%" id="glow" r="50%">
-                      <stop offset="0%" stopColor="#2563eb" stopOpacity="0.8">
-                        <animate attributeName="stop-opacity" dur="3s" repeatCount="indefinite" values="0.8;0.4;0.8"></animate>
-                      </stop>
-                      <stop offset="100%" stopColor="#a855f7" stopOpacity="0"></stop>
-                    </radialGradient>
-                    <filter id="blur">
-                      <feGaussianBlur in="SourceGraphic" stdDeviation="8"></feGaussianBlur>
-                    </filter>
-                  </defs>
-                  {/* Outer Glow */}
-                  <circle cx="100" cy="100" fill="url(#glow)" filter="url(#blur)" r="80">
-                    <animateTransform additive="sum" attributeName="transform" dur="4s" repeatCount="indefinite" type="scale" values="1;1.1;1"></animateTransform>
-                  </circle>
-                  {/* Main Orb */}
-                  <circle cx="100" cy="100" fill="#2563eb" r="40">
-                    <animate attributeName="r" dur="2s" repeatCount="indefinite" values="40;42;40"></animate>
-                  </circle>
-                  {/* Content Icon */}
-                  <path d="M100 70 L108 92 L130 100 L108 108 L100 130 L92 108 L70 100 L92 92 Z" fill="white"></path>
-                </svg>
-              </div>
-            </div>
-            <h1 className="text-xl md:text-2xl font-bold text-[var(--dn-t1)] dn-glow-text mb-1 text-center tracking-tight">DocNova AI Assistant</h1>
-            <p className="text-xs md:text-sm text-[var(--dn-t3)] text-center max-w-lg">Your intelligent co-pilot for document workflows</p>
-          </div>
-
-          {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col w-full mx-auto relative dn-ai-glow-box overflow-hidden mb-3 rounded-xl shadow-2xl">
-            <div className="flex-1 overflow-y-auto dn-custom-scrollbar p-4 space-y-4">
+        <section className="flex-1 flex flex-col relative min-w-0 px-4 md:px-8 pt-6 pb-4 mx-auto w-full max-w-4xl h-full">
+          
+          {messages.length === 1 ? (
+            <div className="flex-1 flex flex-col items-center justify-center mb-8 w-full max-w-3xl mx-auto">
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }} className="w-16 h-16 mb-6 relative flex items-center justify-center">
+                <div className="absolute inset-0 w-full h-full" id="animated-svg-ANIMATION_3" style={{ display: 'block' }}>
+                  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <radialGradient cx="50%" cy="50%" id="glow" r="50%">
+                        <stop offset="0%" stopColor="#2563eb" stopOpacity="0.8">
+                          <animate attributeName="stop-opacity" dur="3s" repeatCount="indefinite" values="0.8;0.4;0.8"></animate>
+                        </stop>
+                        <stop offset="100%" stopColor="#a855f7" stopOpacity="0"></stop>
+                      </radialGradient>
+                      <filter id="blur">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="8"></feGaussianBlur>
+                      </filter>
+                    </defs>
+                    <circle cx="100" cy="100" fill="url(#glow)" filter="url(#blur)" r="80">
+                      <animateTransform additive="sum" attributeName="transform" dur="4s" repeatCount="indefinite" type="scale" values="1;1.1;1"></animateTransform>
+                    </circle>
+                    <circle cx="100" cy="100" fill="#2563eb" r="40">
+                      <animate attributeName="r" dur="2s" repeatCount="indefinite" values="40;42;40"></animate>
+                    </circle>
+                    <path d="M100 70 L108 92 L130 100 L108 108 L100 130 L92 108 L70 100 L92 92 Z" fill="white"></path>
+                  </svg>
+                </div>
+              </motion.div>
               
+              <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="text-2xl md:text-3xl font-bold text-[var(--dn-t1)] mb-3 text-center tracking-tight">
+                How can I help you today?
+              </motion.h1>
+              <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-[var(--dn-t3)] text-center max-w-lg mb-10 leading-relaxed">
+                I'm DocNova, your intelligent co-pilot. I can summarize, convert, extract OCR data, or explain your PDF workflows.
+              </motion.p>
+              
+              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <button onClick={() => setInput("Summarize my PDF file")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-subtle)]/50 border border-[var(--dn-border2)] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-left group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500 shadow-sm">
+                      <FileText size={18} />
+                    </div>
+                    <span className="font-semibold text-[var(--dn-t1)] text-sm">Summarize</span>
+                  </div>
+                  <p className="text-xs text-[var(--dn-t3)] leading-relaxed">Get instant insights and extract key data from long PDFs</p>
+                </button>
+                <button onClick={() => setInput("Convert my PDF to Word")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-subtle)]/50 border border-[var(--dn-border2)] hover:border-purple-500/50 hover:bg-purple-500/5 transition-all text-left group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500 shadow-sm">
+                      <RefreshCw size={18} />
+                    </div>
+                    <span className="font-semibold text-[var(--dn-t1)] text-sm">Convert Format</span>
+                  </div>
+                  <p className="text-xs text-[var(--dn-t3)] leading-relaxed">Seamlessly transform PDF files into editable formats</p>
+                </button>
+                <button onClick={() => setInput("Help me edit this PDF")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-subtle)]/50 border border-[var(--dn-border2)] hover:border-green-500/50 hover:bg-green-500/5 transition-all text-left group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 rounded-lg bg-green-500/10 text-green-500 shadow-sm">
+                      <Zap size={18} />
+                    </div>
+                    <span className="font-semibold text-[var(--dn-t1)] text-sm">Edit & Modify</span>
+                  </div>
+                  <p className="text-xs text-[var(--dn-t3)] leading-relaxed">Merge, split, or rearrange pages instantly</p>
+                </button>
+                <button onClick={() => setInput("How to secure my document?")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-subtle)]/50 border border-[var(--dn-border2)] hover:border-orange-500/50 hover:bg-orange-500/5 transition-all text-left group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500 shadow-sm">
+                      <Shield size={18} />
+                    </div>
+                    <span className="font-semibold text-[var(--dn-t1)] text-sm">Protect & Secure</span>
+                  </div>
+                  <p className="text-xs text-[var(--dn-t3)] leading-relaxed">Add passwords and redact sensitive information</p>
+                </button>
+              </motion.div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto dn-custom-scrollbar px-2 md:px-6 space-y-6 mb-6">
               <AnimatePresence>
                 {messages.map((msg, index) => {
+                  if (index === 0) return null; // Skip the default welcome message
                   
-                  // For the first welcome message
-                  if (index === 0 && msg.id === "welcome") {
-                    return (
-                      <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6 pt-2 pb-4">
-                        <div className="flex items-start gap-4 max-w-[85%]">
-                          <div className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
-                            <Sparkles size={20} className="text-blue-500" />
-                          </div>
-                          <div className="dn-glass-panel p-4 rounded-2xl rounded-tl-sm text-[var(--dn-t1)] text-sm leading-relaxed shadow-sm">
-                            {msg.content}
-                          </div>
-                        </div>
-                        
-                        {/* Welcome Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl mt-2">
-                          <button onClick={() => setInput("Summarize my PDF file")} className="dn-glass-panel p-4 rounded-xl flex items-start gap-4 hover:bg-[var(--dn-border2)]/50 transition-all text-left group">
-                            <div className="p-3 rounded-xl bg-[var(--dn-bg-subtle)] text-blue-500 group-hover:bg-blue-500/10 transition-colors shadow-sm">
-                              <FileText size={22} />
-                            </div>
-                            <div>
-                              <h3 className="text-[15px] font-semibold text-[var(--dn-t1)] mb-1">Upload and summarize</h3>
-                              <p className="text-xs text-[var(--dn-t3)]">Get instant insights from long PDFs</p>
-                            </div>
-                          </button>
-                          <button onClick={() => setInput("Convert my PDF to Word")} className="dn-glass-panel p-4 rounded-xl flex items-start gap-4 hover:bg-[var(--dn-border2)]/50 transition-all text-left group">
-                            <div className="p-3 rounded-xl bg-[var(--dn-bg-subtle)] text-purple-500 group-hover:bg-purple-500/10 transition-colors shadow-sm">
-                              <RefreshCw size={22} />
-                            </div>
-                            <div>
-                              <h3 className="text-[15px] font-semibold text-[var(--dn-t1)] mb-1">Convert PDF to Word</h3>
-                              <p className="text-xs text-[var(--dn-t3)]">Maintain formatting accurately</p>
-                            </div>
-                          </button>
-                        </div>
-                      </motion.div>
-                    );
-                  }
-
                   return (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
                       className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-blue-600" : "bg-blue-500/20 border border-blue-500/30"}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 shadow-sm ${msg.role === "user" ? "bg-blue-600" : "bg-[var(--dn-bg-subtle)] border border-[var(--dn-border2)]"}`}>
                         {msg.role === "user" ? <User size={16} color="#fff" /> : <Sparkles size={16} className="text-blue-500" />}
                       </div>
                       
                       <div className={`
-                        p-4 rounded-2xl text-[15px] leading-relaxed max-w-[85%] whitespace-pre-wrap
+                        p-4 text-[15px] leading-relaxed max-w-[85%] whitespace-pre-wrap shadow-sm
                         ${msg.role === "user" 
-                          ? "bg-blue-600 text-white rounded-tr-sm shadow-md" 
-                          : "dn-glass-panel text-[var(--dn-t1)] rounded-tl-sm shadow-sm"
+                          ? "bg-[var(--dn-bg-subtle)] border border-[var(--dn-border2)] text-[var(--dn-t1)] rounded-2xl rounded-tr-sm" 
+                          : "bg-transparent text-[var(--dn-t1)]"
                         }
                       `}>
                         {msg.content}
@@ -385,75 +387,46 @@ void main() {
                 
                 {isLoading && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-[var(--dn-bg-subtle)] border border-[var(--dn-border2)] flex items-center justify-center shrink-0 mt-1">
                       <Sparkles size={16} className="text-blue-500" />
                     </div>
-                    <div className="dn-glass-panel p-3 rounded-2xl rounded-tl-sm flex items-center gap-2">
-                      <Loader2 size={16} className="animate-spin text-blue-500" />
-                      <span className="text-[var(--dn-t3)] text-sm">DocNova is thinking...</span>
+                    <div className="p-4 flex items-center gap-3">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                      </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} className="h-4" />
             </div>
-          </div>
+          )}
 
           {/* Input Area Container */}
-          <div className="w-full mx-auto mt-auto shrink-0 space-y-3 relative z-20">
-            {/* Quick Suggestion Chips */}
-            <div className="flex flex-wrap gap-2 justify-center pb-0">
-              <button onClick={() => setInput("Summarize a PDF")} className="px-3 py-1.5 rounded-full dn-glass-panel text-xs text-[var(--dn-t3)] hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">Summarize a PDF</button>
-              <button onClick={() => setInput("Explain PDF tools")} className="px-3 py-1.5 rounded-full dn-glass-panel text-xs text-[var(--dn-t3)] hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">Explain PDF tools</button>
-              <button onClick={() => setInput("Convert a document")} className="px-3 py-1.5 rounded-full dn-glass-panel text-xs text-[var(--dn-t3)] hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">Convert a document</button>
-              <button onClick={() => setInput("Help with OCR")} className="px-3 py-1.5 rounded-full dn-glass-panel text-xs text-[var(--dn-t3)] hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm hidden sm:inline-block">Help with OCR</button>
-              <button onClick={() => setInput("Compare two documents")} className="px-3 py-1.5 rounded-full dn-glass-panel text-xs text-[var(--dn-t3)] hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm hidden md:inline-block">Compare two documents</button>
-            </div>
-
-            {/* AI Model Selector */}
-            <div className="flex justify-end px-2 mb-1">
-              <select 
-                value={model} 
-                onChange={(e) => setModel(e.target.value)}
-                className="bg-transparent border border-[var(--dn-border2)] text-[var(--dn-t3)] text-xs rounded-md px-2 py-1 outline-none hover:border-blue-500 transition-colors"
-                style={{ backgroundColor: 'var(--dn-bg)' }}
-              >
-                <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
-              </select>
-            </div>
+          <div className="w-full mx-auto mt-auto shrink-0 relative z-20 max-w-3xl">
+            {/* Quick Suggestion Chips - Only show when chat is active */}
+            {messages.length > 1 && (
+              <div className="flex flex-wrap gap-2 justify-center mb-4">
+                <button onClick={() => setInput("Summarize a PDF")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-subtle)]/80 backdrop-blur-md border border-[var(--dn-border2)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-[var(--dn-border)] transition-all shadow-sm">Summarize a PDF</button>
+                <button onClick={() => setInput("Explain PDF tools")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-subtle)]/80 backdrop-blur-md border border-[var(--dn-border2)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-[var(--dn-border)] transition-all shadow-sm">Explain PDF tools</button>
+                <button onClick={() => setInput("Convert a document")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-subtle)]/80 backdrop-blur-md border border-[var(--dn-border2)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-[var(--dn-border)] transition-all shadow-sm hidden sm:inline-block">Convert a document</button>
+              </div>
+            )}
 
             {/* Input Bar */}
-            <form onSubmit={handleSubmit} className="dn-glass-panel-elevated rounded-2xl p-2 flex items-end gap-2 relative overflow-hidden group">
-              <div className="absolute bottom-0 left-0 h-[2px] w-full bg-blue-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left opacity-80"></div>
-              
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) setSelectedFile(file);
-                }}
-              />
-              <button type="button" onClick={() => fileInputRef.current?.click()} className={`p-3 transition-colors rounded-xl hover:bg-[var(--dn-border2)]/50 shrink-0 ${selectedFile ? 'text-blue-500' : 'text-[var(--dn-t3)] hover:text-blue-500'}`}>
-                <Paperclip size={20} />
-              </button>
-              
+            <form onSubmit={handleSubmit} className="dn-glass-panel rounded-2xl p-3 flex flex-col gap-2 relative group shadow-2xl border border-[var(--dn-border2)] bg-[var(--dn-bg)]/80">
               {selectedFile && (
-                <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 rounded-lg px-2 py-1 shrink-0">
+                <div className="flex items-center gap-2 bg-[var(--dn-bg-subtle)] border border-[var(--dn-border2)] rounded-lg px-3 py-1.5 mb-1 self-start ml-1">
                   <FileText size={14} className="text-blue-500" />
-                  <span className="text-xs text-blue-400 max-w-[120px] truncate">{selectedFile.name}</span>
-                  <button type="button" onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="text-[var(--dn-t3)] hover:text-red-400 ml-1">
-                    ×
+                  <span className="text-xs text-[var(--dn-t1)] max-w-[200px] truncate font-medium">{selectedFile.name}</span>
+                  <button type="button" onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="text-[var(--dn-t3)] hover:text-red-400 ml-1 p-0.5 rounded-full hover:bg-red-500/10 transition-colors">
+                    <X size={14} />
                   </button>
                 </div>
               )}
-              
+
               <textarea 
                 ref={textareaRef}
                 value={input}
@@ -464,28 +437,64 @@ void main() {
                     handleSubmit();
                   }
                 }}
-                className="w-full bg-transparent border-none focus:ring-0 text-[var(--dn-t1)] text-sm resize-none py-2 px-2 dn-custom-scrollbar placeholder:text-[var(--dn-t3)]/70" 
+                className="w-full bg-transparent border-none focus:ring-0 text-[var(--dn-t1)] text-[15px] resize-none py-2 px-3 dn-custom-scrollbar placeholder:text-[var(--dn-t3)]/70 leading-relaxed" 
                 placeholder="Ask DocNova about documents, formatting, PDF tools, OCR, or workflows..." 
                 rows={1}
-                style={{ outline: "none", maxHeight: "150px" }}
+                style={{ outline: "none", minHeight: "44px", maxHeight: "200px" }}
               />
               
-              <div className="flex items-center gap-1 shrink-0 pb-1">
-                <button type="button" className="p-2 text-[var(--dn-t3)] hover:text-purple-500 transition-colors rounded-xl hover:bg-[var(--dn-border2)]/50">
-                  <Mic size={20} />
-                </button>
-                <button 
-                  type="submit"
-                  disabled={(!input.trim() && !selectedFile) || isLoading}
-                  className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors shadow-[0_0_10px_rgba(37,99,235,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send size={20} />
-                </button>
+              <div className="flex items-center justify-between w-full pt-2">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setSelectedFile(file);
+                    }}
+                  />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className={`p-2 transition-colors rounded-xl hover:bg-[var(--dn-border2)] shrink-0 ${selectedFile ? 'text-blue-500 bg-blue-500/10' : 'text-[var(--dn-t3)] hover:text-[var(--dn-t1)]'}`}>
+                    <Paperclip size={18} />
+                  </button>
+                  
+                  {/* AI Model Selector Merged Inside */}
+                  <div className="relative flex items-center group/select">
+                    <select 
+                      value={model} 
+                      onChange={(e) => setModel(e.target.value)}
+                      className="appearance-none bg-transparent border border-transparent hover:border-[var(--dn-border2)] hover:bg-[var(--dn-bg-subtle)] focus:border-[var(--dn-border)] focus:bg-[var(--dn-bg-subtle)] text-[var(--dn-t2)] font-medium text-[12px] rounded-lg pl-3 pr-8 py-1.5 outline-none transition-all cursor-pointer"
+                    >
+                      <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+                      <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                      <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                      <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                      <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                    </select>
+                    <div className="absolute right-2 pointer-events-none text-[var(--dn-t3)] group-hover/select:text-[var(--dn-t2)]">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button type="button" className="p-2 text-[var(--dn-t3)] hover:text-[var(--dn-t1)] transition-colors rounded-xl hover:bg-[var(--dn-border2)]">
+                    <Mic size={18} />
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={(!input.trim() && !selectedFile) || isLoading}
+                    className={`p-2 rounded-xl transition-all ${(!input.trim() && !selectedFile) || isLoading ? 'bg-[var(--dn-bg-subtle)] text-[var(--dn-t4)] cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md hover:shadow-[0_0_15px_rgba(37,99,235,0.4)]'}`}
+                  >
+                    <Send size={18} className={(!input.trim() && !selectedFile) || isLoading ? '' : 'translate-x-0.5 -translate-y-0.5'} />
+                  </button>
+                </div>
               </div>
             </form>
             
-            <div className="text-center mt-3">
-              <p className="text-[11px] text-[var(--dn-t3)] opacity-70">AI can make mistakes. Verify important information.</p>
+            <div className="text-center mt-4">
+              <p className="text-[11px] text-[var(--dn-t4)]">DocNova can make mistakes. Consider verifying important information.</p>
             </div>
           </div>
         </section>
