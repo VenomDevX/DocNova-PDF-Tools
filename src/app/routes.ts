@@ -13,6 +13,7 @@ import ResultPage from "./pages/ResultPage";
 import GenericAIToolPage from "./pages/ai/GenericAIToolPage";
 import AIAssistantPage from "./pages/ai/AIAssistantPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import PricingPage from "./pages/PricingPage";
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
       { path: "ai-tools/chat", Component: AIAssistantPage },
       { path: "ai-tools/:toolId", Component: GenericAIToolPage },
       { path: "result/:jobId", Component: ResultPage },
+      { path: "pricing", Component: PricingPage },
       { path: "*", Component: NotFoundPage },
     ],
   },
