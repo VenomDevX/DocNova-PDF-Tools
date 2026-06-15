@@ -333,7 +333,7 @@ void main() {
               </motion.p>
               
               <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                <button onClick={() => setInput("Summarize my PDF file")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-subtle)]/50 border border-[var(--dn-border2)] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-left group">
+                <button onClick={() => setInput("Summarize my PDF file")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-card)] border border-[var(--dn-border)] shadow-sm hover:shadow-md hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-left group">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500 shadow-sm">
                       <FileText size={18} />
@@ -342,7 +342,7 @@ void main() {
                   </div>
                   <p className="text-xs text-[var(--dn-t3)] leading-relaxed">Get instant insights and extract key data from long PDFs</p>
                 </button>
-                <button onClick={() => setInput("Convert my PDF to Word")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-subtle)]/50 border border-[var(--dn-border2)] hover:border-purple-500/50 hover:bg-purple-500/5 transition-all text-left group">
+                <button onClick={() => setInput("Convert my PDF to Word")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-card)] border border-[var(--dn-border)] shadow-sm hover:shadow-md hover:border-purple-500/50 hover:bg-purple-500/5 transition-all text-left group">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500 shadow-sm">
                       <RefreshCw size={18} />
@@ -351,7 +351,7 @@ void main() {
                   </div>
                   <p className="text-xs text-[var(--dn-t3)] leading-relaxed">Seamlessly transform PDF files into editable formats</p>
                 </button>
-                <button onClick={() => setInput("Help me edit this PDF")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-subtle)]/50 border border-[var(--dn-border2)] hover:border-green-500/50 hover:bg-green-500/5 transition-all text-left group">
+                <button onClick={() => setInput("Help me edit this PDF")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-card)] border border-[var(--dn-border)] shadow-sm hover:shadow-md hover:border-green-500/50 hover:bg-green-500/5 transition-all text-left group">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-lg bg-green-500/10 text-green-500 shadow-sm">
                       <Zap size={18} />
@@ -360,7 +360,7 @@ void main() {
                   </div>
                   <p className="text-xs text-[var(--dn-t3)] leading-relaxed">Merge, split, or rearrange pages instantly</p>
                 </button>
-                <button onClick={() => setInput("How to secure my document?")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-subtle)]/50 border border-[var(--dn-border2)] hover:border-orange-500/50 hover:bg-orange-500/5 transition-all text-left group">
+                <button onClick={() => setInput("How to secure my document?")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-card)] border border-[var(--dn-border)] shadow-sm hover:shadow-md hover:border-orange-500/50 hover:bg-orange-500/5 transition-all text-left group">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500 shadow-sm">
                       <Shield size={18} />
@@ -391,7 +391,7 @@ void main() {
                       <div className={`
                         p-4 text-[15px] leading-relaxed max-w-[85%] whitespace-pre-wrap shadow-sm
                         ${msg.role === "user" 
-                          ? "bg-[var(--dn-bg-subtle)] border border-[var(--dn-border2)] text-[var(--dn-t1)] rounded-2xl rounded-tr-sm" 
+                          ? "bg-[var(--dn-bg-card)] border border-[var(--dn-border)] text-[var(--dn-t1)] rounded-2xl rounded-tr-sm shadow-md" 
                           : "bg-transparent text-[var(--dn-t1)]"
                         }
                       `}>
@@ -425,14 +425,14 @@ void main() {
             {/* Quick Suggestion Chips - Only show when chat is active */}
             {messages.length > 1 && (
               <div className="flex flex-wrap gap-2 justify-center mb-4">
-                <button onClick={() => setInput("Summarize a PDF")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-subtle)]/80 backdrop-blur-md border border-[var(--dn-border2)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-[var(--dn-border)] transition-all shadow-sm">Summarize a PDF</button>
-                <button onClick={() => setInput("Explain PDF tools")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-subtle)]/80 backdrop-blur-md border border-[var(--dn-border2)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-[var(--dn-border)] transition-all shadow-sm">Explain PDF tools</button>
-                <button onClick={() => setInput("Convert a document")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-subtle)]/80 backdrop-blur-md border border-[var(--dn-border2)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-[var(--dn-border)] transition-all shadow-sm hidden sm:inline-block">Convert a document</button>
+                <button onClick={() => setInput("Summarize a PDF")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-card)] backdrop-blur-md border border-[var(--dn-border)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all shadow-sm hover:shadow-md">Summarize a PDF</button>
+                <button onClick={() => setInput("Explain PDF tools")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-card)] backdrop-blur-md border border-[var(--dn-border)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all shadow-sm hover:shadow-md">Explain PDF tools</button>
+                <button onClick={() => setInput("Convert a document")} className="px-4 py-1.5 rounded-full bg-[var(--dn-bg-card)] backdrop-blur-md border border-[var(--dn-border)] text-[12px] font-medium text-[var(--dn-t2)] hover:text-[var(--dn-t1)] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all shadow-sm hover:shadow-md hidden sm:inline-block">Convert a document</button>
               </div>
             )}
 
             {/* Input Bar */}
-            <form onSubmit={handleSubmit} className="dn-glass-panel rounded-2xl p-3 flex flex-col gap-2 relative group shadow-2xl border border-[var(--dn-border2)] bg-[var(--dn-bg)]/80">
+            <form onSubmit={handleSubmit} className="dn-glass-panel rounded-2xl p-3 flex flex-col gap-2 relative group shadow-2xl border border-[var(--dn-border)] bg-[var(--dn-bg-card)]/90">
               {selectedFile && (
                 <div className="flex items-center gap-2 bg-[var(--dn-bg-subtle)] border border-[var(--dn-border2)] rounded-lg px-3 py-1.5 mb-1 self-start ml-1">
                   <FileText size={14} className="text-blue-500" />
