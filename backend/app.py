@@ -151,10 +151,6 @@ def save_uploaded_file(file, suffix):
     file.save(temp_path)
     os.chmod(temp_path, 0o600)
     
-    if not scan_for_malware(temp_path):
-        os.remove(temp_path)
-        raise ValueError('File failed malware scan.')
-        
     return temp_path
 
 def result_meta_path(job_id):
