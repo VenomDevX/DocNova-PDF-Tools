@@ -23,20 +23,26 @@ import {
   ShieldCheck,
   Trash2,
   XCircle,
-  Loader2
+  Loader2,
+  FileStack,
+  RotateCw,
+  FileOutput
 } from "lucide-react";
 import { pdfApi, type ResultJobResponse, type ResultPreviewResponse } from "../../../services/pdfApi";
+import { hardNavigate } from "../../../lib/navigateClean";
+import { resetDocNovaState } from "../../../lib/resetDocNovaState";
 
 interface ResultPageLayoutProps {
   job: ResultJobResponse;
   preview: ResultPreviewResponse | null;
-  onDelete: () => void;
+  onDelete: (job: ResultJobResponse) => void | Promise<void>;
 }
 
 export function ResultPageLayout({ job, preview, onDelete }: ResultPageLayoutProps) {
   const navigate = useNavigate();
   const [showStartOverModal, setShowStartOverModal] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [resettingAction, setResettingAction] = useState<"delete" | "start-over" | "continue" | null>(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -52,7 +58,29 @@ export function ResultPageLayout({ job, preview, onDelete }: ResultPageLayoutPro
 
   const handleStartOver = () => {
     setShowStartOverModal(false);
-    navigate(`/tools/${job.toolType || "merge-pdf"}`);
+    setResettingAction("start-over");
+    const path = getToolPath(job.toolType);
+    resetDocNovaState(job.toolType, job.jobId);
+    navigate(path, { replace: true });
+  };
+
+  const handleDelete = async () => {
+    setResettingAction("delete");
+    const path = getToolPath(job.toolType);
+    resetDocNovaState(job.toolType, job.jobId);
+    await onDelete(job);
+    navigate(path, { replace: true });
+  };
+
+  const handleContinue = (path: string) => {
+    setResettingAction("continue");
+    resetDocNovaState(job.toolType, job.jobId);
+    navigate(path, {
+      state: {
+        sourceFileUrl: job.downloadUrl,
+        sourceFileName: job.outputFileName
+      }
+    });
   };
 
   return (
@@ -117,16 +145,17 @@ export function ResultPageLayout({ job, preview, onDelete }: ResultPageLayoutPro
               {job.outputFileName}
             </h1>
           </div>
-          <button onClick={() => setShowStartOverModal(true)} className="dn-action-btn"
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "var(--dn-t2)", padding: "0.55rem 0.85rem", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
-            <RotateCcw size={15} /> Start over
+          <button onClick={() => setShowStartOverModal(true)} disabled={resettingAction !== null} className="dn-action-btn"
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "var(--dn-t2)", padding: "0.55rem 0.85rem", fontWeight: 600, fontSize: "0.85rem", cursor: resettingAction ? "wait" : "pointer", opacity: resettingAction ? 0.75 : 1 }}>
+            {resettingAction === "start-over" ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <RotateCcw size={15} />}
+            {resettingAction === "start-over" ? "Resetting..." : "Start over"}
           </button>
         </div>
 
         {/* Clean Layout Split */}
         <div className="dn-result-grid" style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", alignItems: "stretch", overflow: "hidden", minHeight: 0 }}>
-          <CleanPDFPreview job={job} preview={preview} />
-          <ResultActionPanel job={job} onDelete={onDelete} onStartOver={() => setShowStartOverModal(true)} showToast={showToast} />
+          <CleanPDFPreview key={job.jobId} job={job} preview={preview} />
+          <ResultActionPanel key={job.jobId} job={job} onDelete={handleDelete} onStartOver={() => setShowStartOverModal(true)} onContinue={handleContinue} resettingAction={resettingAction} showToast={showToast} />
         </div>
       </div>
 
@@ -137,6 +166,7 @@ export function ResultPageLayout({ job, preview, onDelete }: ResultPageLayoutPro
         confirmText="Yes, start over" 
         onConfirm={handleStartOver} 
         onCancel={() => setShowStartOverModal(false)} 
+        loading={resettingAction === "start-over"}
       />
 
       <Toast message={toast?.message} type={toast?.type} />
@@ -145,7 +175,7 @@ export function ResultPageLayout({ job, preview, onDelete }: ResultPageLayoutPro
 }
 
 export function CleanPDFPreview({ job, preview }: { job: ResultJobResponse; preview: ResultPreviewResponse | null }) {
-  const pages = preview?.pages || [];
+  const pages = useMemo(() => preview?.pages || [], [preview?.pages]);
   const [viewMode, setViewMode] = useState<"scroll" | "single">("scroll");
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(1);
@@ -433,9 +463,43 @@ function PageSkeleton({ page }: { page: number }) {
   );
 }
 
-export function ResultActionPanel({ job, onDelete, onStartOver, showToast }: { job: ResultJobResponse; onDelete: () => void; onStartOver: () => void; showToast: (msg: string, type?: 'success'|'error') => void }) {
+export function ResultActionPanel({
+  job,
+  onDelete,
+  onStartOver,
+  onContinue,
+  resettingAction,
+  showToast
+}: {
+  job: ResultJobResponse;
+  onDelete: () => void | Promise<void>;
+  onStartOver: () => void;
+  onContinue: (path: string) => void;
+  resettingAction: "delete" | "start-over" | "continue" | null;
+  showToast: (msg: string, type?: 'success'|'error') => void;
+}) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const isResetting = resettingAction !== null;
+
+  const handleDeleteConfirm = async () => {
+    setShowDeleteModal(false);
+    await onDelete();
+  };
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      const file = await fetchResultFile(job);
+      pdfApi.downloadBlob(file, job.outputFileName);
+      showToast("Download started.");
+    } catch {
+      triggerUrlDownload(job.downloadUrl, job.outputFileName);
+      showToast("Download opened in your browser.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -449,27 +513,11 @@ export function ResultActionPanel({ job, onDelete, onStartOver, showToast }: { j
       }
     } catch {
       try {
-        await navigator.clipboard.writeText(url);
+        await copyText(url);
         showToast("Link copied to clipboard!");
       } catch {
         showToast("Failed to share link", "error");
       }
-    }
-  };
-
-  const handleDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    setIsDownloading(true);
-    try {
-      const resp = await fetch(job.downloadUrl);
-      if (!resp.ok) throw new Error("Download failed");
-      const blob = await resp.blob();
-      pdfApi.downloadBlob(blob, job.outputFileName);
-      showToast("Download started!");
-    } catch (error) {
-      showToast("Failed to download file", "error");
-    } finally {
-      setIsDownloading(false);
     }
   };
 
@@ -496,34 +544,33 @@ export function ResultActionPanel({ job, onDelete, onStartOver, showToast }: { j
       <section>
         <div style={{ color: "var(--dn-t4)", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "1rem" }}>Actions</div>
         
-        <a href={job.downloadUrl} download={job.outputFileName} onClick={handleDownload} style={{ textDecoration: "none", display: "block", marginBottom: "0.5rem" }}>
-          <motion.div whileHover={{ scale: isDownloading ? 1 : 1.01 }} whileTap={{ scale: isDownloading ? 1 : 0.99 }}
-            style={{ width: "100%", borderRadius: "4px", background: "#2563eb", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.55rem", padding: "0.85rem 1rem", fontWeight: 500, fontSize: "0.9rem", cursor: isDownloading ? "wait" : "pointer", transition: "background 0.2s", opacity: isDownloading ? 0.8 : 1 }}
-            onMouseOver={(e) => { if (!isDownloading) e.currentTarget.style.background = "#1d4ed8" }}
-            onMouseOut={(e) => { if (!isDownloading) e.currentTarget.style.background = "#2563eb" }}
+        <motion.button type="button" disabled={isDownloading || isResetting} onClick={handleDownload} whileHover={{ scale: isDownloading || isResetting ? 1 : 1.01 }} whileTap={{ scale: isDownloading || isResetting ? 1 : 0.99 }}
+            style={{ width: "100%", border: "none", marginBottom: "0.5rem", borderRadius: "4px", background: isDownloading || isResetting ? "#94a3b8" : "#2563eb", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.55rem", padding: "0.85rem 1rem", fontWeight: 500, fontSize: "0.9rem", cursor: isDownloading || isResetting ? "wait" : "pointer", transition: "background 0.2s" }}
+            onMouseOver={(e) => { e.currentTarget.style.background = "#1d4ed8" }}
+            onMouseOut={(e) => { e.currentTarget.style.background = isDownloading || isResetting ? "#94a3b8" : "#2563eb" }}
           >
-            {isDownloading ? <Loader2 size={16} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} /> : <Download size={16} />}
-            {isDownloading ? "Downloading..." : "Download File"}
-          </motion.div>
-        </a>
+            {isDownloading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={16} />}
+            {isDownloading ? "Preparing..." : "Download File"}
+        </motion.button>
 
         <div style={{ display: "grid", gap: "0.25rem" }}>
           <ExportDropdown job={job} showToast={showToast} />
           
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: "0.4rem" }}>
-            <ActionButton label="Share" icon={<Share2 size={15} />} onClick={handleShare} />
-            <ActionButton label="Print" icon={<Printer size={15} />} onClick={handlePrint} />
-            <ActionButton label="Delete" icon={<Trash2 size={15} color="#ef4444" />} onClick={() => setShowDeleteModal(true)} danger />
+            <ActionButton label="Share" icon={<Share2 size={15} />} onClick={handleShare} disabled={isResetting} />
+            <ActionButton label="Print" icon={<Printer size={15} />} onClick={handlePrint} disabled={isResetting} />
+            <ActionButton label={resettingAction === "delete" ? "Resetting..." : "Delete"} icon={resettingAction === "delete" ? <Loader2 size={15} color="#ef4444" style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={15} color="#ef4444" />} onClick={() => setShowDeleteModal(true)} disabled={isResetting} danger />
           </div>
         </div>
       </section>
 
       {/* Continue Working Section */}
-      <ContinueToolsPanel job={job} showToast={showToast} />
+      <ContinueToolsPanel key={job.jobId} job={job} onContinue={onContinue} disabled={isResetting} />
 
       <div style={{ marginTop: "16px", display: "grid" }}>
-        <button onClick={onStartOver} className="dn-action-btn" style={{ width: "100%", color: "var(--dn-t2)", padding: "0.75rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}>
-          <RotateCcw size={15} /> Start Over
+        <button onClick={onStartOver} disabled={isResetting} className="dn-action-btn" style={{ width: "100%", color: "var(--dn-t2)", padding: "0.75rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", cursor: isResetting ? "wait" : "pointer", fontWeight: 600, fontSize: "0.85rem", opacity: isResetting ? 0.75 : 1 }}>
+          {resettingAction === "start-over" ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <RotateCcw size={15} />}
+          {resettingAction === "start-over" ? "Resetting..." : "Start Over"}
         </button>
       </div>
 
@@ -533,51 +580,37 @@ export function ResultActionPanel({ job, onDelete, onStartOver, showToast }: { j
         description="Are you sure you want to delete this result file? This action cannot be undone." 
         confirmText="Delete" 
         danger
-        onConfirm={onDelete} 
+        onConfirm={handleDeleteConfirm} 
         onCancel={() => setShowDeleteModal(false)} 
+        loading={resettingAction === "delete"}
       />
 
     </aside>
   );
 }
 
-export function ContinueToolsPanel({ job, showToast }: { job: ResultJobResponse; showToast: (msg: string, type?: 'success'|'error') => void }) {
-  const navigate = useNavigate();
+export function ContinueToolsPanel({ job, onContinue, disabled }: { job: ResultJobResponse; onContinue: (path: string) => void; disabled?: boolean }) {
+  const tools = useMemo(() => getContinueTools(job), [job.kind, job.outputFileName, job.outputFormat]);
 
-  const tools = [
-    { label: "Compress PDF", path: "/tools/compress-pdf", icon: FileArchive, accepts: ["pdf"] },
-    { label: "Split Pages", path: "/tools/split-pdf", icon: Scissors, accepts: ["pdf"] },
-    { label: "Edit Content", path: "/tools/edit-pdf", icon: Edit3, accepts: ["pdf"] },
-    { label: "Protect File", path: "/tools/protect-pdf", icon: ShieldCheck, accepts: ["pdf"] },
-  ];
-
-  const handleNavigate = (e: React.MouseEvent, path: string, accepts: string[]) => {
+  const handleNavigate = (e: React.MouseEvent, path: string) => {
     e.preventDefault();
-    const currentExt = (job.outputFormat || job.kind).toLowerCase();
-    
-    if (!accepts.includes(currentExt)) {
-      showToast(`This tool requires ${accepts.join(",").toUpperCase()} files.`, "error");
-      return;
-    }
-
-    navigate(path, { 
-      state: { 
-        sourceFileUrl: job.downloadUrl, 
-        sourceFileName: job.outputFileName 
-      } 
-    });
+    if (disabled) return;
+    onContinue(path);
   };
 
   return (
     <section>
       <div style={{ color: "var(--dn-t4)", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem" }}>Continue Working</div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-        {tools.map(tool => (
-          <a key={tool.label} href={tool.path} onClick={(e) => handleNavigate(e, tool.path, tool.accepts)} className="dn-action-btn" style={{ textDecoration: "none", color: "var(--dn-t2)", display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.65rem 0.75rem" }}>
-            <tool.icon size={15} color="var(--dn-t3)" />
-            <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>{tool.label}</span>
-          </a>
-        ))}
+        {tools.map(tool => {
+          const Icon = tool.icon;
+          return (
+            <a key={tool.label} href={tool.path} onClick={(e) => handleNavigate(e, tool.path)} className="dn-action-btn" aria-disabled={disabled} style={{ textDecoration: "none", color: "var(--dn-t2)", display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.65rem 0.75rem", opacity: disabled ? 0.7 : 1, cursor: disabled ? "wait" : "pointer" }}>
+              <Icon size={15} color="var(--dn-t3)" />
+              <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>{tool.label}</span>
+            </a>
+          );
+        })}
       </div>
     </section>
   );
@@ -587,59 +620,53 @@ export function ExportDropdown({ job, showToast }: { job: ResultJobResponse; sho
   const [open, setOpen] = useState(false);
   const [exportingAs, setExportingAs] = useState<string | null>(null);
   
-  const currentFormat = (job.outputFormat || job.kind).toUpperCase();
-  const options = ["PDF", "DOCX", "XLSX", "PPTX", "JPG", "PNG", "ZIP"];
+  const currentFormat = getResultFormat(job);
+  const options = getExportOptions(currentFormat);
 
   const handleExport = async (format: string) => {
     setOpen(false);
-    if (format === currentFormat.replace(/[^A-Z]/gi, "")) return;
-    
-    const isSourcePDF = currentFormat.includes("PDF");
-    if (!isSourcePDF && format !== "PDF") {
-      showToast("Only PDF files can be exported to this format.", "error");
+    if (format === currentFormat) {
+      triggerUrlDownload(job.downloadUrl, job.outputFileName);
+      showToast(`Downloaded ${currentFormat}.`);
       return;
     }
 
     setExportingAs(format);
     try {
-      // Fetch current file as Blob
-      const resp = await fetch(job.downloadUrl);
-      if (!resp.ok) throw new Error("Failed to fetch source file");
-      const blob = await resp.blob();
-      const file = new File([blob], job.outputFileName, { type: blob.type });
+      const file = await fetchResultFile(job);
 
       let resultBlob: Blob | null = null;
       let newName = job.outputFileName.replace(/\.[^/.]+$/, "") + `.${format.toLowerCase()}`;
 
-      if (format === "DOCX") {
-        resultBlob = await pdfApi.wordToPDF(file); // Note: pdfToWord in API
+      if (currentFormat === "PDF" && format === "DOCX") {
         resultBlob = await pdfApi.pdfToWord(file);
-      } else if (format === "XLSX") {
+      } else if (currentFormat === "PDF" && format === "XLSX") {
         resultBlob = await pdfApi.pdfToExcel(file);
-      } else if (format === "PPTX") {
+      } else if (currentFormat === "PDF" && format === "PPTX") {
         resultBlob = await pdfApi.pdfToPowerPoint(file);
-      } else if (format === "JPG" || format === "PNG") {
+      } else if (currentFormat === "PDF" && (format === "JPG" || format === "PNG")) {
         const res = await pdfApi.pdfToJpg(file, { format: format.toLowerCase() });
-        // Instead of downloading a blob directly here for zip, let's just show toast if it's an API that returns json
         if (res && res.images && res.images.length > 0) {
-           // We might need to handle this differently if it returns JSON with base64
-           showToast(`Conversion complete. Images prepared.`, "success");
-           setExportingAs(null);
-           return;
+          res.images.forEach((image, index) => {
+            const imageBlob = pdfApi.base64ToBlob(image.image, `image/${format.toLowerCase()}`);
+            const suffix = res.images.length > 1 ? `-page-${image.page || index + 1}` : "";
+            pdfApi.downloadBlob(imageBlob, `${job.outputFileName.replace(/\.[^/.]+$/, "")}${suffix}.${format.toLowerCase()}`);
+          });
+          showToast(`Exported to ${format} successfully!`);
+          return;
         }
       } else if (format === "PDF") {
-        // e.g. Word to PDF
-        if (currentFormat.includes("DOC")) resultBlob = await pdfApi.wordToPDF(file);
-        else if (currentFormat.includes("XLS")) resultBlob = await pdfApi.excelToPDF(file);
-        else if (currentFormat.includes("PPT")) resultBlob = await pdfApi.powerPointToPDF(file);
-        else if (currentFormat.includes("JPG") || currentFormat.includes("PNG")) resultBlob = await pdfApi.jpgToPDF([file]);
+        if (currentFormat === "DOCX" || currentFormat === "DOC") resultBlob = await pdfApi.wordToPDF(file);
+        else if (currentFormat === "XLSX" || currentFormat === "XLS") resultBlob = await pdfApi.excelToPDF(file);
+        else if (currentFormat === "PPTX" || currentFormat === "PPT") resultBlob = await pdfApi.powerPointToPDF(file);
+        else if (currentFormat === "JPG" || currentFormat === "JPEG" || currentFormat === "PNG") resultBlob = await pdfApi.jpgToPDF([file]);
       }
 
       if (resultBlob) {
         pdfApi.downloadBlob(resultBlob, newName);
         showToast(`Exported to ${format} successfully!`);
       } else {
-        throw new Error("Conversion returned empty");
+        throw new Error(`Export from ${currentFormat} to ${format} is not available yet.`);
       }
     } catch (error) {
       showToast(error instanceof Error ? error.message : `Failed to export as ${format}`, "error");
@@ -666,7 +693,7 @@ export function ExportDropdown({ job, showToast }: { job: ResultJobResponse; sho
           {options.map(option => (
             <button key={option} type="button" onClick={() => handleExport(option)} className="dn-action-btn" style={{ width: "100%", color: "var(--dn-t2)", textAlign: "left", padding: "0.5rem 0.6rem", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.2rem" }}>
               {option}
-              {option === currentFormat.replace(/[^A-Z]/gi, "") && <CheckCircle2 size={14} color="#16a34a" />}
+              {option === currentFormat && <CheckCircle2 size={14} color="#16a34a" />}
             </button>
           ))}
         </div>
@@ -675,9 +702,9 @@ export function ExportDropdown({ job, showToast }: { job: ResultJobResponse; sho
   );
 }
 
-function ActionButton({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+function ActionButton({ icon, label, onClick, danger, disabled }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean; disabled?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className={danger ? "dn-action-btn-danger" : "dn-action-btn"} style={{ color: danger ? "#ef4444" : "var(--dn-t2)", padding: "0.6rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.3rem", cursor: "pointer" }}>
+    <button type="button" onClick={onClick} disabled={disabled} className={danger ? "dn-action-btn-danger" : "dn-action-btn"} style={{ color: danger ? "#ef4444" : "var(--dn-t2)", padding: "0.6rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.3rem", cursor: disabled ? "wait" : "pointer", opacity: disabled ? 0.7 : 1 }}>
       {icon}
       <span style={{ fontSize: "0.7rem", fontWeight: 500 }}>{label}</span>
     </button>
@@ -709,8 +736,133 @@ function formatBytes(bytes: number) {
   return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
+type ContinueTool = { label: string; path: string; icon: React.ComponentType<{ size?: number; color?: string }> };
+
+const toolPathMap: Record<string, string> = {
+  "pdf-to-word": "/tools/pdf-to-word",
+  "word-to-pdf": "/tools/word-to-pdf",
+  "pdf-to-excel": "/tools/pdf-to-excel",
+  "excel-to-pdf": "/tools/excel-to-pdf",
+  "pdf-to-image": "/tools/pdf-to-images",
+  "pdf-to-images": "/tools/pdf-to-images",
+  "image-to-pdf": "/tools/image-to-pdf",
+  "pdf-to-ppt": "/tools/pdf-to-powerpoint",
+  "pdf-to-powerpoint": "/tools/pdf-to-powerpoint",
+  "ppt-to-pdf": "/tools/powerpoint-to-pdf",
+  "powerpoint-to-pdf": "/tools/powerpoint-to-pdf",
+};
+
+function getToolPath(toolSlug?: string) {
+  if (!toolSlug) return "/tools";
+  return toolPathMap[toolSlug] || `/tools/${toolSlug}`;
+}
+
+function getResultFormat(job: ResultJobResponse): string {
+  const raw = (job.outputFormat || job.outputFileName.split(".").pop() || job.kind || "").toUpperCase();
+  return raw.replace(/[^A-Z0-9]/g, "") || "FILE";
+}
+
+function getExportOptions(currentFormat: string) {
+  if (currentFormat === "PDF") return ["PDF", "DOCX", "XLSX", "PPTX", "JPG", "PNG"];
+  if (currentFormat === "DOCX" || currentFormat === "DOC") return [currentFormat, "PDF"];
+  if (currentFormat === "XLSX" || currentFormat === "XLS") return [currentFormat, "PDF"];
+  if (currentFormat === "PPTX" || currentFormat === "PPT") return [currentFormat, "PDF"];
+  if (["JPG", "JPEG", "PNG"].includes(currentFormat)) return [currentFormat, "PDF"];
+  return [currentFormat];
+}
+
+function getContinueTools(job: ResultJobResponse): ContinueTool[] {
+  const format = getResultFormat(job);
+  if (format === "PDF") {
+    return [
+      { label: "Merge PDF", path: "/tools/merge-pdf", icon: FileStack },
+      { label: "Compress PDF", path: "/tools/compress-pdf", icon: FileArchive },
+      { label: "Convert to Word", path: "/tools/pdf-to-word", icon: FileOutput },
+      { label: "Split Pages", path: "/tools/split-pdf", icon: Scissors },
+      { label: "Edit PDF", path: "/tools/edit-pdf", icon: Edit3 },
+      { label: "Rotate PDF", path: "/tools/rotate-pdf", icon: RotateCw },
+      { label: "Protect PDF", path: "/tools/protect-pdf", icon: ShieldCheck },
+    ];
+  }
+  if (format === "DOCX" || format === "DOC") {
+    return [
+      { label: "Merge PDF", path: "/tools/merge-pdf", icon: FileStack },
+      { label: "Compress PDF", path: "/tools/compress-pdf", icon: FileArchive },
+      { label: "Convert to Word", path: "/tools/pdf-to-word", icon: FileOutput },
+      { label: "Split Pages", path: "/tools/split-pdf", icon: Scissors },
+      { label: "Edit PDF", path: "/tools/edit-pdf", icon: Edit3 },
+      { label: "Rotate PDF", path: "/tools/rotate-pdf", icon: RotateCw },
+      { label: "Protect PDF", path: "/tools/protect-pdf", icon: ShieldCheck },
+    ];
+  }
+  if (format === "XLSX" || format === "XLS") {
+    return [{ label: "Convert to PDF", path: "/tools/excel-to-pdf", icon: FileText }];
+  }
+  if (format === "PPTX" || format === "PPT") {
+    return [{ label: "Convert to PDF", path: "/tools/powerpoint-to-pdf", icon: FileText }];
+  }
+  if (["JPG", "JPEG", "PNG"].includes(format)) {
+    return [
+      { label: "Convert to PDF", path: "/tools/image-to-pdf", icon: FileImage },
+      { label: "Run OCR", path: "/tools/image-ocr", icon: Hash },
+    ];
+  }
+  return [{ label: "All Tools", path: "/tools", icon: MoreHorizontal }];
+}
+
+async function fetchResultFile(job: ResultJobResponse): Promise<File> {
+  const response = await fetch(job.downloadUrl);
+  if (!response.ok) throw new Error("Could not load the result file.");
+  const blob = await response.blob();
+  return new File([blob], job.outputFileName, { type: blob.type || mimeTypeForFormat(getResultFormat(job)) });
+}
+
+function triggerUrlDownload(url: string, filename: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function copyText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const ok = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!ok) throw new Error("Copy failed");
+}
+
+function mimeTypeForFormat(format: string) {
+  switch (format) {
+    case "PDF": return "application/pdf";
+    case "DOC":
+    case "DOCX": return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case "XLS":
+    case "XLSX": return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    case "PPT":
+    case "PPTX": return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    case "JPG":
+    case "JPEG": return "image/jpeg";
+    case "PNG": return "image/png";
+    case "ZIP": return "application/zip";
+    default: return "application/octet-stream";
+  }
+}
+
 // --- Custom Modal ---
-function ConfirmModal({ open, title, description, confirmText, onConfirm, onCancel, danger = false }: any) {
+function ConfirmModal({ open, title, description, confirmText, onConfirm, onCancel, danger = false, loading = false }: any) {
   if (!open) return null;
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.5)", display: "grid", placeItems: "center", padding: "1rem" }}>
@@ -718,8 +870,11 @@ function ConfirmModal({ open, title, description, confirmText, onConfirm, onCanc
         <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.15rem", fontWeight: 700, color: "var(--dn-t1)" }}>{title}</h3>
         <p style={{ margin: "0 0 1.75rem", color: "var(--dn-t3)", fontSize: "0.95rem", lineHeight: 1.5 }}>{description}</p>
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-          <button onClick={onCancel} className="dn-action-btn" style={{ padding: "0.6rem 1rem", color: "var(--dn-t2)", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: "0.6rem 1rem", borderRadius: "4px", border: "none", background: danger ? "#ef4444" : "#2563eb", color: "#fff", fontWeight: 600, cursor: "pointer", transition: "filter 0.2s" }} onMouseOver={(e) => e.currentTarget.style.filter = "brightness(1.1)"} onMouseOut={(e) => e.currentTarget.style.filter = "none"}>{confirmText}</button>
+          <button onClick={onCancel} disabled={loading} className="dn-action-btn" style={{ padding: "0.6rem 1rem", color: "var(--dn-t2)", fontWeight: 600, cursor: loading ? "wait" : "pointer", opacity: loading ? 0.7 : 1 }}>Cancel</button>
+          <button onClick={onConfirm} disabled={loading} style={{ padding: "0.6rem 1rem", borderRadius: "4px", border: "none", background: danger ? "#ef4444" : "#2563eb", color: "#fff", fontWeight: 600, cursor: loading ? "wait" : "pointer", transition: "filter 0.2s", display: "inline-flex", alignItems: "center", gap: "0.45rem" }} onMouseOver={(e) => e.currentTarget.style.filter = "brightness(1.1)"} onMouseOut={(e) => e.currentTarget.style.filter = "none"}>
+            {loading && <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />}
+            {loading ? "Resetting..." : confirmText}
+          </button>
         </div>
       </motion.div>
     </div>

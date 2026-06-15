@@ -27,9 +27,7 @@ export default function CategoryPage() {
             </motion.div>
           </Link>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.32rem 0.85rem", borderRadius: "999px", background: `${meta.color}15`, border: `1px solid ${meta.color}30`, color: meta.color, fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1.25rem" }}>
-              {tools.length} Tools Available
-            </div>
+
             <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.08, marginBottom: "1rem", background: "linear-gradient(180deg, var(--dn-t1) 0%, var(--dn-t2) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               {meta.label}
             </h1>
@@ -42,13 +40,15 @@ export default function CategoryPage() {
       <section ref={ref} style={{ padding: "0 1.5rem 6rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.1rem" }}>
-            {tools.map((tool, i) => (
-              <motion.div key={tool.id} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.07, duration: 0.4 }}>
-                <Link to={`/tools/${tool.id}`} style={{ textDecoration: "none" }}>
+            {tools.map((tool, i) => {
+              const basePath = tool.category === 'ai' ? '/ai-tools' : '/tools';
+              return (
+              <motion.div key={tool.id} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.07, duration: 0.4 }} style={{ height: "100%" }}>
+                <Link to={`${basePath}/${tool.id}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
                   <motion.div
                     whileHover={{ y: -6, scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     className="dn-card"
-                    style={{ padding: "1.75rem", borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: "var(--dn-shadow)", transition: "border-color 0.2s" }}
+                    style={{ padding: "1.75rem", borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: "var(--dn-shadow)", transition: "border-color 0.2s", height: "100%", display: "flex", flexDirection: "column" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}35`; (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 40px ${tool.color}15`; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--dn-border)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--dn-shadow)"; }}
                   >
@@ -66,7 +66,7 @@ export default function CategoryPage() {
                     </div>
 
                     <div style={{ color: "var(--dn-t1)", fontWeight: 700, fontSize: "1.05rem", letterSpacing: "-0.02em", marginBottom: "0.5rem" }}>{tool.label}</div>
-                    <div style={{ color: "var(--dn-t4)", fontSize: "0.84rem", lineHeight: 1.7, marginBottom: "1.25rem" }}>{tool.desc}</div>
+                    <div style={{ color: "var(--dn-t4)", fontSize: "0.84rem", lineHeight: 1.7, marginBottom: "1.25rem", flexGrow: 1 }}>{tool.desc}</div>
 
                     {/* Meta row */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
@@ -88,7 +88,7 @@ export default function CategoryPage() {
                   </motion.div>
                 </Link>
               </motion.div>
-            ))}
+            )})}
           </div>
         </div>
       </section>

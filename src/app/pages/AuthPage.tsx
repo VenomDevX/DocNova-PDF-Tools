@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Eye, EyeOff, ArrowLeft, CheckCircle2, Zap, Shield, FileOutput } from "lucide-react";
 
 export default function AuthPage() {
@@ -8,6 +8,7 @@ export default function AuthPage() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const navigate = useNavigate();
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const p = e.target.value;
@@ -308,7 +309,7 @@ export default function AuthPage() {
                   <div className="flex-grow border-t" style={{ borderColor: "var(--dn-border2)" }}></div>
                 </div>
 
-                <form className="space-y-[16px]" onSubmit={(e) => { e.preventDefault(); window.location.href = "/"; }}>
+                <form className="space-y-[16px]" onSubmit={(e) => { e.preventDefault(); navigate("/"); }}>
                   <div>
                     <label className="block text-[12px] font-medium tracking-wider mb-1" style={{ color: "var(--dn-t3)" }}>WORK EMAIL</label>
                     <input type="email" placeholder="name@company.com" className="w-full h-[40px] px-3 focus:outline-none dn-auth-input" style={{ fontSize: "14px" }} />
@@ -334,7 +335,7 @@ export default function AuthPage() {
                   <div className="flex flex-col items-center mt-3 gap-1.5 pt-2">
                     <button 
                       type="button" 
-                      onClick={(e) => { e.preventDefault(); sessionStorage.setItem("guestMode", "true"); window.location.href = "/"; }}
+                      onClick={(e) => { e.preventDefault(); sessionStorage.setItem("guestMode", "true"); navigate("/"); }}
                       className="w-full h-[40px] font-medium dn-auth-btn-skip"
                     >
                       Skip for Now
@@ -366,7 +367,7 @@ export default function AuthPage() {
                   <div className="flex-grow border-t" style={{ borderColor: "var(--dn-border2)" }}></div>
                 </div>
 
-                <form className="space-y-[16px]" onSubmit={(e) => { e.preventDefault(); window.location.href = "/"; }}>
+                <form className="space-y-[16px]" onSubmit={(e) => { e.preventDefault(); navigate("/"); }}>
                   <div>
                     <label className="block text-[12px] font-medium tracking-wider mb-1" style={{ color: "var(--dn-t3)" }}>FULL NAME</label>
                     <input type="text" placeholder="Jane Doe" className="w-full h-[40px] px-3 focus:outline-none dn-auth-input" style={{ fontSize: "14px" }} />
@@ -409,7 +410,7 @@ export default function AuthPage() {
                   <div className="flex flex-col items-center mt-3 gap-1.5 pt-2">
                     <button 
                       type="button" 
-                      onClick={(e) => { e.preventDefault(); sessionStorage.setItem("guestMode", "true"); window.location.href = "/"; }}
+                      onClick={(e) => { e.preventDefault(); sessionStorage.setItem("guestMode", "true"); navigate("/"); }}
                       className="w-full h-[40px] font-medium dn-auth-btn-skip"
                     >
                       Skip for Now

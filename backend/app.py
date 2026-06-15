@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import io
 import json
 import base64
@@ -7,7 +9,10 @@ import uuid
 from datetime import datetime
 from xml.etree import ElementTree as ET
 from flask import Flask, request, jsonify, send_file
+from validators import validate_request, AIProcessSchema, AIChatSchema, PDFOperationSchema
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 from PIL import Image, ImageDraw
@@ -23,14 +28,53 @@ except ImportError:
     fitz = None
 
 app = Flask(__name__)
-CORS(app)
+# Strictly configure CORS for production security
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175").split(",")
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ALLOWED_ORIGINS,
+        "methods": ["GET", "POST", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    },
+    r"/health": {
+        "origins": "*",
+        "methods": ["GET"]
+    }
+})
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["60 per minute"],
+    storage_uri="memory://"
+)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 RESULTS_FOLDER = os.path.join(UPLOAD_FOLDER, 'results')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
+
+@app.after_request
+def add_security_headers(response):
+    # Content-Security-Policy: restrict script and style sources
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self';"
+    # X-Frame-Options: DENY to prevent clickjacking
+    response.headers['X-Frame-Options'] = 'DENY'
+    # X-Content-Type-Options: nosniff
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    # Strict-Transport-Security to force HTTPS
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    # Referrer-Policy: strict-origin-when-cross-origin
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # Remove the X-Powered-By header if present to avoid leaking framework information
+    if 'X-Powered-By' in response.headers:
+        del response.headers['X-Powered-By']
+        
+    return response
 
 ALLOWED_PDF = {'pdf'}
 ALLOWED_IMAGES = {'jpg', 'jpeg', 'png', 'webp'}
@@ -38,13 +82,75 @@ ALLOWED_DOCS = {'docx', 'doc'}
 ALLOWED_SPREADSHEETS = {'xlsx', 'xls'}
 ALLOWED_PRESENTATIONS = {'pptx', 'ppt'}
 
-def allowed_file(filename, allowed_types):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_types
+import magic
+import uuid
+import os
+
+MAX_IMAGE_SIZE = 5 * 1024 * 1024
+MAX_DOC_SIZE = 25 * 1024 * 1024
+
+MIME_TYPE_MAP = {
+    'pdf': ['application/pdf'],
+    'jpg': ['image/jpeg'],
+    'jpeg': ['image/jpeg'],
+    'png': ['image/png'],
+    'webp': ['image/webp'],
+    'docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'],
+    'doc': ['application/msword'],
+    'xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'],
+    'xls': ['application/vnd.ms-excel'],
+    'pptx': ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint'],
+    'ppt': ['application/vnd.ms-powerpoint'],
+}
+
+def scan_for_malware(filepath):
+    # Mock malware scanner hook
+    return True
+
+def allowed_file(file_obj, allowed_types):
+    if not file_obj or not file_obj.filename:
+        return False
+    filename = file_obj.filename
+    if '.' not in filename: return False
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext not in allowed_types: return False
+    
+    # Read the first 2048 bytes to determine MIME type
+    try:
+        header = file_obj.read(2048)
+        file_obj.seek(0)
+        mime_type = magic.from_buffer(header, mime=True)
+    except Exception:
+        file_obj.seek(0)
+        return False
+        
+    expected_mimes = MIME_TYPE_MAP.get(ext, [])
+    if not expected_mimes:
+        return False
+    return mime_type in expected_mimes
 
 def save_uploaded_file(file, suffix):
-    filename = secure_filename(file.filename or f'upload{suffix}')
-    temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_{filename}")
+    ext = file.filename.rsplit('.', 1)[1].lower() if file.filename and '.' in file.filename else suffix.lstrip('.')
+    
+    file.seek(0, os.SEEK_END)
+    file_length = file.tell()
+    file.seek(0)
+    
+    if ext in ALLOWED_IMAGES and file_length > MAX_IMAGE_SIZE:
+        raise ValueError('Image exceeds size limit of 5MB.')
+    elif file_length > MAX_DOC_SIZE:
+        raise ValueError('Document exceeds size limit of 25MB.')
+        
+    safe_filename = f"{uuid.uuid4().hex}.{ext}"
+    temp_path = os.path.join(UPLOAD_FOLDER, safe_filename)
+    
     file.save(temp_path)
+    os.chmod(temp_path, 0o600)
+    
+    if not scan_for_malware(temp_path):
+        os.remove(temp_path)
+        raise ValueError('File failed malware scan.')
+        
     return temp_path
 
 def result_meta_path(job_id):
@@ -470,6 +576,7 @@ def health():
 
 # ==================== RESULT JOBS ====================
 @app.route('/api/result/create', methods=['POST'])
+@limiter.limit("5 per minute")
 def create_result_job():
     """Persist a processed output so the frontend can open a clean result page."""
     try:
@@ -518,7 +625,7 @@ def create_result_job():
         public_meta = {key: value for key, value in meta.items() if key != 'storedName'}
         return jsonify(public_meta)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 @app.route('/api/result/<job_id>', methods=['GET'])
 def get_result_job(job_id):
@@ -594,7 +701,7 @@ def preview_result_job(job_id):
             'text': f'{meta.get("outputFileName", "Output file")} is ready to download.'
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 @app.route('/api/result/<job_id>', methods=['DELETE'])
 def delete_result_job(job_id):
@@ -613,6 +720,7 @@ def delete_result_job(job_id):
 
 # ==================== MERGE PDF ====================
 @app.route('/api/merge-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def merge_pdf():
     """Merge multiple PDFs into one"""
     temp_paths = []
@@ -630,7 +738,7 @@ def merge_pdf():
         
         # Save uploaded files and add to merger
         for file in files:
-            if file and file.filename and allowed_file(file.filename, ALLOWED_PDF):
+            if file and file.filename and allowed_file(file, ALLOWED_PDF):
                 filename = secure_filename(file.filename)
                 temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_{filename}")
                 file.save(temp_path)
@@ -655,7 +763,7 @@ def merge_pdf():
         )
     
     except Exception as e:
-        return jsonify({'error': f'Merge error: {str(e)}'}), 500
+        return jsonify({'error': 'Merge failed.'}), 500
     
     finally:
         # Cleanup input temp files
@@ -667,6 +775,7 @@ def merge_pdf():
                 pass
 
 @app.route('/api/pdf/merge-selected', methods=['POST'])
+@limiter.limit("5 per minute")
 def merge_selected_pdf():
     """Merge selected pages from multiple PDFs in a custom order"""
     temp_paths = {}
@@ -686,7 +795,7 @@ def merge_selected_pdf():
 
         readers = {}
         for file, file_id in zip(files, file_ids):
-            if not file or not allowed_file(file.filename, ALLOWED_PDF):
+            if not file or not allowed_file(file, ALLOWED_PDF):
                 continue
             temp_path = save_uploaded_file(file, '.pdf')
             temp_paths[file_id] = temp_path
@@ -700,15 +809,15 @@ def merge_selected_pdf():
             page_index = int(selected.get('pageIndex', -1))
             reader = readers.get(file_id)
             if reader is None:
-                return jsonify({'error': f'Missing source PDF for {file_id}'}), 400
+                return jsonify({'error': 'Missing source PDF.', 'details': f'Missing source PDF for {file_id}'}), 400
             if page_index < 0 or page_index >= len(reader.pages):
-                return jsonify({'error': f'Invalid page selected from {selected.get("fileName", "PDF")}'}), 400
+                return jsonify({'error': 'Invalid page selected.', 'details': f'Invalid page selected from {selected.get("fileName", "PDF")}'}), 400
             writer.add_page(reader.pages[page_index])
 
         return send_writer_pdf(writer, 'merged-selected.pdf')
 
     except Exception as e:
-        return jsonify({'error': f'Merge selected error: {str(e)}'}), 500
+        return jsonify({'error': 'Merge failed.'}), 500
 
     finally:
         for path in temp_paths.values():
@@ -720,6 +829,7 @@ def merge_selected_pdf():
 
 # ==================== COMPRESS PDF ====================
 @app.route('/api/compress-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def compress_pdf():
     """Compress PDF to reduce file size"""
     temp_path = None
@@ -730,7 +840,7 @@ def compress_pdf():
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
         
         temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_input.pdf")
@@ -756,7 +866,7 @@ def compress_pdf():
         )
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
     
     finally:
         if temp_path and os.path.exists(temp_path):
@@ -768,6 +878,7 @@ def compress_pdf():
 # ==================== SPLIT PDF ====================
 @app.route('/api/pdf/split', methods=['POST'])
 @app.route('/api/split-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def split_pdf():
     """Split PDF into individual pages"""
     try:
@@ -775,7 +886,7 @@ def split_pdf():
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
         
         temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_input.pdf")
@@ -819,13 +930,14 @@ def split_pdf():
                 os.remove(temp_path)
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 # ==================== PDF TO JPG ====================
 @app.route('/api/pdf/thumbnails', methods=['POST'])
 @app.route('/api/preview/pdf', methods=['POST'])
 @app.route('/api/convert/pdf-to-image', methods=['POST'])
 @app.route('/api/pdf-to-jpg', methods=['POST'])
+@limiter.limit("5 per minute")
 def pdf_to_jpg():
     """Convert PDF pages to JPG images"""
     try:
@@ -833,7 +945,7 @@ def pdf_to_jpg():
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
         
         temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_input.pdf")
@@ -864,14 +976,15 @@ def pdf_to_jpg():
                 os.remove(temp_path)
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 # ==================== UNIVERSAL PREVIEWS ====================
 @app.route('/api/preview/image', methods=['POST'])
+@limiter.limit("5 per minute")
 def preview_image():
     try:
         file = request.files.get('file')
-        if not file or not allowed_file(file.filename, ALLOWED_IMAGES):
+        if not file or not allowed_file(file, ALLOWED_IMAGES):
             return jsonify({'error': 'Invalid image file'}), 400
         temp_path = save_uploaded_file(file, '')
         try:
@@ -891,13 +1004,14 @@ def preview_image():
             if os.path.exists(temp_path):
                 os.remove(temp_path)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 @app.route('/api/preview/document', methods=['POST'])
+@limiter.limit("5 per minute")
 def preview_document():
     try:
         file = request.files.get('file')
-        if not file or not allowed_file(file.filename, ALLOWED_DOCS):
+        if not file or not allowed_file(file, ALLOWED_DOCS):
             return jsonify({'error': 'Invalid document'}), 400
         if not file.filename.lower().endswith('.docx'):
             return jsonify({
@@ -914,13 +1028,14 @@ def preview_document():
             if os.path.exists(temp_path):
                 os.remove(temp_path)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 @app.route('/api/preview/spreadsheet', methods=['POST'])
+@limiter.limit("5 per minute")
 def preview_spreadsheet():
     try:
         file = request.files.get('file')
-        if not file or not allowed_file(file.filename, ALLOWED_SPREADSHEETS):
+        if not file or not allowed_file(file, ALLOWED_SPREADSHEETS):
             return jsonify({'error': 'Invalid spreadsheet'}), 400
         if not file.filename.lower().endswith('.xlsx'):
             return jsonify({
@@ -937,13 +1052,14 @@ def preview_spreadsheet():
             if os.path.exists(temp_path):
                 os.remove(temp_path)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 @app.route('/api/preview/presentation', methods=['POST'])
+@limiter.limit("5 per minute")
 def preview_presentation():
     try:
         file = request.files.get('file')
-        if not file or not allowed_file(file.filename, ALLOWED_PRESENTATIONS):
+        if not file or not allowed_file(file, ALLOWED_PRESENTATIONS):
             return jsonify({'error': 'Invalid presentation'}), 400
         if not file.filename.lower().endswith('.pptx'):
             return jsonify({
@@ -960,9 +1076,10 @@ def preview_presentation():
             if os.path.exists(temp_path):
                 os.remove(temp_path)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 @app.route('/api/output/preview', methods=['POST'])
+@limiter.limit("5 per minute")
 def preview_output():
     file = request.files.get('file')
     if not file or not file.filename:
@@ -988,6 +1105,7 @@ def preview_output():
 # ==================== JPG TO PDF ====================
 @app.route('/api/convert/image-to-pdf', methods=['POST'])
 @app.route('/api/jpg-to-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def jpg_to_pdf():
     """Convert JPG images to PDF"""
     try:
@@ -1003,7 +1121,7 @@ def jpg_to_pdf():
         
         try:
             for file in files:
-                if file and allowed_file(file.filename, ALLOWED_IMAGES):
+                if file and allowed_file(file, ALLOWED_IMAGES):
                     temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_{secure_filename(file.filename)}")
                     file.save(temp_path)
                     temp_paths.append(temp_path)
@@ -1036,11 +1154,12 @@ def jpg_to_pdf():
                     os.remove(path)
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
 # ==================== WORD TO PDF ====================
 @app.route('/api/convert/word-to-pdf', methods=['POST'])
 @app.route('/api/word-to-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def word_to_pdf():
     """Convert DOCX to a basic text-based PDF"""
     try:
@@ -1048,7 +1167,7 @@ def word_to_pdf():
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_DOCS):
+        if not file or not allowed_file(file, ALLOWED_DOCS):
             return jsonify({'error': 'Invalid Word document'}), 400
 
         if not file.filename.lower().endswith('.docx'):
@@ -1093,69 +1212,68 @@ def word_to_pdf():
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-    
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        if 'Package not found' in str(e):
+            return jsonify({'error': 'Invalid or corrupted DOCX file. Please ensure the file is a valid Word document, not a PDF or .doc file renamed to .docx.'}), 400
+        return jsonify({'error': 'Unknown Error'}), 500
 
 # ==================== PDF TO WORD ====================
 @app.route('/api/convert/pdf-to-word', methods=['POST'])
 @app.route('/api/pdf-to-word', methods=['POST'])
+@limiter.limit("5 per minute")
 def pdf_to_word():
     """Convert PDF text to a basic DOCX document"""
+    temp_path = None
     try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        file = request.files.get('file')
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
-        
+
         temp_path = save_uploaded_file(file, '.pdf')
-        
-        try:
-            reader = PdfReader(temp_path)
-            document = Document()
+        reader = PdfReader(temp_path)
+        page_indices = parse_page_range(request.form.get('pageRange', ''), len(reader.pages))
 
-            page_indices = parse_page_range(request.form.get('pageRange', ''), len(reader.pages))
-            for output_index, index in enumerate(page_indices):
-                page = reader.pages[index]
-                if output_index > 0:
-                    document.add_page_break()
-                document.add_heading(f'Page {index + 1}', level=2)
-                text = page.extract_text() or ''
-                if text.strip():
-                    for line in text.splitlines():
-                        document.add_paragraph(line)
-                else:
-                    document.add_paragraph('[No extractable text on this page]')
+        document = Document()
+        for output_index, page_index in enumerate(page_indices):
+            page = reader.pages[page_index]
+            if output_index > 0:
+                document.add_page_break()
+            document.add_heading(f'Page {page_index + 1}', level=2)
+            text = page.extract_text() or ''
+            if text.strip():
+                for line in text.splitlines():
+                    clean = ''.join(c for c in line if ord(c) >= 32 or c in '\t\n\r')
+                    if clean.strip():
+                        document.add_paragraph(clean)
+            else:
+                document.add_paragraph('[No extractable text on this page]')
 
-            output = io.BytesIO()
-            document.save(output)
-            output.seek(0)
+        output = io.BytesIO()
+        document.save(output)
+        output.seek(0)
 
-            return send_file(
-                output,
-                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                as_attachment=True,
-                download_name='converted.docx'
-            )
-        
-        finally:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-    
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            as_attachment=True,
+            download_name='converted.docx'
+        )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 # ==================== PDF TO EXCEL ====================
 @app.route('/api/convert/pdf-to-excel', methods=['POST'])
 @app.route('/api/pdf-to-excel', methods=['POST'])
+@limiter.limit("5 per minute")
 def pdf_to_excel():
     """Convert PDF text into a simple XLSX workbook"""
     temp_path = None
     try:
         file = request.files.get('file')
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
 
         temp_path = save_uploaded_file(file, '.pdf')
@@ -1178,7 +1296,7 @@ def pdf_to_excel():
             download_name='converted.xlsx'
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1186,12 +1304,13 @@ def pdf_to_excel():
 # ==================== EXCEL TO PDF ====================
 @app.route('/api/convert/excel-to-pdf', methods=['POST'])
 @app.route('/api/excel-to-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def excel_to_pdf():
     """Convert an XLSX workbook preview into a simple PDF"""
     temp_path = None
     try:
         file = request.files.get('file')
-        if not file or not allowed_file(file.filename, ALLOWED_SPREADSHEETS):
+        if not file or not allowed_file(file, ALLOWED_SPREADSHEETS):
             return jsonify({'error': 'Invalid spreadsheet'}), 400
 
         if not file.filename.lower().endswith('.xlsx'):
@@ -1217,7 +1336,7 @@ def excel_to_pdf():
         output.seek(0)
         return send_file(output, mimetype='application/pdf', as_attachment=True, download_name='converted.pdf')
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1225,12 +1344,13 @@ def excel_to_pdf():
 # ==================== PDF TO POWERPOINT ====================
 @app.route('/api/convert/pdf-to-powerpoint', methods=['POST'])
 @app.route('/api/pdf-to-powerpoint', methods=['POST'])
+@limiter.limit("5 per minute")
 def pdf_to_powerpoint():
     """Convert PDF text pages into a basic PPTX deck"""
     temp_path = None
     try:
         file = request.files.get('file')
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
 
         temp_path = save_uploaded_file(file, '.pdf')
@@ -1248,7 +1368,7 @@ def pdf_to_powerpoint():
             download_name='converted.pptx'
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1257,18 +1377,20 @@ def pdf_to_powerpoint():
 @app.route('/api/convert/powerpoint-to-pdf', methods=['POST'])
 @app.route('/api/powerpoint-to-pdf', methods=['POST'])
 @app.route('/api/ppt-to-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def powerpoint_to_pdf():
     """Convert PPTX slide text into a simple PDF"""
     temp_path = None
     try:
         file = request.files.get('file')
-        if not file or not allowed_file(file.filename, ALLOWED_PRESENTATIONS):
+        if not file or not allowed_file(file, ALLOWED_PRESENTATIONS):
             return jsonify({'error': 'Invalid presentation'}), 400
 
         if file.filename.lower().endswith('.pptx'):
             temp_path = save_uploaded_file(file, '.pptx')
             slides = parse_pptx_slides(temp_path)
         else:
+            
             slides = [f'PPT conversion requires LibreOffice.\n{file.filename}']
 
         page_indices = parse_page_range(request.form.get('pageRange', ''), len(slides))
@@ -1286,7 +1408,7 @@ def powerpoint_to_pdf():
         output.seek(0)
         return send_file(output, mimetype='application/pdf', as_attachment=True, download_name='converted.pdf')
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1294,6 +1416,7 @@ def powerpoint_to_pdf():
 # ==================== OCR ====================
 @app.route('/api/ocr', methods=['POST'])
 @app.route('/api/pdf/ocr', methods=['POST'])
+@limiter.limit("5 per minute")
 def ocr():
     """Return extractable text for PDFs and a graceful placeholder for images"""
     temp_path = None
@@ -1326,13 +1449,14 @@ def ocr():
             'metadata': {'language': lang, 'filename': file.filename}
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
 @app.route('/api/pdf/extract', methods=['POST'])
 @app.route('/api/extract-pages', methods=['POST'])
+@limiter.limit("5 per minute")
 def extract_pages():
     """Extract selected pages into a new PDF"""
     temp_path = None
@@ -1342,7 +1466,7 @@ def extract_pages():
             return jsonify({'error': 'No file provided'}), 400
 
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
 
         temp_path = save_uploaded_file(file, '.pdf')
@@ -1358,7 +1482,7 @@ def extract_pages():
         return send_writer_pdf(writer, 'extracted-pages.pdf')
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
     finally:
         if temp_path and os.path.exists(temp_path):
@@ -1366,6 +1490,7 @@ def extract_pages():
 
 @app.route('/api/pdf/delete-pages', methods=['POST'])
 @app.route('/api/delete-pages', methods=['POST'])
+@limiter.limit("5 per minute")
 def delete_pages():
     """Delete selected pages from a PDF"""
     temp_path = None
@@ -1375,7 +1500,7 @@ def delete_pages():
             return jsonify({'error': 'No file provided'}), 400
 
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
 
         temp_path = save_uploaded_file(file, '.pdf')
@@ -1395,7 +1520,7 @@ def delete_pages():
         return send_writer_pdf(writer, 'pages-deleted.pdf')
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
     finally:
         if temp_path and os.path.exists(temp_path):
@@ -1403,6 +1528,7 @@ def delete_pages():
 
 @app.route('/api/pdf/rotate', methods=['POST'])
 @app.route('/api/rotate-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def rotate_pdf():
     """Rotate every page in a PDF"""
     temp_path = None
@@ -1412,7 +1538,7 @@ def rotate_pdf():
             return jsonify({'error': 'No file provided'}), 400
 
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
 
         rotation = int(request.form.get('rotation', '90'))
@@ -1429,7 +1555,7 @@ def rotate_pdf():
         return send_writer_pdf(writer, 'rotated.pdf')
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
     finally:
         if temp_path and os.path.exists(temp_path):
@@ -1438,6 +1564,7 @@ def rotate_pdf():
 @app.route('/api/lock-pdf', methods=['POST'])
 @app.route('/api/protect-pdf', methods=['POST'])
 @app.route('/api/encrypt-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def encrypt_pdf():
     """Password protect a PDF"""
     temp_path = None
@@ -1451,7 +1578,7 @@ def encrypt_pdf():
             return jsonify({'error': 'Password is required'}), 400
 
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
 
         temp_path = save_uploaded_file(file, '.pdf')
@@ -1464,7 +1591,7 @@ def encrypt_pdf():
         return send_writer_pdf(writer, 'protected.pdf')
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
     finally:
         if temp_path and os.path.exists(temp_path):
@@ -1473,6 +1600,7 @@ def encrypt_pdf():
 @app.route('/api/unlock-pdf', methods=['POST'])
 @app.route('/api/remove-password', methods=['POST'])
 @app.route('/api/decrypt-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 def decrypt_pdf():
     """Remove password protection from a PDF"""
     temp_path = None
@@ -1483,7 +1611,7 @@ def decrypt_pdf():
 
         password = request.form.get('password', '')
         file = request.files['file']
-        if not file or not allowed_file(file.filename, ALLOWED_PDF):
+        if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
 
         temp_path = save_uploaded_file(file, '.pdf')
@@ -1501,7 +1629,7 @@ def decrypt_pdf():
         return send_writer_pdf(writer, 'unlocked.pdf')
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Unknown Error'}), 500
 
     finally:
         if temp_path and os.path.exists(temp_path):
@@ -1515,6 +1643,238 @@ def not_found(error):
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
+@app.route('/api/ai/process', methods=['POST'])
+def ai_process():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No JSON payload provided'}), 400
+            
+        file_base64 = data.get('fileBase64')
+        tool_id = data.get('toolId')
+        model = data.get('model', 'gemini-3.5-flash')
+        allowed_models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-flash-latest', 'gemini-flash-lite-latest']
+        if model not in allowed_models:
+            model = 'gemini-3.5-flash'
+        
+        if not file_base64:
+            return jsonify({'error': 'No file provided'}), 400
+            
+        import base64
+        import fitz  # PyMuPDF
+        
+        pdf_bytes = base64.b64decode(file_base64)
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        document_text = ""
+        for page in doc:
+            document_text += page.get_text()
+            
+        # extract settings
+        required_sections = []
+        if str(data.get('includeKeyPoints', '')).lower() == 'true': required_sections.append('Key Points')
+        if str(data.get('includeImportantDates', '')).lower() == 'true': required_sections.append('Important Dates')
+        if str(data.get('includeConclusion', '')).lower() == 'true': required_sections.append('Main Conclusion')
+        if str(data.get('includeActionItems', '')).lower() == 'true': required_sections.append('Action Items')
+        if str(data.get('includePageReferences', '')).lower() == 'true': required_sections.append('Page References')
+        if str(data.get('includeSimpleExplanation', '')).lower() == 'true': required_sections.append('Simple Explanation')
+        
+        system_instruction = ""
+        additional_prompt = ""
+        
+        is_json_output = False
+
+        if tool_id == 'resume-analyzer':
+            system_instruction = "You are DocNova AI, an expert HR professional and Resume Analyzer. Score the resume, identify key strengths, list missing skills based on standard industry requirements, and provide actionable improvements."
+        elif tool_id == 'quiz-generator':
+            system_instruction = "You are DocNova AI, an expert educator. Generate a comprehensive multiple-choice quiz based ONLY on the provided document text. Include an answer key at the end."
+        elif tool_id == 'flashcards':
+            system_instruction = "You are DocNova AI, an expert study assistant. Generate a series of Flashcards (Question and Answer format) from the provided text to help the user memorize key concepts."
+        elif tool_id == 'translator':
+            lang = data.get('language', 'the requested language')
+            system_instruction = f"You are DocNova AI, an expert translator. Translate the following text into {lang}. Preserve the original formatting and meaning as much as possible."
+        elif tool_id == 'contract-review':
+            system_instruction = "You are DocNova AI, an expert legal assistant. Review the provided contract. Highlight potential risks, loopholes, obligations, and key terms. Use simple language to explain complex legal jargon."
+        elif tool_id == 'table-extractor':
+            system_instruction = "You are DocNova AI. Your task is to identify any tabular or structured data in the text and format it cleanly into Markdown tables."
+        elif tool_id == 'pdf-chat':
+            system_instruction = "You are DocNova AI, an expert document assistant. Answer the user's questions based ONLY on the provided document text. If the answer is not in the text, say so."
+            additional_prompt = "Please summarize the document briefly and suggest 3 questions the user could ask about it to start the chat."
+        else:
+            is_json_output = True
+            system_instruction = "You are DocNova AI, an expert PDF summarization assistant. Summarize only from the provided document text. Do not invent information. Create a structured summary based on the user's settings. You MUST format the output as a RAW JSON object with this exact structure: {\"overview\": \"string summary\", \"keyPoints\": [{\"title\": \"string\", \"desc\": \"string\"}], \"importantDates\": [{\"date\": \"string like MMM DD, YYYY\", \"title\": \"string\"}], \"actionItems\": [{\"text\": \"string\", \"priority\": \"High|Medium|Low\"}], \"conclusion\": \"string\"}."
+            
+        req_sections_str = "\n".join(required_sections) if required_sections else "Generate standard output for this tool."
+        summary_len_str = f"Summary length: {data.get('summaryLength')}" if data.get('summaryLength') else ""
+        output_style_str = f"Output style: {data.get('outputStyle')}" if data.get('outputStyle') else ""
+        
+        format_instruction = "Generate the result according to these settings. Output MUST be valid JSON as per system instructions." if is_json_output else "Generate the result according to these settings. Use Markdown headers (##)."
+        
+        user_prompt = f"""
+        Document text:
+        {document_text[:100000]}
+        
+        Settings:
+        Tone: {data.get('tone', 'Professional')}
+        Language: {data.get('language', 'English')}
+        {summary_len_str}
+        {output_style_str}
+        
+        Required sections to generate:
+        {req_sections_str}
+        
+        {additional_prompt}
+        
+        {format_instruction}
+        """
+        
+        from google import genai
+        from google.genai import types
+        import os
+        from collections import defaultdict
+        
+        # Simple in-memory token budget per IP (reset daily in production via cron/redis)
+        if not hasattr(app, 'token_budgets'):
+            app.token_budgets = defaultdict(int)
+        
+        client_ip = request.remote_addr
+        if app.token_budgets[client_ip] > 50000:
+            return jsonify({'error': 'Daily token budget exceeded. Please try again later.'}), 429
+        
+        client = genai.Client() # Uses GEMINI_API_KEY from env
+        
+        config_args = {
+            "system_instruction": system_instruction,
+            "temperature": 0.2,
+            "max_output_tokens": 2048, # Prevent runaway costs
+        }
+        if is_json_output:
+            config_args["response_mime_type"] = "application/json"
+            
+        models_to_try = [model]
+        for m in allowed_models:
+            if m != model and 'pro' not in m: # Skip Pro models in fallback to avoid 0-quota traps
+                models_to_try.append(m)
+                
+        last_error = None
+        for fallback_model in models_to_try:
+            try:
+                print(f"Trying model: {fallback_model}...")
+                response = client.models.generate_content(
+                    model=fallback_model,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(**config_args)
+                )
+                
+                # Log usage and update budget
+                used_tokens = response.usage_metadata.total_token_count if response.usage_metadata else 0
+                app.token_budgets[client_ip] += used_tokens
+                print(f"[SECURITY] LLM Usage Log - IP: {client_ip}, Model: {fallback_model}, Tokens Used: {used_tokens}, Total Budget Consumed: {app.token_budgets[client_ip]}/50000")
+                
+                return jsonify({'success': True, 'result': response.text})
+            except Exception as e:
+                error_str = str(e)
+                last_error = error_str
+                print(f'Gemini Error on {fallback_model}:', error_str)
+                continue # Always try next model, whether 429 Quota or 404 Not Found!
+                
+        return jsonify({'error': 'API Quota reached for all available free models. Please try again after some time.'}), 429
+
+    except Exception as e:
+        error_str = str(e)
+        print('Gemini Unexpected error:', e)
+        return jsonify({'error': 'Failed to process document'}), 500
+
+@app.route('/api/ai/chat', methods=['POST'])
+@validate_request(AIChatSchema)
+def ai_chat():
+    try:
+        from google import genai
+        from google.genai import types
+        import json
+        from collections import defaultdict
+        
+        # Simple in-memory token budget per IP (reset daily in production via cron/redis)
+        if not hasattr(app, 'token_budgets'):
+            app.token_budgets = defaultdict(int)
+        
+        client_ip = request.remote_addr
+        if app.token_budgets[client_ip] > 50000:
+            return jsonify({'error': 'Daily token budget exceeded. Please try again later.'}), 429
+
+        file_part = None
+        data = getattr(request, 'validated_data', {})
+        messages = data.get('messages', [])
+        model = data.get('model', 'gemini-3.5-flash')
+
+        if not request.is_json:
+            uploaded_file = request.files.get('file')
+            if uploaded_file and uploaded_file.filename:
+                file_bytes = uploaded_file.read()
+                mime_type = uploaded_file.content_type or 'application/pdf'
+                file_part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
+
+        if not messages:
+            return jsonify({'error': 'No messages provided'}), 400
+            
+        allowed_models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest']
+        if model not in allowed_models:
+            model = 'gemini-3.5-flash'
+            
+        system_instruction = "You are the DocNova AI Assistant. You are a helpful, knowledgeable, and polite assistant integrated into a web app called DocNova PDF Tools. DocNova is a platform for manipulating, converting, organizing, and editing PDF documents."
+        
+        client = genai.Client()
+        
+        # Convert messages to Gemini format
+        conversation_text = ""
+        for m in messages[:-1]:
+            role = "User" if m['role'] == 'user' else "Assistant"
+            conversation_text += f"{role}: {m['content']}\n\n"
+            
+        current_message = messages[-1]['content']
+        full_prompt = f"Previous conversation:\n{conversation_text}\n\nUser: {current_message}\n\nAssistant:" if conversation_text else current_message
+        
+        contents = [file_part, full_prompt] if file_part else full_prompt
+        
+        models_to_try = [model]
+        for m in allowed_models:
+            if m != model and 'pro' not in m:
+                models_to_try.append(m)
+                
+        last_error = None
+        for fallback_model in models_to_try:
+            try:
+                print(f"Trying chat model: {fallback_model}...")
+                response = client.models.generate_content(
+                    model=fallback_model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.7,
+                        max_output_tokens=2048, # Prevent runaway costs
+                    )
+                )
+                
+                # Log usage and update budget
+                used_tokens = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') and response.usage_metadata else 0
+                app.token_budgets[client_ip] += used_tokens
+                print(f"[SECURITY] LLM Usage Log - IP: {client_ip}, Model: {fallback_model}, Tokens Used: {used_tokens}, Total Budget Consumed: {app.token_budgets[client_ip]}/50000")
+                
+                return jsonify({'success': True, 'result': response.text})
+            except Exception as e:
+                error_str = str(e)
+                last_error = error_str
+                print(f'Gemini Error on chat {fallback_model}:', error_str)
+                continue # Always try next model!
+                
+        return jsonify({'error': 'API Quota reached for all available free models. Please try again after some time.'}), 429
+
+    except Exception as e:
+        error_str = str(e)
+        print('Gemini Unexpected chat error:', e)
+        return jsonify({'error': 'Failed to process chat'}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    # Pre-deploy gate: Debug mode and development logging are off in production
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
