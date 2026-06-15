@@ -7,7 +7,7 @@ type ImportMetaWithEnv = ImportMeta & {
   };
 };
 
-const API_BASE_URL = (import.meta as ImportMetaWithEnv).env?.VITE_API_URL || 'http://localhost:5000';
+export const API_BASE_URL = (import.meta as ImportMetaWithEnv).env?.VITE_API_URL || 'http://localhost:5000';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -365,7 +365,7 @@ class PDFApiService {
   }
 
   async getResultJob(jobId: string): Promise<ResultJobResponse> {
-    const response = await fetch(`${this.baseURL}/api/result/${encodeURIComponent(jobId)}`);
+    const response = await fetch(`${this.baseURL}/api/result/${encodeURIComponent(jobId)}`, { cache: "no-store" });
     await this.throwIfError(response, 'Failed to load result');
     return this.withAbsoluteResultUrls(await response.json());
   }
@@ -373,7 +373,7 @@ class PDFApiService {
   async getResultPreview(jobId: string, params: Record<string, string> = {}): Promise<ResultPreviewResponse> {
     const query = new URLSearchParams(params);
     const suffix = query.toString() ? `?${query.toString()}` : '';
-    const response = await fetch(`${this.baseURL}/api/result/${encodeURIComponent(jobId)}/preview${suffix}`);
+    const response = await fetch(`${this.baseURL}/api/result/${encodeURIComponent(jobId)}/preview${suffix}`, { cache: "no-store" });
     await this.throwIfError(response, 'Failed to load result preview');
     return await response.json();
   }
@@ -504,15 +504,48 @@ class PDFApiService {
   private async throwIfError(response: Response, fallback: string): Promise<void> {
     if (response.ok) return;
 
+    let errorData: any = {};
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
-      const error = await response.json();
-      throw new Error(error.error || error.message || error.note || fallback);
+      errorData = await response.json();
+    } else {
+      errorData.error = await response.text();
     }
 
-    const text = await response.text();
-    throw new Error(text || fallback);
+    const err = new Error(errorData.error || errorData.message || errorData.note || fallback) as any;
+    err.status = response.status;
+    err.details = errorData.details;
+    throw err;
   }
 }
 
 export const pdfApi = new PDFApiService();
+
+export const chatWithAI = async (messages: Array<{role: string, content: string}>, file?: File | null, model: string = 'gemini-3.5-flash'): Promise<string> => {
+  let response;
+  if (file) {
+    const formData = new FormData();
+    formData.append('messages', JSON.stringify(messages));
+    formData.append('model', model);
+    formData.append('file', file);
+    response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
+      method: 'POST',
+      body: formData
+    });
+  } else {
+    response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, model })
+    });
+  }
+  
+  const data = await response.json();
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to communicate with AI') as any;
+    err.status = response.status;
+    err.details = data.details;
+    throw err;
+  }
+  return data.result;
+};

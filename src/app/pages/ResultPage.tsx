@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { motion } from "motion/react";
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { pdfApi, type ResultJobResponse, type ResultPreviewResponse } from "../../services/pdfApi";
 import { ResultPageLayout } from "../components/result/ResultPageLayout";
+import { getFriendlyErrorMessage } from "../../utils/errorHandler";
 
 type ResultState = "loading" | "ready" | "error";
 
@@ -26,8 +27,9 @@ export default function ResultPage() {
       }
 
       setState("loading");
+      setJob(null);
+      setPreview(null);
       setError("");
-
       try {
         const loadedJob = await pdfApi.getResultJob(jobId);
         const loadedPreview = loadedJob.kind === "pdf"
@@ -39,7 +41,7 @@ export default function ResultPage() {
         setState("ready");
       } catch (loadError) {
         if (cancelled) return;
-        setError(loadError instanceof Error ? loadError.message : "Could not load this result.");
+        setError(getFriendlyErrorMessage(loadError, 'server'));
         setState("error");
       }
     }
@@ -53,11 +55,7 @@ export default function ResultPage() {
 
   const handleDelete = async () => {
     if (!jobId) return;
-    try {
-      await pdfApi.deleteResultJob(jobId);
-    } finally {
-      navigate("/tools");
-    }
+    void pdfApi.deleteResultJob(jobId).catch(() => {});
   };
 
   if (state === "loading") {
@@ -128,5 +126,5 @@ export default function ResultPage() {
     );
   }
 
-  return <ResultPageLayout job={job} preview={preview} onDelete={handleDelete} />;
+  return <ResultPageLayout key={jobId} job={job} preview={preview} onDelete={handleDelete} />;
 }

@@ -1,5 +1,6 @@
-import { Outlet, useLocation } from "react-router";
-import { useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { Navbar } from "./components/Navbar";
 import { Sidebar } from "./components/Sidebar";
 import { SidebarProvider, useSidebar } from "./context/SidebarContext";
@@ -7,7 +8,15 @@ import "../styles/fonts.css";
 
 function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { width } = useSidebar();
+  const [hideBanner, setHideBanner] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("hideGuestBanner") === "true") {
+      setHideBanner(true);
+    }
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -64,17 +73,45 @@ function Layout() {
         position: "relative",
         zIndex: 1,
         marginLeft: `${width}px`,
-        paddingTop: "60px",
+        paddingTop: (location.pathname === "/" || location.pathname.startsWith("/ai-tools")) ? "0" : "60px",
         minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
         transition: "margin-left 0.25s cubic-bezier(0.4,0,0.2,1)",
       }}>
-        {typeof window !== 'undefined' && sessionStorage.getItem("guestMode") === "true" && (
-          <div style={{ background: "rgba(37, 99, 235, 0.1)", borderBottom: "1px solid rgba(37, 99, 235, 0.2)", padding: "0.6rem 1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+        {typeof window !== 'undefined' && sessionStorage.getItem("guestMode") === "true" && location.pathname !== "/" && !hideBanner && (
+          <div style={{ position: "relative", background: "rgba(37, 99, 235, 0.1)", borderBottom: "1px solid rgba(37, 99, 235, 0.2)", padding: "0.6rem 2.5rem 0.6rem 1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
             <span style={{ fontSize: "13px", color: "var(--dn-t1)" }}>Sign in to save your work, sync files, and access premium features.</span>
-            <a href="/auth" onClick={(e) => { e.preventDefault(); sessionStorage.removeItem("guestMode"); window.location.href = "/auth"; }} style={{ fontSize: "12px", fontWeight: 600, color: "#fff", textDecoration: "none", background: "#2563eb", padding: "0.25rem 0.75rem", borderRadius: "4px", border: "1px solid #2563eb", transition: "filter 0.2s" }} onMouseOver={(e) => e.currentTarget.style.filter = "brightness(1.1)"} onMouseOut={(e) => e.currentTarget.style.filter = "none"}>Sign In</a>
+            <a href="/auth" onClick={(e) => { e.preventDefault(); sessionStorage.removeItem("guestMode"); navigate("/auth"); }} style={{ fontSize: "12px", fontWeight: 600, color: "#fff", textDecoration: "none", background: "#2563eb", padding: "0.25rem 0.75rem", borderRadius: "4px", border: "1px solid #2563eb", transition: "filter 0.2s" }} onMouseOver={(e) => e.currentTarget.style.filter = "brightness(1.1)"} onMouseOut={(e) => e.currentTarget.style.filter = "none"}>Sign In</a>
+            <button 
+              onClick={() => {
+                sessionStorage.setItem("hideGuestBanner", "true");
+                setHideBanner(true);
+              }}
+              aria-label="Close banner"
+              style={{
+                position: "absolute",
+                right: "1rem",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--dn-t3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0.2rem",
+                borderRadius: "4px",
+                transition: "background 0.2s"
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = "var(--dn-bg-subtle)"}
+              onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
-        <Outlet />
+        <Outlet key={location.pathname} />
       </main>
     </div>
   );

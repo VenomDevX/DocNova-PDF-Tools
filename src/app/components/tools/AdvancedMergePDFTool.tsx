@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, CheckCircle2, Download, Eye, FileStack, Loader2, Upload, X } from "lucide-react";
 import { categoryMeta, type Tool } from "../../data/tools";
 import { pdfApi, type MergeSelectedPage } from "../../../services/pdfApi";
+import { resetDocNovaState } from "../../../lib/resetDocNovaState";
+import { getFriendlyErrorMessage } from "../../../utils/errorHandler";
 import { FilePreviewPanel, type PreviewFile, type PreviewPage, type QueuePage } from "./FilePreviewPanel";
 
 interface MergeFile extends PreviewFile {
@@ -51,6 +53,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
     const pdfFiles = incoming.filter(file => file.name.toLowerCase().endsWith(".pdf"));
     if (pdfFiles.length === 0) {
       setErrorMsg("Please upload PDF files.");
+      setProcessing(false);
       return;
     }
 
@@ -112,7 +115,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
           ...file,
           loading: false,
           previewStatus: undefined,
-          error: error instanceof Error ? error.message : "Could not generate preview",
+          error: getFriendlyErrorMessage(error, 'conversion'),
         } : file));
       }
     }
@@ -121,7 +124,8 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
   useEffect(() => {
     if (location.state?.sourceFileUrl) {
       const { sourceFileUrl, sourceFileName } = location.state;
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true, state: {} });
+      resetDocNovaState(tool.id);
       
       setProcessing(true);
       setErrorMsg("Loading file...");
@@ -137,7 +141,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
           handleFiles([file]);
         })
         .catch(err => {
-          setErrorMsg(err.message || "Failed to load the passed file.");
+          setErrorMsg(getFriendlyErrorMessage(err, 'download'));
         })
         .finally(() => {
           setProcessing(false);
@@ -261,7 +265,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
       setProgress(100);
       navigate(`/result/${resultJob.jobId}`);
     } catch (error) {
-      setErrorMsg(error instanceof Error ? error.message : "Merge failed.");
+      setErrorMsg(getFriendlyErrorMessage(error, 'conversion'));
     } finally {
       window.setTimeout(() => {
         setProcessing(false);

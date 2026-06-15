@@ -10,6 +10,9 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import AuthPage from "./pages/AuthPage";
 import ResultPage from "./pages/ResultPage";
+import GenericAIToolPage from "./pages/ai/GenericAIToolPage";
+import AIAssistantPage from "./pages/ai/AIAssistantPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 export const router = createBrowserRouter([
   {
@@ -24,15 +27,19 @@ export const router = createBrowserRouter([
       { path: "edit", Component: CategoryPage },
       { path: "secure", Component: CategoryPage },
       { path: "ocr", Component: CategoryPage },
-      { path: "result/:jobId", Component: ResultPage },
+      { path: "ai", Component: CategoryPage },
       { path: "about", Component: AboutPage },
       { path: "contact", Component: ContactPage },
       { path: "privacy", Component: PrivacyPage },
       { path: "terms", Component: TermsPage },
+      { path: "ai-tools/chat", Component: AIAssistantPage },
+      { path: "ai-tools/:toolId", Component: GenericAIToolPage },
+      { path: "result/:jobId", Component: ResultPage },
+      { path: "*", Component: NotFoundPage },
     ],
   },
   {
     path: "/auth",
     Component: AuthPage,
-  }
+  },
 ]);

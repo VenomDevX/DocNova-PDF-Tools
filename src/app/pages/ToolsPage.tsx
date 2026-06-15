@@ -71,12 +71,12 @@ export default function ToolsPage() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: "1rem" }}>
                 {filtered.map((tool, i) => (
-                  <motion.div key={tool.id} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.04, duration: 0.35 }}>
-                    <Link to={`/tools/${tool.id}`} style={{ textDecoration: "none" }}>
+                  <motion.div key={tool.id} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.04, duration: 0.35 }} style={{ height: "100%" }}>
+                    <Link to={`/tools/${tool.id}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
                       <motion.div
                         whileHover={{ y: -5, scale: 1.02 }} whileTap={{ scale: 0.98 }}
                         className="dn-card"
-                        style={{ padding: "1.5rem", borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", cursor: "pointer", height: "100%", position: "relative", overflow: "hidden", boxShadow: "var(--dn-shadow)", transition: "border-color 0.2s" }}
+                        style={{ padding: "1.5rem", borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", cursor: "pointer", height: "100%", position: "relative", overflow: "hidden", boxShadow: "var(--dn-shadow)", transition: "border-color 0.2s", display: "flex", flexDirection: "column" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}35`; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--dn-border)"; }}
                       >
@@ -87,8 +87,8 @@ export default function ToolsPage() {
                           <tool.icon size={20} color="#fff" />
                         </div>
                         <div style={{ color: "var(--dn-t1)", fontWeight: 700, fontSize: "1rem", letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>{tool.label}</div>
-                        <div style={{ color: "var(--dn-t4)", fontSize: "0.82rem", lineHeight: 1.65, marginBottom: "1.1rem" }}>{tool.desc}</div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ color: "var(--dn-t4)", fontSize: "0.82rem", lineHeight: 1.65, marginBottom: "1.1rem", flexGrow: 1 }}>{tool.desc}</div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
                           <div style={{ padding: "0.3rem 0.8rem", borderRadius: "999px", background: `${tool.color}15`, border: `1px solid ${tool.color}25`, color: tool.color, fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.25rem" }}>
                             {tool.action} <ArrowRight size={11} />
                           </div>

@@ -185,15 +185,13 @@ function applyVars(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
-
-  /* Init from localStorage */
-  useEffect(() => {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "dark";
     const saved = localStorage.getItem("docnova-theme") as Theme | null;
     const t = saved === "dark" || saved === "light" ? saved : "dark";
-    setThemeState(t);
     applyVars(t);
-  }, []);
+    return t;
+  });
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
