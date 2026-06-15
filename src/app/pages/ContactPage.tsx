@@ -94,7 +94,7 @@ export default function ContactPage() {
                 { icon: Mail, label: "Email", value: "hello@docnova.app" },
                 { icon: MessageSquare, label: "Support", value: "support@docnova.app" },
                 { icon: Clock, label: "Response Time", value: "Within 24 hours" },
-                { icon: MapPin, label: "HQ", value: "San Francisco, CA" },
+                { icon: MapPin, label: "HQ", value: "India" },
               ].map((item, i) => (
                 <motion.div
                   key={i}
