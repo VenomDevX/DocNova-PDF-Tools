@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { categoryMeta, ocrLanguages, type Tool } from "../../data/tools";
 import { pdfApi } from "../../../services/pdfApi";
+import { resetDocNovaState } from "../../../lib/resetDocNovaState";
+import { getFriendlyErrorMessage } from "../../../utils/errorHandler";
 
 type WorkflowStatus = "idle" | "processing" | "done" | "error";
 type PreviewKind = "pdf" | "image" | "document" | "spreadsheet" | "presentation" | "text" | "generic";
@@ -231,7 +233,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
         ...file,
         loading: false,
         previewStatus: undefined,
-        error: error instanceof Error ? error.message : "Preview could not be generated.",
+        error: getFriendlyErrorMessage(error, 'conversion'),
       } : file));
     }
   }, [tool]);
@@ -245,6 +247,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
 
     if (valid.length === 0) {
       setErrorMsg(`Please upload: ${tool.accepts}`);
+      setStatus("idle");
       return;
     }
 
@@ -273,7 +276,8 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
   useEffect(() => {
     if (location.state?.sourceFileUrl) {
       const { sourceFileUrl, sourceFileName } = location.state;
-      window.history.replaceState({}, document.title);
+      // Properly clear location.state using React Router instead of breaking history
+      navigate(location.pathname, { replace: true, state: {} });
       
       setStatus("processing");
       setProcessingLabel("Loading file...");
@@ -288,7 +292,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
           addFiles([file]);
         })
         .catch(err => {
-          setErrorMsg(err.message || "Failed to load the passed file.");
+          setErrorMsg(getFriendlyErrorMessage(err, 'download'));
           setStatus("idle");
         });
     }
@@ -361,6 +365,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
   const handleReset = () => {
     files.forEach(file => file.objectUrl && URL.revokeObjectURL(file.objectUrl));
     resetOutput(output);
+    resetDocNovaState(tool.id);
     setFiles([]);
     setSelectionOrder([]);
     setSettings(defaultSettings);
@@ -420,7 +425,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     } catch (error) {
       setStatus("error");
       setProgress(0);
-      setErrorMsg(error instanceof Error ? error.message : "Processing failed.");
+      setErrorMsg(getFriendlyErrorMessage(error, 'conversion'));
     }
   };
 
@@ -433,23 +438,46 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
   };
 
   return (
-    <div style={{ color: "var(--dn-t1)", paddingTop: "100px", minHeight: "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "2rem 1.5rem 6rem" }}>
+    <div style={{ color: "var(--dn-t1)", paddingTop: "60px", minHeight: "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif", position: "relative" }}>
+      {/* Background Blobs (Dark Mode Only) */}
+      <div className="dn-dark-blobs fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#2563eb]/15 rounded-full blur-[100px] animate-[drift1_25s_ease-in-out_infinite]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#0267b8]/15 rounded-full blur-[120px] animate-[drift2_30s_ease-in-out_infinite_reverse]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#b4c5ff]/5 rounded-full blur-[150px] animate-[drift1_40s_ease-in-out_infinite]"></div>
+      </div>
+
+      <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "1.5rem 1.5rem 2rem", position: "relative", zIndex: 10 }}>
         <style>{`
+          ::-webkit-scrollbar { display: none !important; }
+          * { -ms-overflow-style: none !important; scrollbar-width: none !important; }
           @keyframes spin { to { transform: rotate(360deg); } }
           @media (max-width: 980px) {
             .dn-workflow-grid { grid-template-columns: 1fr !important; }
             .dn-sticky-panel { position: static !important; }
           }
+          [data-theme="light"] .dn-dark-blobs { display: none; }
+          html:not([data-theme="dark"]) .dn-dark-blobs { display: none; } /* Fallback */
+          @keyframes drift1 {
+              0% { transform: translate(0, 0) scale(1); }
+              33% { transform: translate(5vw, 5vh) scale(1.1); }
+              66% { transform: translate(-2vw, 8vh) scale(0.9); }
+              100% { transform: translate(0, 0) scale(1); }
+          }
+          @keyframes drift2 {
+              0% { transform: translate(0, 0) scale(1); }
+              33% { transform: translate(-5vw, -5vh) scale(0.95); }
+              66% { transform: translate(4vw, -2vh) scale(1.05); }
+              100% { transform: translate(0, 0) scale(1); }
+          }
         `}</style>
 
         <Link to={`/${tool.category}`} style={{ textDecoration: "none" }}>
-          <motion.div whileHover={{ x: -3 }} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.875rem", marginBottom: "2rem", cursor: "pointer" }}>
+          <motion.div whileHover={{ x: -3 }} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.875rem", marginBottom: "1.25rem", cursor: "pointer" }}>
             <ArrowLeft size={15} /> {catMeta.label}
           </motion.div>
         </Link>
 
-        <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.5rem" }}>
+        <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.25rem" }}>
           <div style={{ width: 60, height: 60, borderRadius: "4px", background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42`, flexShrink: 0 }}>
             <tool.icon size={28} color="#fff" />
           </div>
@@ -1875,7 +1903,12 @@ async function createZipBlob(files: Array<{ name: string; blob: Blob }>) {
   endView.setUint32(16, centralOffset, true);
   endView.setUint16(20, 0, true);
 
-  return new Blob([...chunks, ...central, end], { type: "application/zip" });
+  const parts = [...chunks, ...central, end].map(part => {
+    const buffer = new ArrayBuffer(part.byteLength);
+    new Uint8Array(buffer).set(part);
+    return buffer;
+  });
+  return new Blob(parts, { type: "application/zip" });
 }
 
 function dosTimeDate(value: Date) {

@@ -107,8 +107,6 @@ function HeroSection() {
   return (
     <section style={{
       position: "relative",
-      /* Pull up behind the 60px fixed navbar */
-      marginTop: "-60px",
       paddingTop: "0",
       minHeight: "calc(100vh)",
       display: "flex", alignItems: "center",
@@ -165,15 +163,14 @@ function HeroSection() {
       <div className="hero-2col" style={{
         position: "relative",
         zIndex: 2,
-        /* Restore the original content padding; extra top to compensate for margin-top pull */
-        padding: "156px 2rem 80px",
+        padding: "0 2rem",
       }}>
         {/* Left */}
         <div>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0.9rem", borderRadius: "6px", background: isDark ? "rgba(37,99,235,0.15)" : "#dbe1ff", border: isDark ? "1px solid rgba(59,130,246,0.3)" : "1px solid #b4c5ff", color: isDark ? "#93bbff" : "#00174b", fontSize: "0.73rem", fontWeight: 600, marginBottom: "1.5rem", letterSpacing: "0.04em" }}>
               <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#2563eb" }} />
-              Now in Public Beta · 38 Free PDF Tools
+              Now in Public Beta · {toolsList.length} Free PDF Tools
             </div>
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.08 }}
@@ -222,7 +219,7 @@ function HeroSection() {
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
         className="dn-card"
         style={{ position: "absolute", bottom: "2rem", left: "50%", transform: "translateX(-50%)", display: "flex", gap: 0, borderRadius: "6px", background: isDark ? "rgba(15,20,35,0.85)" : "var(--dn-bg-card)", border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid var(--dn-border2)", overflow: "hidden", boxShadow: "var(--dn-shadow)", whiteSpace: "nowrap", zIndex: 2, backdropFilter: isDark ? "blur(12px)" : "none" }}>
-        {[{ val: "38+", label: "Tools" }, { val: "∞", label: "Files" }, { val: "$0", label: "Cost" }, { val: "1 hr", label: "Auto-delete" }].map((s, i) => (
+        {[{ val: `${toolsList.length}+`, label: "Tools" }, { val: "∞", label: "Files" }, { val: "$0", label: "Cost" }, { val: "1 hr", label: "Auto-delete" }].map((s, i) => (
           <div key={s.val} style={{ padding: "0.875rem 1.5rem", textAlign: "center", borderRight: i < 3 ? `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "var(--dn-border)"}` : "none" }}>
             <div style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.04em", background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.val}</div>
             <div style={{ fontSize: "0.65rem", color: "var(--dn-t4)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: "0.1rem" }}>{s.label}</div>
@@ -298,7 +295,7 @@ function CategoriesSection() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} style={{ textAlign: "center", marginBottom: "3rem" }}>
           <div style={{ display: "inline-block", padding: "0.3rem 0.875rem", borderRadius: "6px", background: "#dbe1ff", border: "1px solid #b4c5ff", color: "#1d4ed8", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "1rem" }}>Tool Categories</div>
           <h2 style={{ fontSize: "clamp(1.8rem,3.5vw,2.4rem)", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--dn-t1)", marginBottom: "0.75rem" }}>Everything you need for PDFs</h2>
-          <p style={{ color: "var(--dn-t3)", fontSize: "0.95rem", maxWidth: "480px", margin: "0 auto", lineHeight: 1.7 }}>38 professional tools across 5 categories. No watermarks. No limits.</p>
+          <p style={{ color: "var(--dn-t3)", fontSize: "0.95rem", maxWidth: "480px", margin: "0 auto", lineHeight: 1.7 }}>{toolsList.length} professional tools across 5 categories. No watermarks. No limits.</p>
         </motion.div>
         <div className="category-grid">
           {cats.map((cat, i) => (
@@ -370,7 +367,7 @@ function PopularToolsSection() {
         <motion.div initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}} transition={{ delay: 0.5 }} style={{ textAlign: "center", marginTop: "2rem" }}>
           <Link to="/tools" style={{ textDecoration: "none" }}>
             <motion.div whileHover={{ scale: 1.02 }} className="dn-card" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.7rem 1.75rem", borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border2)", color: "var(--dn-t2)", fontWeight: 500, cursor: "pointer", fontSize: "0.85rem", boxShadow: "var(--dn-shadow)" }}>
-              View all 38 tools <ArrowRight size={14} />
+              View all {toolsList.length} tools <ArrowRight size={14} />
             </motion.div>
           </Link>
         </motion.div>

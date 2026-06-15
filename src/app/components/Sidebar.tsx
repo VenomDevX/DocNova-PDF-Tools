@@ -3,12 +3,13 @@ import { Link, useLocation } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ChevronDown, FileText, FileOutput, FileStack, PenLine, Lock, ScanLine,
-  LayoutGrid, Info, Mail, Shield, BookOpen, PanelLeftClose, PanelLeftOpen, Plus,
+  LayoutGrid, Info, Mail, Shield, BookOpen, PanelLeftClose, PanelLeftOpen, Plus, Sparkles, Bot
 } from "lucide-react";
 import { getToolsByCategory, type ToolCategory } from "../data/tools";
 import { useSidebar, SIDEBAR_W_EXPANDED, SIDEBAR_W_COLLAPSED } from "../context/SidebarContext";
 
 const CATEGORIES = [
+  { id: "ai" as ToolCategory, label: "AI Tools", icon: Sparkles, color: "#60a5fa" },
   { id: "convert" as ToolCategory, label: "Convert", icon: FileOutput, color: "#93c5fd" },
   { id: "organize" as ToolCategory, label: "Organize", icon: FileStack, color: "#c4b5fd" },
   { id: "edit" as ToolCategory, label: "Edit", icon: PenLine, color: "#fcd34d" },
@@ -49,7 +50,9 @@ export function Sidebar() {
 
   const [expanded, setExpanded] = useState<string | null>(() => {
     const seg = location.pathname.split("/")[1];
-    return ["convert", "organize", "edit", "secure", "ocr"].includes(seg) ? seg : "convert";
+    return ["ai", "convert", "organize", "edit", "secure", "ocr", "ai-tools"].includes(seg) 
+      ? (seg === "ai-tools" ? "ai" : seg) 
+      : null;
   });
 
   const [glow, setGlow] = useState({ x: "50%", y: "30%" });
@@ -193,18 +196,20 @@ export function Sidebar() {
           </Link>
         </div>
 
-        {/* Scrollable tools list */}
         <div id={scrollbarId} style={{ padding: collapsed ? "0.625rem 0.4rem 0.5rem" : "0.75rem 0.5rem 0.5rem", flex: 1, overflowY: "auto", overflowX: "hidden" }}>
           {!collapsed && (
             <div style={{ color: C.muted, fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 0.5rem", marginBottom: "0.4rem", opacity: 0.5 }}>
-              Tools
+              Categories
             </div>
           )}
 
           {CATEGORIES.map(cat => {
-            const tools = getToolsByCategory(cat.id);
+            const tools = getToolsByCategory(cat.id).filter(t => t.id !== "chat");
+            if (tools.length === 0) return null;
             const isOpen = !collapsed && expanded === cat.id;
-            const catActive = location.pathname === `/${cat.id}` || tools.some(t => location.pathname === `/tools/${t.id}`);
+            const isAITool = cat.id === "ai";
+            const basePath = isAITool ? "/ai-tools" : "/tools";
+            const catActive = location.pathname === `/${cat.id}` || tools.some(t => location.pathname === `${basePath}/${t.id}`);
 
             if (collapsed) {
               return (
@@ -261,9 +266,21 @@ export function Sidebar() {
                     >
                       <div style={{ paddingLeft: "0.625rem", paddingTop: "0.125rem", paddingBottom: "0.25rem" }}>
                         {tools.map(tool => {
-                          const active = location.pathname === `/tools/${tool.id}`;
+                          const isAITool = cat.id === "ai";
+                          const basePath = isAITool ? "/ai-tools" : "/tools";
+                          const active = location.pathname === `${basePath}/${tool.id}`;
+                          
+                          // Add extra glow for AI tools when active
+                          const activeBgStyle = (active && isAITool) 
+                            ? "linear-gradient(90deg, rgba(37,99,235,0.2) 0%, rgba(37,99,235,0) 100%)" 
+                            : (active ? C.activeBg : "transparent");
+
+                          const activeGlowStyle = (active && isAITool)
+                            ? "0 0 12px rgba(96, 165, 250, 0.4)"
+                            : "none";
+
                           return (
-                            <Link key={tool.id} to={`/tools/${tool.id}`} style={{ textDecoration: "none" }}>
+                            <Link key={tool.id} to={`${basePath}/${tool.id}`} style={{ textDecoration: "none" }}>
                               <div
                                 className={`dn-sb-item${active ? " dn-sb-item-active" : ""}`}
                                 style={{
@@ -271,7 +288,8 @@ export function Sidebar() {
                                   padding: "0.34rem 0.5rem",
                                   paddingLeft: active ? "calc(0.5rem - 2px)" : "0.5rem",
                                   borderRadius: "6px", cursor: "pointer",
-                                  background: active ? C.activeBg : "transparent",
+                                  background: activeBgStyle,
+                                  boxShadow: activeGlowStyle,
                                   borderLeft: active ? `2px solid ${cat.color}` : "2px solid transparent",
                                   marginBottom: "1px",
                                 }}
@@ -302,6 +320,47 @@ export function Sidebar() {
 
         {/* Bottom nav */}
         <div style={{ borderTop: `1px solid ${C.divider}`, padding: collapsed ? "0.5rem 0.4rem" : "0.5rem 0.5rem" }}>
+          
+          {/* STANDALONE DOCAI BUTTON */}
+          <Link to="/ai-tools/chat" style={{ textDecoration: "none" }} title="DocAI">
+            {collapsed ? (
+              <div
+                className={`dn-sb-item${location.pathname.startsWith("/ai-tools/chat") ? " dn-sb-item-active" : ""}`}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: "100%", height: "36px", marginBottom: "8px",
+                  borderRadius: "6px", cursor: "pointer",
+                  background: location.pathname.startsWith("/ai-tools/chat") ? C.activeBg : "transparent",
+                  borderLeft: `2px solid ${location.pathname.startsWith("/ai-tools/chat") ? "#60a5fa" : "transparent"}`,
+                }}
+              >
+                <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: "linear-gradient(135deg,#1e3a8a,#2563eb)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(37,99,235,0.4)" }}>
+                  <Bot size={14} color="#fff" />
+                </div>
+              </div>
+            ) : (
+              <div
+                className={`dn-sb-item${location.pathname.startsWith("/ai-tools/chat") ? " dn-sb-item-active" : ""}`}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.6rem",
+                  padding: "0.4rem 0.5rem",
+                  marginBottom: "8px",
+                  borderRadius: "8px", cursor: "pointer",
+                  background: location.pathname.startsWith("/ai-tools/chat") ? C.activeBg : "rgba(37,99,235,0.08)",
+                  border: `1px solid ${location.pathname.startsWith("/ai-tools/chat") ? "#3b82f6" : "rgba(59,130,246,0.2)"}`,
+                }}
+              >
+                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "linear-gradient(135deg,#1e3a8a,#2563eb)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(37,99,235,0.4)" }}>
+                  <Bot size={16} color="#fff" />
+                </div>
+                <span style={{ flex: 1, color: C.text, fontSize: "0.85rem", fontWeight: 700 }}>
+                  DocAI
+                </span>
+                <span style={{ fontSize: "0.6rem", background: "linear-gradient(135deg,#3b82f6,#8b5cf6)", color: "#fff", padding: "3px 6px", borderRadius: "4px", fontWeight: 700, letterSpacing: "0.05em" }}>NEW</span>
+              </div>
+            )}
+          </Link>
+
           {NAV_LINKS.map(link => {
             const active = isActive(link.path);
             if (collapsed) {

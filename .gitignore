@@ -1,8 +1,13 @@
-node_modules
-dist
+node_modules/
+dist/
+build/
+.next/
 *.log
 *.err
 .env
+.env.local
+.env.production
+.env.development
 .env.*
 backend/uploads/*
 !backend/uploads/.gitkeep
@@ -12,3 +17,8 @@ __pycache__/
 .DS_Store
 Black theme video/
 White Theme video/
+.vercel/
+.env*
+.gemini/
+stitch-export/
+public/stitch-export/

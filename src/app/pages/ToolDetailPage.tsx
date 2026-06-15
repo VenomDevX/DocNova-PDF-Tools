@@ -19,8 +19,8 @@ export default function ToolDetailPage() {
   }
 
   if (tool.id === "merge-pdf") {
-    return <AdvancedMergePDFTool tool={tool} />;
+    return <AdvancedMergePDFTool key={tool.id} tool={tool} />;
   }
 
-  return <UniversalToolWorkflow tool={tool} />;
+  return <UniversalToolWorkflow key={tool.id} tool={tool} />;
 }

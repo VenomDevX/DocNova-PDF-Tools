@@ -178,16 +178,16 @@ export function Navbar() {
 
   const isDark = theme === "dark";
 
-  /* On homepage at top: fully transparent. Otherwise: normal. */
-  const heroTransparent = isHomePage && !scrolled;
+  const isAIToolsPage = location.pathname.startsWith("/ai-tools");
+
+  /* On homepage at top: fully transparent. On AI tools: always transparent. Otherwise: normal. */
+  const heroTransparent = isAIToolsPage ? true : (isHomePage && !scrolled);
 
   return (
     <>
       <nav style={{
         height: "60px",
-        background: heroTransparent
-          ? "transparent"
-          : scrolled ? "var(--dn-nav-bg)" : (isDark ? "rgba(0,0,0,0.5)" : "rgba(248,249,252,0.85)"),
+        background: "transparent",
         borderBottom: heroTransparent
           ? "1px solid transparent"
           : `1px solid ${scrolled ? "var(--dn-nav-border)" : "transparent"}`,
@@ -201,12 +201,12 @@ export function Navbar() {
         justifyContent: "space-between",
         padding: "0 1.5rem",
       }}>
-        {/* Left — Spacer to keep center nav perfectly centered */}
-        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+        {/* Left — Spacer to guarantee perfect mathematical centering */}
+        <div style={{ flex: "1 1 0%", display: "flex", alignItems: "center" }}>
         </div>
 
         {/* Center — Main nav items (Desktop only) */}
-        <div className="dn-desktop-nav" style={{ display: "flex", alignItems: "center", gap: "0.25rem", height: "100%" }}>
+        <div className="dn-desktop-nav" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", height: "100%" }}>
           {MAIN_LINKS.map((link, idx) => {
             if (link.type === "dropdown") {
               return <DropdownMenu key={idx} category={link.category!} label={link.label} isActive={isActive(undefined, link.category)} />;
@@ -224,7 +224,7 @@ export function Navbar() {
         </div>
 
         {/* Right actions */}
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.25rem" }}>
+        <div style={{ flex: "1 1 0%", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.25rem" }}>
           <motion.button whileTap={{ scale: 0.92 }} aria-label="Search"
             style={{ width: "36px", height: "36px", borderRadius: "6px", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--dn-nav-text)" }}>
             <Search size={16} />
