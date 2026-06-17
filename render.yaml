@@ -3,6 +3,6 @@ services:
     name: docnova-pdf-tools
     env: python
     plan: free
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: pip install --break-system-packages -r backend/requirements.txt
     startCommand: cd backend && gunicorn --workers 4 --worker-class sync --bind 0.0.0.0:$PORT --timeout 120 app:app
     healthCheckPath: /health
