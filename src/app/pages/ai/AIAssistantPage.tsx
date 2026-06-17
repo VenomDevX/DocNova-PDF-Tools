@@ -66,14 +66,14 @@ export default function AIAssistantPage() {
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-    
+
     const fileToSend = selectedFile;
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    
+
     // Reset textarea height
     if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = "auto";
     }
 
     try {
@@ -81,7 +81,7 @@ export default function AIAssistantPage() {
         role: m.role,
         content: m.content
       })), fileToSend, model);
-      
+
       const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: responseText };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
@@ -120,7 +120,7 @@ export default function AIAssistantPage() {
 
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext;
     if (!gl) return;
-    
+
     const vs = `attribute vec2 a_position;
 varying vec2 v_texCoord;
 void main() {
@@ -170,23 +170,23 @@ void main() {
 }`;
     function cs(type: number, src: string) {
       const s = gl.createShader(type);
-      if(!s) return null;
+      if (!s) return null;
       gl.shaderSource(s, src);
       gl.compileShader(s);
       return s;
     }
     const prog = gl.createProgram();
-    if(!prog) return;
+    if (!prog) return;
     const vShader = cs(gl.VERTEX_SHADER, vs);
     const fShader = cs(gl.FRAGMENT_SHADER, fs);
-    if(!vShader || !fShader) return;
+    if (!vShader || !fShader) return;
     gl.attachShader(prog, vShader);
     gl.attachShader(prog, fShader);
     gl.linkProgram(prog);
     gl.useProgram(prog);
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const pos = gl.getAttribLocation(prog, 'a_position');
     gl.enableVertexAttribArray(pos);
     gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
@@ -294,10 +294,10 @@ void main() {
       </div>
 
       <main className="flex-1 flex overflow-hidden w-full relative z-10 pt-[60px]">
-        
+
         {/* Center Panel: Chat Canvas */}
         <section className="flex-1 flex flex-col relative min-w-0 px-4 md:px-8 pt-6 pb-4 mx-auto w-full max-w-4xl h-full">
-          
+
           {messages.length === 1 ? (
             <div className="flex-1 flex flex-col items-center justify-center mb-8 w-full max-w-3xl mx-auto">
               <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }} className="w-16 h-16 mb-6 relative flex items-center justify-center">
@@ -324,14 +324,14 @@ void main() {
                   </svg>
                 </div>
               </motion.div>
-              
+
               <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="text-2xl md:text-3xl font-bold text-[var(--dn-t1)] mb-3 text-center tracking-tight">
                 How can I help you today?
               </motion.h1>
               <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-[var(--dn-t3)] text-center max-w-lg mb-10 leading-relaxed">
                 I'm DocNova, your intelligent co-pilot. I can summarize, convert, extract OCR data, or explain your PDF workflows.
               </motion.p>
-              
+
               <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 <button onClick={() => setInput("Summarize my PDF file")} className="p-4 rounded-2xl dn-glass-panel bg-[var(--dn-bg-card)] border border-[var(--dn-border)] shadow-sm hover:shadow-md hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-left group">
                   <div className="flex items-center gap-3 mb-2">
@@ -376,7 +376,7 @@ void main() {
               <AnimatePresence>
                 {messages.map((msg, index) => {
                   if (index === 0) return null; // Skip the default welcome message
-                  
+
                   return (
                     <motion.div
                       key={msg.id}
@@ -387,11 +387,11 @@ void main() {
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 shadow-sm ${msg.role === "user" ? "bg-blue-600" : "bg-[var(--dn-bg-subtle)] border border-[var(--dn-border2)]"}`}>
                         {msg.role === "user" ? <User size={16} color="#fff" /> : <Sparkles size={16} className="text-blue-500" />}
                       </div>
-                      
+
                       <div className={`
                         p-4 text-[15px] leading-relaxed max-w-[85%] whitespace-pre-wrap shadow-sm
-                        ${msg.role === "user" 
-                          ? "bg-[var(--dn-bg-card)] border border-[var(--dn-border)] text-[var(--dn-t1)] rounded-2xl rounded-tr-sm shadow-md" 
+                        ${msg.role === "user"
+                          ? "bg-[var(--dn-bg-card)] border border-[var(--dn-border)] text-[var(--dn-t1)] rounded-2xl rounded-tr-sm shadow-md"
                           : "bg-transparent text-[var(--dn-t1)]"
                         }
                       `}>
@@ -400,7 +400,7 @@ void main() {
                     </motion.div>
                   )
                 })}
-                
+
                 {isLoading && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-4">
                     <div className="w-8 h-8 rounded-full bg-[var(--dn-bg-subtle)] border border-[var(--dn-border2)] flex items-center justify-center shrink-0 mt-1">
@@ -443,7 +443,7 @@ void main() {
                 </div>
               )}
 
-              <textarea 
+              <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={handleInput}
@@ -453,12 +453,12 @@ void main() {
                     handleSubmit();
                   }
                 }}
-                className="w-full bg-transparent border-none focus:ring-0 text-[var(--dn-t1)] text-[15px] resize-none py-2 px-3 dn-custom-scrollbar placeholder:text-[var(--dn-t3)]/70 leading-relaxed" 
-                placeholder="Ask DocNova about documents, formatting, PDF tools, OCR, or workflows..." 
+                className="w-full bg-transparent border-none focus:ring-0 text-[var(--dn-t1)] text-[15px] resize-none py-2 px-3 dn-custom-scrollbar placeholder:text-[var(--dn-t3)]/70 leading-relaxed"
+                placeholder="Ask DocNova about documents, formatting, PDF tools, OCR, or workflows..."
                 rows={1}
                 style={{ outline: "none", minHeight: "44px", maxHeight: "200px" }}
               />
-              
+
               <div className="flex items-center justify-between w-full pt-2">
                 <div className="flex items-center gap-1.5">
                   <input
@@ -474,22 +474,22 @@ void main() {
                   <button type="button" onClick={() => fileInputRef.current?.click()} className={`p-2 transition-colors rounded-xl hover:bg-[var(--dn-border2)] shrink-0 ${selectedFile ? 'text-blue-500 bg-blue-500/10' : 'text-[var(--dn-t3)] hover:text-[var(--dn-t1)]'}`}>
                     <Paperclip size={18} />
                   </button>
-                  
+
                   {/* Custom AI Model Selector */}
                   <div className="relative flex items-center" ref={modelDropdownRef}>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
                       className="flex items-center gap-2 bg-transparent border border-transparent hover:border-[var(--dn-border2)] hover:bg-[var(--dn-bg-subtle)] focus:border-[var(--dn-border)] focus:bg-[var(--dn-bg-subtle)] text-[var(--dn-t2)] font-medium text-[12px] rounded-lg pl-3 pr-2 py-1.5 outline-none transition-all cursor-pointer"
                     >
                       <Sparkles size={14} className="text-blue-500" />
                       <span>{models.find(m => m.id === model)?.name || "Gemini 3.5 Flash"}</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 text-[var(--dn-t3)] ${isModelDropdownOpen ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 text-[var(--dn-t3)] ${isModelDropdownOpen ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6" /></svg>
                     </button>
-                    
+
                     <AnimatePresence>
                       {isModelDropdownOpen && (
-                        <motion.div 
+                        <motion.div
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -508,7 +508,7 @@ void main() {
                                 className={`w-full text-left px-3 py-2 text-[12px] transition-colors flex items-center justify-between ${model === m.id ? 'bg-blue-500/10 text-blue-500 font-medium' : 'text-[var(--dn-t2)] hover:bg-[var(--dn-bg-subtle)] hover:text-[var(--dn-t1)]'}`}
                               >
                                 <span>{m.name}</span>
-                                {model === m.id && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                {model === m.id && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                               </button>
                             ))}
                           </div>
@@ -522,7 +522,7 @@ void main() {
                   <button type="button" className="p-2 text-[var(--dn-t3)] hover:text-[var(--dn-t1)] transition-colors rounded-xl hover:bg-[var(--dn-border2)]">
                     <Mic size={18} />
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     disabled={(!input.trim() && !selectedFile) || isLoading}
                     className={`p-2 rounded-xl transition-all ${(!input.trim() && !selectedFile) || isLoading ? 'bg-[var(--dn-bg-subtle)] text-[var(--dn-t4)] cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md hover:shadow-[0_0_15px_rgba(37,99,235,0.4)]'}`}
@@ -532,7 +532,7 @@ void main() {
                 </div>
               </div>
             </form>
-            
+
             <div className="text-center mt-4">
               <p className="text-[11px] text-[var(--dn-t4)]">DocNova can make mistakes. Consider verifying important information.</p>
             </div>
@@ -545,7 +545,7 @@ void main() {
             <Zap className="text-purple-500" size={20} />
             AI Capabilities
           </h3>
-          
+
           <ul className="space-y-5 relative before:absolute before:inset-y-0 before:left-[11px] before:w-[1px] before:bg-[var(--dn-border2)]/60">
             <li className="relative pl-8">
               <div className="absolute left-[7.5px] top-1.5 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.6)]"></div>
@@ -573,7 +573,7 @@ void main() {
               <span className="text-xs text-[var(--dn-t3)] block leading-tight">Learn how to redact and protect sensitive info</span>
             </li>
           </ul>
-          
+
           <div className="mt-auto pt-8">
             <div className="p-4 rounded-xl dn-glass-panel bg-gradient-to-b from-transparent to-blue-500/5 border-blue-500/20">
               <div className="flex items-center gap-2 mb-2">

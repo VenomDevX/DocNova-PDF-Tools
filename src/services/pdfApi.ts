@@ -92,6 +92,7 @@ export interface MergeSelectedPage {
   fileName: string;
   pageIndex: number;
   pageNumber: number;
+  rotation?: number;
   order: number;
 }
 
@@ -329,6 +330,21 @@ class PDFApiService {
 
   async powerPointToPDF(file: File, pageRange = ''): Promise<Blob | null> {
     return this.postFileWithParams('/api/powerpoint-to-pdf', file, { pageRange }, 'Failed to convert PowerPoint to PDF');
+  }
+
+  async applyEditorEdits(file: File, layers: unknown[], toolId: string): Promise<Blob | null> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('layers', JSON.stringify(layers || []));
+    formData.append('toolId', toolId);
+
+    const response = await fetch(`${this.baseURL}/api/pdf/apply-editor-edits`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    await this.throwIfError(response, 'Failed to apply PDF editor changes');
+    return await response.blob();
   }
 
   async ocr(file: File, lang = 'eng', pageRange = '', outputType = 'txt'): Promise<OCRResponse> {

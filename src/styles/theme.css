@@ -1,4 +1,4 @@
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
   --font-size: 14.4px;
@@ -281,4 +281,15 @@
 .dark ::-webkit-scrollbar-thumb:active,
 [data-theme="dark"] ::-webkit-scrollbar-thumb:active {
   background: #2563eb; /* accent blue */
+}
+
+/* ── Hide native number-input spinners everywhere ── */
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }

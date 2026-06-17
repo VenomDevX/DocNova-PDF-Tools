@@ -30,6 +30,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [output, setOutput] = useState<OutputFile | null>(null);
+  const [outputFileName, setOutputFileName] = useState("docnova-merged-selected");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedPageIds = useMemo(() => new Set(queue.map(page => page.id)), [queue]);
@@ -49,7 +50,8 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
     };
   }, [output?.url]);
 
-  const handleFiles = async (incoming: File[]) => {
+  const handleFiles = async (incoming: File[], insertIndex?: number) => {
+    const targetIndex = insertIndex ?? queue.length;
     const pdfFiles = incoming.filter(file => file.name.toLowerCase().endsWith(".pdf"));
     if (pdfFiles.length === 0) {
       setErrorMsg("Please upload PDF files.");
@@ -59,6 +61,9 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
 
     setErrorMsg("");
     setOutput(null);
+    if (files.length === 0 && !outputFileName.trim()) {
+      setOutputFileName("docnova-merged-selected");
+    }
 
     const nextFiles: MergeFile[] = pdfFiles.map(file => ({
       id: makeFileId(file),
@@ -79,13 +84,19 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
           const pageNumber = index + 1;
           const firstImage = first.images.find(image => image.page === pageNumber);
           return {
-            id: `${source.id}-${pageNumber}`,
+            id: `${source.id}-${pageNumber}-${Math.random().toString(36).slice(2, 6)}`,
             fileId: source.id,
             fileName: source.name,
             pageIndex: index,
             pageNumber,
             thumbnail: firstImage ? `data:image/jpeg;base64,${firstImage.image}` : undefined,
           };
+        });
+
+        setQueue(prev => {
+          const next = [...prev];
+          next.splice(insertIndex ?? prev.length, 0, ...pages.map((p, i) => ({ ...p, order: 0 })));
+          return next.map((p, i) => ({ ...p, order: i + 1 }));
         });
 
         setFiles(prev => prev.map(file => file.id === source.id ? {
@@ -126,10 +137,10 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
       const { sourceFileUrl, sourceFileName } = location.state;
       navigate(location.pathname, { replace: true, state: {} });
       resetDocNovaState(tool.id);
-      
+
       setProcessing(true);
       setErrorMsg("Loading file...");
-      
+
       fetch(sourceFileUrl)
         .then(res => {
           if (!res.ok) throw new Error("Failed to load previous file");
@@ -224,6 +235,35 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
     setDraggingQueueId(null);
   };
 
+
+  const handleInsertFile = (index: number) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.multiple = true;
+    input.onchange = (e: any) => {
+      if (e.target.files) handleFiles(Array.from(e.target.files), index);
+    };
+    input.click();
+  };
+
+  const handleRotatePage = (pageId: string, angle: number) => {
+    const rotate = <T extends PreviewPage>(page: T): T =>
+      page.id === pageId ? { ...page, rotation: ((page.rotation || 0) + angle + 360) % 360 } : page;
+    setFiles(prev => prev.map(file => ({ ...file, pages: file.pages.map(rotate) })));
+    setQueue(prev => prev.map(rotate));
+  };
+
+  const handleDuplicatePage = (pageId: string) => {
+    setQueue(prev => {
+      const idx = prev.findIndex(p => p.id === pageId);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next.splice(idx + 1, 0, { ...prev[idx], id: `${prev[idx].id}-copy-${Math.random().toString(36).slice(2, 6)}` });
+      return next.map((p, i) => ({ ...p, order: i + 1 }));
+    });
+  };
+
   const processMerge = async () => {
     if (queue.length === 0) {
       setErrorMsg("Select at least one page before merging.");
@@ -249,8 +289,9 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
 
       if (output?.url) URL.revokeObjectURL(output.url);
       setOutput(null);
+      const downloadName = buildOutputFileName(outputFileName, "docnova-merged-selected.pdf");
       const resultJob = await pdfApi.createResultJob(blob, {
-        outputFileName: "docnova-merged-selected.pdf",
+        outputFileName: downloadName,
         toolType: tool.id,
         toolLabel: tool.label,
         outputFormat: tool.outputFormat,
@@ -259,7 +300,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
           { label: "Source files", value: String(files.length) },
         ],
         items: [
-          { name: "docnova-merged-selected.pdf", size: blob.size, kind: "pdf" },
+          { name: downloadName, size: blob.size, kind: "pdf" },
         ],
       });
       setProgress(100);
@@ -275,66 +316,97 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
   };
 
   return (
-    <div style={{ color: "var(--dn-t1)", paddingTop: "100px", minHeight: "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ color: "var(--dn-t1)", paddingTop: files.length > 0 ? "0" : "48px", minHeight: files.length > 0 ? "calc(100vh - 60px)" : "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif", position: "relative" }}>
+      {/* Background Blobs (Dark Mode Only) */}
+      <div className="dn-dark-blobs fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#2563eb]/15 rounded-full blur-[100px] animate-[drift1_25s_ease-in-out_infinite]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#0267b8]/15 rounded-full blur-[120px] animate-[drift2_30s_ease-in-out_infinite_reverse]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#b4c5ff]/5 rounded-full blur-[150px] animate-[drift1_40s_ease-in-out_infinite]"></div>
+      </div>
       <style>{`
         @keyframes mergeProgressShimmer {
           from { background-position: 200% 0; }
           to { background-position: -200% 0; }
         }
+        [data-theme="light"] .dn-dark-blobs { display: none; }
+        html:not([data-theme="dark"]) .dn-dark-blobs { display: none; } /* Fallback */
+        @keyframes drift1 {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(5vw, 5vh) scale(1.1); }
+            66% { transform: translate(-2vw, 8vh) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes drift2 {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-5vw, -5vh) scale(0.95); }
+            66% { transform: translate(4vw, -2vh) scale(1.05); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
       `}</style>
-      <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "2rem 1.5rem 6rem" }}>
-        <Link to={`/${tool.category}`} style={{ textDecoration: "none" }}>
-          <motion.div whileHover={{ x: -3 }} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.875rem", marginBottom: "2rem", cursor: "pointer" }}>
-            <ArrowLeft size={15} /> {catMeta.label}
-          </motion.div>
-        </Link>
+      <div style={files.length > 0 ? { padding: "0", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", position: "relative", zIndex: 10 } : { maxWidth: "1440px", margin: "0 auto", padding: "2rem 1.5rem 6rem", position: "relative", zIndex: 10 }}>
+        {files.length === 0 && (
+          <Link to={`/${tool.category}`} style={{ textDecoration: "none" }}>
+            <motion.div whileHover={{ x: -3 }} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.875rem", marginBottom: "2rem", cursor: "pointer" }}>
+              <ArrowLeft size={15} /> {catMeta.label}
+            </motion.div>
+          </Link>
+        )}
 
-        <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.5rem" }}>
-          <div style={{ width: 60, height: 60, borderRadius: "4px", background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42` }}>
-            <FileStack size={28} color="#fff" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: "clamp(1.8rem,4vw,2.7rem)", lineHeight: 1.05, fontWeight: 920, margin: 0 }}>Advanced Merge PDF</h1>
-            <p style={{ color: "var(--dn-t3)", marginTop: "0.55rem", maxWidth: 720, lineHeight: 1.6 }}>
-              Preview every page, select only what you need, reorder the merge queue, then download the final PDF.
-            </p>
-          </div>
-        </header>
+        {files.length === 0 && (
+          <>
+            <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.5rem" }}>
+              <div style={{ width: 60, height: 60, borderRadius: "4px", background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42` }}>
+                <FileStack size={28} color="#fff" />
+              </div>
+              <div>
+                <h1 style={{ fontSize: "clamp(1.8rem,4vw,2.7rem)", lineHeight: 1.05, fontWeight: 920, margin: 0 }}>Advanced Merge PDF</h1>
+                <p style={{ color: "var(--dn-t3)", marginTop: "0.55rem", maxWidth: 720, lineHeight: 1.6 }}>
+                  Preview every page, select only what you need, reorder the merge queue, then download the final PDF.
+                </p>
+              </div>
+            </header>
 
-        <div
-          onDrop={event => {
-            event.preventDefault();
-            setIsDraggingUpload(false);
-            handleFiles(Array.from(event.dataTransfer.files));
-          }}
-          onDragOver={event => {
-            event.preventDefault();
-            setIsDraggingUpload(true);
-          }}
-          onDragLeave={() => setIsDraggingUpload(false)}
-          onClick={() => inputRef.current?.click()}
-          style={{
-            minHeight: 168,
-            borderRadius: "4px",
-            border: `2px dashed ${isDraggingUpload ? "#60a5fa" : "var(--dn-border2)"}`,
-            background: isDraggingUpload ? "rgba(37,99,235,0.12)" : "var(--dn-bg-card)",
-            display: "grid",
-            placeItems: "center",
-            textAlign: "center",
-            cursor: "pointer",
-            boxShadow: "var(--dn-shadow)",
-            marginBottom: "1rem",
-          }}
-        >
-          <input ref={inputRef} type="file" accept=".pdf" multiple style={{ display: "none" }} onChange={event => event.target.files && handleFiles(Array.from(event.target.files))} />
-          <div>
-            <div style={{ width: 58, height: 58, margin: "0 auto 0.85rem", borderRadius: "4px", display: "grid", placeItems: "center", background: "rgba(37,99,235,0.16)", color: "#93c5fd", boxShadow: "0 0 30px rgba(59,130,246,0.22)" }}>
-              <Upload size={26} />
+            <div
+              onDrop={event => {
+                event.preventDefault();
+                setIsDraggingUpload(false);
+                handleFiles(Array.from(event.dataTransfer.files));
+              }}
+              onDragOver={event => {
+                event.preventDefault();
+                setIsDraggingUpload(true);
+              }}
+              onDragLeave={() => setIsDraggingUpload(false)}
+              onClick={() => inputRef.current?.click()}
+              style={{
+                minHeight: "clamp(420px, calc(100vh - 320px), 680px)",
+                borderRadius: "5px",
+                border: `2px dashed ${isDraggingUpload ? "#60a5fa" : "var(--dn-border2)"}`,
+                background: isDraggingUpload ? "rgba(59,130,246,0.1)" : "var(--dn-bg-card)",
+                display: "grid",
+                placeItems: "center",
+                textAlign: "center",
+                cursor: "pointer",
+                boxShadow: isDraggingUpload ? `0 0 0 4px rgba(59,130,246,0.15), var(--dn-shadow)` : "var(--dn-shadow)",
+                marginBottom: "2rem",
+                transition: "all 0.3s ease",
+                position: "relative",
+                overflow: "hidden"
+              }}
+              className="dn-glass-panel group"
+            >
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `linear-gradient(135deg, transparent, rgba(59,130,246,0.05), transparent)` }} />
+              <input ref={inputRef} type="file" accept=".pdf" multiple style={{ display: "none" }} onChange={event => event.target.files && handleFiles(Array.from(event.target.files))} />
+              <div className="relative z-10 flex flex-col items-center py-6">
+                <div style={{ width: 64, height: 64, margin: "0 auto 1rem", borderRadius: "16px", display: "grid", placeItems: "center", background: "rgba(59,130,246,0.15)", color: "#60a5fa", boxShadow: "0 0 30px rgba(59,130,246,0.2)", transition: "transform 0.3s" }} className="group-hover:scale-110">
+                  <Upload size={28} />
+                </div>
+                <div style={{ color: "var(--dn-t1)", fontWeight: 800, fontSize: "1.1rem" }}>{isDraggingUpload ? "Drop PDFs here" : `Upload PDFs`}</div>
+                <div style={{ color: "var(--dn-t4)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Multiple PDFs supported. Thumbnails generate automatically.</div>
+              </div>
             </div>
-            <div style={{ color: "var(--dn-t1)", fontWeight: 800 }}>Upload PDFs or drop them here</div>
-            <div style={{ color: "var(--dn-t4)", fontSize: "0.82rem", marginTop: "0.35rem" }}>Multiple PDFs supported. Thumbnails generate automatically.</div>
-          </div>
-        </div>
+          </>
+        )}
 
         <AnimatePresence>
           {errorMsg && (
@@ -362,36 +434,14 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
             onRemoveQueuePage={removeQueuePage}
             onDragStart={setDraggingQueueId}
             onDropOnQueuePage={dropOnQueuePage}
+            processing={processing}
+            onProcess={processMerge}
+            onInsertFile={handleInsertFile}
+            onRotatePage={handleRotatePage}
+            onDuplicatePage={handleDuplicatePage}
+            outputFileName={outputFileName}
+            onOutputFileNameChange={setOutputFileName}
           />
-        )}
-
-        {files.length > 0 && (
-          <div style={{ marginTop: "1rem", display: "flex", gap: "0.8rem", flexWrap: "wrap", alignItems: "center" }}>
-            <motion.button
-              whileHover={{ scale: 1.02, boxShadow: "0 0 34px rgba(59,130,246,0.36)" }}
-              whileTap={{ scale: 0.98 }}
-              onClick={processMerge}
-              disabled={processing || queue.length === 0}
-              style={{
-                border: "none",
-                borderRadius: "4px",
-                background: queue.length === 0 ? "rgba(71,85,105,0.5)" : "linear-gradient(135deg,#2563eb,#60a5fa)",
-                color: "#fff",
-                padding: "0.9rem 1.25rem",
-                fontWeight: 850,
-                fontSize: "0.94rem",
-                cursor: queue.length === 0 || processing ? "not-allowed" : "pointer",
-                fontFamily: "'Inter', sans-serif",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.55rem",
-              }}
-            >
-              {processing ? <Loader2 size={17} style={{ animation: "spin 0.8s linear infinite" }} /> : <FileStack size={17} />}
-              Merge {queue.length} Selected Pages
-            </motion.button>
-            <div style={{ color: "var(--dn-t4)", fontSize: "0.8rem" }}>Estimated output: {estimatedSize}</div>
-          </div>
         )}
 
         {processing && (
@@ -442,6 +492,18 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
 
 function makeFileId(file: File) {
   return `${file.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${file.size}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function extensionOf(filename: string) {
+  const match = filename.match(/(\.[^/.]+)$/);
+  return match ? match[1] : "";
+}
+
+function buildOutputFileName(inputName: string, fallbackName: string) {
+  const fallbackExtension = extensionOf(fallbackName);
+  const sanitized = inputName.trim().replace(/[\\/:*?"<>|]/g, "-");
+  if (!sanitized) return fallbackName;
+  return extensionOf(sanitized) ? sanitized : `${sanitized}${fallbackExtension}`;
 }
 
 function formatBytes(bytes: number) {
