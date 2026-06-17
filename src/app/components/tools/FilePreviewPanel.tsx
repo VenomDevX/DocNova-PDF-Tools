@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
-import { Check, Eye, FileText, GripVertical, Loader2, Trash2, X } from "lucide-react";
+import { ToolbarButton, PageCard, AddMoreFilesTile, Label, Select, ToggleRow, DetailRow, CheckBox } from "./OrganizeComponents";
+import { ArrowRight, ChevronDown, Copy, CornerDownRight, FileText, Grid2X2, List, Loader2, Lock, Plus, RotateCcw, RotateCw, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import type React from "react";
 
 export interface PreviewPage {
   id: string;
@@ -10,6 +10,7 @@ export interface PreviewPage {
   pageIndex: number;
   pageNumber: number;
   thumbnail?: string;
+  rotation?: number;
 }
 
 export interface PreviewFile {
@@ -42,13 +43,16 @@ interface FilePreviewPanelProps {
   onRemoveQueuePage: (pageId: string) => void;
   onDragStart: (pageId: string) => void;
   onDropOnQueuePage: (pageId: string) => void;
+  processing?: boolean;
+  onProcess?: () => void;
+  onInsertFile?: (index: number) => void;
+  onRotatePage?: (pageId: string, angle: number) => void;
+  onDuplicatePage?: (pageId: string) => void;
+  outputFileName?: string;
+  onOutputFileNameChange?: (value: string) => void;
 }
 
-const panelStyle: React.CSSProperties = {
-  border: "1px solid var(--dn-border)",
-  background: "var(--dn-bg-card)",
-  boxShadow: "var(--dn-shadow)",
-};
+
 
 export function FilePreviewPanel({
   files,
@@ -66,179 +70,263 @@ export function FilePreviewPanel({
   onRemoveQueuePage,
   onDragStart,
   onDropOnQueuePage,
+  processing,
+  onProcess,
+  onInsertFile,
+  onRotatePage,
+  onDuplicatePage,
+  outputFileName = "docnova-merged-selected",
+  onOutputFileNameChange,
 }: FilePreviewPanelProps) {
   const [previewPage, setPreviewPage] = useState<PreviewPage | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const totalPages = files.reduce((sum, file) => sum + file.pages.length, 0);
+  const selectedQueuePages = queue.filter(page => selectedPageIds.has(page.id));
+  const hasSelectedPages = selectedQueuePages.length > 0;
+  const addFiles = () => onInsertFile?.(queue.length);
+  const rotateSelected = (angle: number) => {
+    selectedQueuePages.forEach(page => onRotatePage?.(page.id, angle));
+  };
+  const deleteSelected = () => {
+    selectedQueuePages.forEach(page => onRemoveQueuePage(page.id));
+  };
+  const duplicateSelected = () => {
+    selectedQueuePages.forEach(page => onDuplicatePage?.(page.id));
+  };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: "1rem", alignItems: "start" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div style={{ ...panelStyle, borderRadius: "18px", padding: "1rem", display: "flex", gap: "0.65rem", flexWrap: "wrap", alignItems: "center" }}>
-          <ToolbarButton onClick={onSelectAllFiles}>Select All Files</ToolbarButton>
-          <ToolbarButton onClick={onClearSelection}>Clear Selection</ToolbarButton>
-          <ToolbarButton onClick={onInvertSelection}>Invert Selection</ToolbarButton>
-          <div style={{ marginLeft: "auto", color: "var(--dn-t3)", fontSize: "0.78rem" }}>
-            {queue.length} selected / {totalPages} pages
+    <div className="flex flex-1 w-full overflow-hidden bg-transparent" style={{ color: "var(--dn-t1)" }}>
+
+      {/* Center Workspace */}
+      <section className="flex min-w-0 flex-1 flex-col bg-transparent">
+        {/* Header */}
+        <div className="flex h-16 flex-shrink-0 items-center gap-4 px-6">
+          <div className="flex h-9 w-9 items-center justify-center rounded border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>
+            <FileText size={20} />
+          </div>
+          <div className="flex min-w-0 items-baseline gap-3">
+            <h1 className="truncate text-lg font-semibold" style={{ color: "var(--dn-t1)" }}>Merge Files</h1>
+            <span className="text-sm font-medium text-blue-500">{files.length} files selected</span>
           </div>
         </div>
 
-        {files.map(file => (
-          <section key={file.id} style={{ ...panelStyle, borderRadius: "20px", padding: "1rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(59,130,246,0.14)", display: "grid", placeItems: "center", color: "#60a5fa" }}>
-                <FileText size={18} />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ color: "var(--dn-t1)", fontWeight: 750, fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</div>
-                <div style={{ color: "var(--dn-t4)", fontSize: "0.72rem" }}>{formatBytes(file.size)} • {file.pages.length || "..."} pages</div>
-                {file.previewStatus && <div style={{ color: "#93c5fd", fontSize: "0.72rem", fontWeight: 750, marginTop: "0.18rem" }}>{file.previewStatus}</div>}
-              </div>
-              <div style={{ marginLeft: "auto", display: "flex", gap: "0.45rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <ToolbarButton onClick={() => onSelectFile(file.id)}>Select All</ToolbarButton>
-                <ToolbarButton onClick={() => onDeselectFile(file.id)}>Deselect All</ToolbarButton>
-                <IconButton label="Remove file" onClick={() => onRemoveFile(file.id)} danger>
-                  <Trash2 size={14} />
-                </IconButton>
-              </div>
-            </div>
-
-            {file.loading && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(118px,1fr))", gap: "0.8rem" }}>
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} style={{ height: 168, borderRadius: 14, background: "var(--dn-bg-subtle)", border: "1px solid var(--dn-border)" }} />
-                ))}
-              </div>
-            )}
-
-            {file.error && (
-              <div style={{ color: "#f87171", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: 12, padding: "0.85rem", fontSize: "0.84rem" }}>{file.error}</div>
-            )}
-
-            {!file.loading && !file.error && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: "0.9rem" }}>
-                {file.pages.map(page => {
-                  const selected = selectedPageIds.has(page.id);
-                  return (
-                    <motion.div
-                      key={page.id}
-                      role="button"
-                      tabIndex={0}
-                      whileHover={{ y: -4 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => onTogglePage(page)}
-                      onDoubleClick={() => setPreviewPage(page)}
-                      onKeyDown={event => {
-                        if (event.key === "Enter" || event.key === " ") onTogglePage(page);
-                      }}
-                      style={{
-                        position: "relative",
-                        border: selected ? "2px solid #3b82f6" : "1px solid rgba(148,163,184,0.18)",
-                        background: selected ? "rgba(37,99,235,0.12)" : "var(--dn-bg-card)",
-                        borderRadius: 14,
-                        padding: "0.45rem",
-                        cursor: "pointer",
-                        boxShadow: selected ? "0 0 28px rgba(59,130,246,0.24)" : "var(--dn-shadow)",
-                        color: "var(--dn-t1)",
-                        fontFamily: "'Inter', sans-serif",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        title="Open large preview"
-                        aria-label={`Open ${page.fileName} page ${page.pageNumber} preview`}
-                        onClick={event => {
-                          event.stopPropagation();
-                          setPreviewPage(page);
-                        }}
-                        style={{
-                          position: "absolute",
-                          top: 10,
-                          right: 10,
-                          zIndex: 2,
-                          width: 30,
-                          height: 30,
-                          border: "1px solid rgba(96,165,250,0.32)",
-                          borderRadius: 9,
-                          background: "rgba(2,6,23,0.72)",
-                          color: "#bfdbfe",
-                          display: "grid",
-                          placeItems: "center",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <Eye size={14} />
-                      </button>
-                      {page.thumbnail ? (
-                        <img src={page.thumbnail} alt={`${page.fileName} page ${page.pageNumber}`} style={{ width: "100%", aspectRatio: "0.72", objectFit: "contain", borderRadius: 10, background: "#fff" }} />
-                      ) : (
-                        <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: 10, background: "linear-gradient(90deg,#ffffff,#f1f5f9,#ffffff)", border: "1px solid rgba(148,163,184,0.24)", display: "grid", placeItems: "center", color: "#94a3b8", fontWeight: 850, fontSize: "0.74rem" }}>
-                          Generating...
-                        </div>
-                      )}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", marginTop: "0.45rem", color: selected ? "#93c5fd" : "var(--dn-t3)", fontSize: "0.74rem", fontWeight: 700 }}>
-                        {selected && <Check size={12} />} Page {page.pageNumber}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        ))}
-      </div>
-
-      <aside style={{ ...panelStyle, borderRadius: "20px", padding: "1rem", position: "sticky", top: 96 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-          <div>
-            <div style={{ color: "var(--dn-t1)", fontWeight: 850, fontSize: "0.98rem" }}>Merge Queue</div>
-            <div style={{ color: "var(--dn-t4)", fontSize: "0.72rem" }}>{queue.length} pages • est. {estimatedSize}</div>
+        {/* Toolbar */}
+        <div className="flex h-auto min-h-14 flex-shrink-0 items-center justify-between gap-4 px-6 py-2 border-b" style={{ borderColor: "var(--dn-border)" }}>
+          <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto">
+            <ToolbarButton icon={<CheckBox checked={selectedPageIds.size === totalPages && totalPages > 0} />} text="Select all" onClick={selectedPageIds.size === totalPages ? onClearSelection : onSelectAllFiles} />
+            <div className="mx-1 h-6 w-px" style={{ background: "var(--dn-border)" }} />
+            <ToolbarButton icon={<Plus size={17} />} text="Add files" dropdown onClick={addFiles} />
+            <div className="mx-1 h-6 w-px" style={{ background: "var(--dn-border)" }} />
+            <ToolbarButton icon={<RotateCcw size={17} />} text="Rotate left" disabled={!hasSelectedPages} onClick={() => rotateSelected(-90)} />
+            <ToolbarButton icon={<RotateCw size={17} />} text="Rotate right" disabled={!hasSelectedPages} onClick={() => rotateSelected(90)} />
+            <ToolbarButton icon={<Copy size={17} />} text="Duplicate" disabled={!hasSelectedPages || !onDuplicatePage} onClick={duplicateSelected} />
+            <ToolbarButton icon={<Trash2 size={17} />} text="Delete" muted={!hasSelectedPages} disabled={!hasSelectedPages} onClick={deleteSelected} />
           </div>
-          <Loader2 size={16} style={{ opacity: 0 }} />
-        </div>
 
-        {queue.length === 0 ? (
-          <div style={{ minHeight: 180, border: "1px dashed var(--dn-border2)", borderRadius: 14, background: "var(--dn-bg-subtle)", display: "grid", placeItems: "center", color: "var(--dn-t4)", textAlign: "center", padding: "1rem", fontSize: "0.82rem" }}>
-            Select pages to build the final merge order.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem", maxHeight: "58vh", overflow: "auto", paddingRight: "0.15rem" }}>
-            {queue.map((page, index) => (
-              <motion.div
-                key={page.id}
-                layout
-                draggable
-                onDragStart={() => onDragStart(page.id)}
-                onDragOver={event => event.preventDefault()}
-                onDrop={() => onDropOnQueuePage(page.id)}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "18px 42px minmax(0,1fr) 28px",
-                  gap: "0.55rem",
-                  alignItems: "center",
-                  padding: "0.45rem",
-                  borderRadius: 12,
-                  border: draggingQueueId === page.id ? "1px solid #60a5fa" : "1px solid var(--dn-border)",
-                  background: "var(--dn-bg-card)",
-                  cursor: "grab",
-                }}
+          <div className="flex flex-shrink-0 items-center gap-4">
+            <button type="button" className="flex items-center gap-2 text-sm transition-colors" style={{ color: "var(--dn-t2)" }}>
+              Sort: <span className="font-medium" style={{ color: "var(--dn-t1)" }}>Custom</span> <ChevronDown size={15} />
+            </button>
+
+            <div className="flex overflow-hidden rounded-md border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)" }}>
+              <button
+                type="button"
+                aria-label="List view"
+                title="List view"
+                onClick={() => setViewMode("list")}
+                className="p-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                style={{ color: viewMode === "list" ? "#3b82f6" : "var(--dn-t2)", background: viewMode === "list" ? "rgba(59,130,246,0.1)" : "transparent" }}
               >
-                <GripVertical size={14} color="var(--dn-t4)" />
-                {page.thumbnail ? (
-                  <img src={page.thumbnail} alt="" style={{ width: 42, height: 54, objectFit: "cover", borderRadius: 7, background: "#fff" }} />
-                ) : (
-                  <div style={{ width: 42, height: 54, borderRadius: 7, background: "#fff", border: "1px solid var(--dn-border)" }} />
-                )}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: "var(--dn-t1)", fontWeight: 750, fontSize: "0.78rem" }}>#{index + 1} • Page {page.pageNumber}</div>
-                  <div style={{ color: "var(--dn-t4)", fontSize: "0.68rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{page.fileName}</div>
-                </div>
-                <IconButton label="Remove page" onClick={() => onRemoveQueuePage(page.id)} danger>
-                  <X size={13} />
-                </IconButton>
-              </motion.div>
-            ))}
+                <List size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label="Grid view"
+                title="Grid view"
+                onClick={() => setViewMode("grid")}
+                className="p-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                style={{ color: viewMode === "grid" ? "#3b82f6" : "var(--dn-t2)", background: viewMode === "grid" ? "rgba(59,130,246,0.1)" : "transparent" }}
+              >
+                <Grid2X2 size={18} />
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Pages Grid */}
+        <div className="custom-scrollbar flex-1 overflow-y-auto p-6 md:p-8">
+          {files.map((file, fileIndex) => (
+            <div key={file.id} className="mb-8">
+              <div className="mb-5 flex items-start gap-2">
+                <CornerDownRight size={18} className="mt-1 flex-shrink-0 text-blue-500" />
+                <div className="min-w-0">
+                  <h2 className="truncate text-sm font-medium" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
+                  <p className="mt-0.5 text-xs font-medium text-blue-500">
+                    {file.loading ? "Generating preview..." : `${file.pages.length} pages`}
+                  </p>
+                  {file.previewStatus && (
+                    <p className="mt-0.5 text-xs font-medium" style={{ color: "var(--dn-t3)" }}>{file.previewStatus}</p>
+                  )}
+                </div>
+              </div>
+
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                  {file.pages.map((page, index) => (
+                    <motion.div key={page.id} layout>
+                      <PageCard
+                        page={{
+                          id: page.id,
+                          label: `Page ${page.pageNumber}`,
+                          fileName: page.fileName,
+                          pageNumber: page.pageNumber,
+                          totalPages: file.pages.length || 1,
+                          thumbnail: page.thumbnail,
+                          rotation: page.rotation,
+                        }}
+                        selected={selectedPageIds.has(page.id)}
+                        onToggle={() => onTogglePage(page)}
+                        onPreview={() => setPreviewPage(page)}
+                        onDragStart={() => onDragStart(page.id)}
+                        onDrop={() => onDropOnQueuePage(page.id)}
+                        isFirst={index === 0}
+                        onRotate={onRotatePage}
+                        onDelete={onRemoveQueuePage}
+                        onDuplicate={onDuplicatePage}
+                      />
+                    </motion.div>
+                  ))}
+                  {fileIndex === files.length - 1 && (
+                    <AddMoreFilesTile
+                      onClick={() => onInsertFile?.(queue.length)}
+                      referenceThumbnail={file.pages[file.pages.length - 1]?.thumbnail}
+                      referenceRotation={file.pages[file.pages.length - 1]?.rotation || 0}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {file.pages.map((page, index) => {
+                    const selected = selectedPageIds.has(page.id);
+                    return (
+                      <motion.div key={page.id} layout>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          draggable
+                          onClick={() => onTogglePage(page)}
+                          onDoubleClick={() => setPreviewPage(page)}
+                          onKeyDown={event => {
+                            if (event.key === "Enter" || event.key === " ") onTogglePage(page);
+                          }}
+                          onDragStart={() => onDragStart(page.id)}
+                          onDragOver={event => event.preventDefault()}
+                          onDrop={() => onDropOnQueuePage(page.id)}
+                          className="group flex min-h-20 w-full items-center gap-4 rounded-md px-3 py-2 text-left transition-colors"
+                          style={{
+                            border: selected ? "1px solid #2563eb" : "1px solid var(--dn-border)",
+                            background: selected ? "rgba(37,99,235,0.14)" : "rgba(255,255,255,0.02)",
+                            color: "var(--dn-t1)",
+                            cursor: "grab",
+                          }}
+                        >
+                          <span
+                            className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-sm text-white"
+                            style={{ background: selected ? "#2563eb" : "rgba(148,163,184,0.18)" }}
+                          >
+                            {selected && <CheckBox checked />}
+                          </span>
+                          <div className="grid h-16 w-12 flex-shrink-0 place-items-center overflow-hidden rounded-[4px]" style={{ background: "#fff" }}>
+                            {page.thumbnail ? (
+                              <img src={page.thumbnail} alt="" className="block max-h-full max-w-full object-contain" style={{ transform: `rotate(${page.rotation || 0}deg)` }} />
+                            ) : (
+                              <span className="text-[10px] font-semibold" style={{ color: "var(--dn-t4)" }}>Generating</span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Page {page.pageNumber}</div>
+                            <div className="truncate text-xs" style={{ color: "var(--dn-t4)" }}>{page.fileName}</div>
+                          </div>
+                          <div className="flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                            <IconButton label="Rotate left" onClick={() => onRotatePage?.(page.id, -90)}><RotateCcw size={15} /></IconButton>
+                            <IconButton label="Duplicate" onClick={() => onDuplicatePage?.(page.id)}><Copy size={15} /></IconButton>
+                            <IconButton label="Delete" danger onClick={() => onRemoveQueuePage(page.id)}><Trash2 size={15} /></IconButton>
+                          </div>
+                          <span className="w-10 text-right text-xs font-semibold" style={{ color: "var(--dn-t4)" }}>{index + 1}</span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                  {fileIndex === files.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() => onInsertFile?.(queue.length)}
+                      className="flex min-h-16 w-full items-center justify-center gap-3 rounded-md border border-dashed text-sm font-semibold transition hover:border-blue-500 hover:text-blue-500"
+                      style={{ borderColor: "var(--dn-border)", background: "rgba(255,255,255,0.02)", color: "var(--dn-t3)" }}
+                    >
+                      <Plus size={18} />
+                      Add more files
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Right Sidebar */}
+      <aside className="relative z-20 flex w-[320px] flex-shrink-0 flex-col border-l" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)" }}>
+        <div className="flex-1 overflow-hidden">
+
+          <div className="px-5 py-4 border-b" style={{ borderColor: "var(--dn-border)" }}>
+            <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Conversion Settings</h2>
+            <Label text="Merge mode" />
+            <Select text="Merge all files" />
+            <ToggleRow text="Preserve original quality" active />
+            <ToggleRow text="Extract text if possible" active={false} />
+          </div>
+
+          <div className="px-5 py-4 border-b" style={{ borderColor: "var(--dn-border)" }}>
+            <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Output Settings</h2>
+            <Label text="Output format" />
+            <Select text="PDF" />
+            <Label text="Save to" />
+            <Select text="Downloads folder" />
+            <Label text="File name" />
+            <input
+              type="text"
+              value={outputFileName}
+              onChange={event => onOutputFileNameChange?.(event.target.value)}
+              className="h-9 w-full rounded-md border px-3 text-sm font-semibold outline-none transition focus:border-blue-500"
+              style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+            />
+          </div>
+
+          <div className="px-5 py-4 border-b" style={{ borderColor: "var(--dn-border)" }}>
+            <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>File Details</h2>
+            <DetailRow label="Total files" value={files.length} />
+            <DetailRow label="Total pages" value={totalPages} />
+            <DetailRow label="Estimated size" value={estimatedSize} />
+          </div>
+        </div>
+
+        <div className="z-10 p-5 pt-5 relative">
+          <div className="absolute inset-x-0 top-0 h-4 -translate-y-full bg-gradient-to-t from-[var(--dn-bg-card)] to-transparent pointer-events-none" />
+          <button
+            onClick={onProcess}
+            disabled={processing || queue.length === 0}
+            className="flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-blue-700 font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {processing ? <Loader2 size={20} className="animate-spin" /> : "Merge Selected"}
+            {!processing && <ArrowRight size={20} />}
+          </button>
+
+          <p className="mt-3 flex items-center justify-center gap-2 text-xs font-medium" style={{ color: "var(--dn-t4)" }}>
+            <Lock size={14} />
+            Your files are secure and private
+          </p>
+        </div>
       </aside>
 
       {previewPage && (
@@ -282,38 +370,15 @@ export function FilePreviewPanel({
             </div>
             <div style={{ maxHeight: "calc(92vh - 68px)", overflow: "auto", background: "var(--dn-bg-subtle)", padding: "1rem" }}>
               {previewPage.thumbnail ? (
-                <img src={previewPage.thumbnail} alt={`${previewPage.fileName} page ${previewPage.pageNumber}`} style={{ display: "block", width: "100%", height: "auto", background: "#fff", borderRadius: 12 }} />
+                <img src={previewPage.thumbnail} alt={`${previewPage.fileName} page ${previewPage.pageNumber}`} style={{ display: "block", width: "100%", height: "auto", background: "var(--dn-bg-card)", borderRadius: 12 }} />
               ) : (
-                <div style={{ minHeight: 520, borderRadius: 12, background: "#fff", display: "grid", placeItems: "center", color: "#94a3b8", fontWeight: 850 }}>Preview still generating...</div>
+                <div style={{ minHeight: 520, borderRadius: 12, background: "var(--dn-bg-card)", display: "grid", placeItems: "center", color: "var(--dn-t4)", fontWeight: 850 }}>Preview still generating...</div>
               )}
             </div>
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-function ToolbarButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        border: "1px solid var(--dn-badge-bd)",
-        background: "var(--dn-badge-bg)",
-        color: "var(--dn-badge-text)",
-        borderRadius: 999,
-        padding: "0.42rem 0.72rem",
-        fontSize: "0.74rem",
-        fontWeight: 750,
-        cursor: "pointer",
-        fontFamily: "'Inter', sans-serif",
-        boxShadow: "0 0 18px rgba(37,99,235,0.12)",
-      }}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -328,19 +393,36 @@ function IconButton({ children, label, onClick, danger }: { children: React.Reac
         onClick();
       }}
       style={{
-        width: 28,
-        height: 28,
-        border: "none",
-        borderRadius: 8,
+        width: 32,
+        height: 32,
+        border: "1px solid var(--dn-border)",
+        borderRadius: "8px",
         display: "grid",
         placeItems: "center",
-        background: danger ? "rgba(239,68,68,0.12)" : "rgba(148,163,184,0.12)",
-        color: danger ? "#f87171" : "var(--dn-t3)",
+        background: danger ? "rgba(239,68,68,0.1)" : "var(--dn-bg-subtle)",
+        color: danger ? "#f87171" : "var(--dn-t2)",
         cursor: "pointer",
       }}
+      className="hover:bg-blue-500/10 transition-all duration-200"
     >
       {children}
     </button>
+  );
+}
+
+function InsertZone({ onInsert }: { onInsert: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200 group h-[400px] w-12 z-10 -mx-6">
+      <div className="w-0.5 h-[80%] bg-blue-100 group-hover:bg-blue-400 transition-colors relative rounded-full">
+        <button
+          onClick={onInsert}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-md shadow-blue-500/20 transition-transform hover:scale-110"
+          title="Insert File Here"
+        >
+          <Plus size={18} strokeWidth={3} />
+        </button>
+      </div>
+    </div>
   );
 }
 

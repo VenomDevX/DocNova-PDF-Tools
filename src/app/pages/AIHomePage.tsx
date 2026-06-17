@@ -353,14 +353,32 @@ function AIFooter() {
             }}>
               {col.title}
             </h4>
-            {col.links.map((link) => (
-              <a
-                key={link} href="#"
-                style={{ color: "var(--dn-footer-link)", textDecoration: "none", fontSize: "0.875rem", transition: "color 0.15s" }}
-              >
-                {link}
-              </a>
-            ))}
+            {col.links.map((link) => {
+              const routeMap: Record<string, string> = {
+                "Features": "/tools",
+                "Pricing": "/pricing",
+                "About Us": "/about",
+                "Contact Support": "/contact",
+                "Privacy Policy": "/privacy",
+                "Terms of Service": "/terms",
+              };
+              const route = routeMap[link];
+              const linkStyle = { color: "var(--dn-footer-link)", textDecoration: "none", fontSize: "0.875rem", transition: "color 0.15s" } as const;
+              return route ? (
+                <Link key={link} to={route} style={linkStyle}>{link}</Link>
+              ) : (
+                <button
+                  key={link}
+                  type="button"
+                  disabled
+                  title="Coming soon"
+                  style={{ ...linkStyle, background: "transparent", border: "none", padding: 0, textAlign: "left", opacity: 0.55, cursor: "not-allowed", display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  {link}
+                  <span style={{ fontSize: "0.5rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", padding: "1px 4px", borderRadius: 3, background: "var(--dn-footer-icon-bg)", color: "var(--dn-footer-text)" }}>Soon</span>
+                </button>
+              );
+            })}
             {col.title === "Legal" && (
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                 <ShieldCheck size={20} color="var(--dn-footer-text)" style={{ cursor: "pointer" }} />

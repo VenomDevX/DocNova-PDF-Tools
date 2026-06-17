@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type React from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -9,6 +8,7 @@ import {
   CheckCircle2,
   Copy,
   Download,
+  MoreVertical,
   Eye,
   FileArchive,
   FileSpreadsheet,
@@ -29,14 +29,97 @@ import {
   X,
   ZoomIn,
   ZoomOut,
+  Grid2X2,
+  List,
+  ChevronDown,
+  CornerDownRight,
+  Lock,
+  ArrowRight,
+  Type,
+  Crop,
+  Eraser,
+  Undo2,
+  Redo2,
+  Minus,
+  Hand,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Bold,
+  Italic,
+  Underline,
+  PenLine,
+  Highlighter,
+  Droplet,
+  Shield,
+  Hash,
+  Unlock,
+  KeyRound,
+  ShieldOff,
+  ShieldCheck,
+  EyeOff,
+  Eye as EyeIcon,
+  ScanLine,
 } from "lucide-react";
 import { categoryMeta, ocrLanguages, type Tool } from "../../data/tools";
 import { pdfApi } from "../../../services/pdfApi";
+import { ProcessingOverlay } from "./ProcessingOverlay";
 import { resetDocNovaState } from "../../../lib/resetDocNovaState";
 import { getFriendlyErrorMessage } from "../../../utils/errorHandler";
+import {
+  CheckBox as OrganizeCheckBox,
+  AddMoreFilesTile as OrganizeAddMoreFilesTile,
+  DetailRow as OrganizeDetailRow,
+  Label as OrganizeLabel,
+  PageCard as OrganizePageCard,
+  RadioRow as OrganizeRadioRow,
+  Select as OrganizeSelect,
+  ToggleRow as OrganizeToggleRow,
+  ToolbarButton as OrganizeToolbarButton,
+} from "./OrganizeComponents";
 
 type WorkflowStatus = "idle" | "processing" | "done" | "error";
 type PreviewKind = "pdf" | "image" | "document" | "spreadsheet" | "presentation" | "text" | "generic";
+const singleFileConversionTools = new Set([
+  "pdf-to-word",
+  "word-to-pdf",
+  "pdf-to-excel",
+  "excel-to-pdf",
+  "pdf-to-powerpoint",
+  "powerpoint-to-pdf",
+  "pdf-to-jpg",
+  "jpg-to-pdf",
+  "png-to-pdf",
+  "pdf-to-images",
+  "image-to-pdf",
+]);
+const pdfEditorWorkspaceTools = new Set([
+  "edit-pdf",
+  "annotate-pdf",
+  "add-text",
+  "add-image-to-pdf",
+  "highlight-text",
+  "draw-on-pdf",
+  "crop-pdf",
+  "redact-pdf",
+  "add-watermark",
+  "add-page-numbers",
+]);
+
+const secureWorkspaceTools = new Set([
+  "lock-pdf",
+  "unlock-pdf",
+  "protect-pdf",
+  "remove-password",
+  "encrypt-pdf",
+  "decrypt-pdf",
+]);
+
+const ocrWorkspaceTools = new Set([
+  "pdf-ocr",
+  "image-ocr",
+]);
 
 export interface PreviewItem {
   id: string;
@@ -48,6 +131,7 @@ export interface PreviewItem {
   thumbnail?: string;
   text?: string;
   rows?: string[][];
+  rotation?: number;
 }
 
 interface WorkflowFile {
@@ -99,9 +183,24 @@ type ToolSettings = {
   fitMode: string;
   ocrLang: string;
   ocrOutput: string;
+  ocrRecognizeText: boolean;
+  ocrSearchablePdf: boolean;
+  ocrImageEnhancement: boolean;
+  ocrAutoRotate: boolean;
+  ocrTextDetectionMode: string;
   editTool: string;
+  editorLayers: string;
   watermarkText: string;
   password: string;
+  confirmPassword: string;
+  ownerPassword: string;
+  encryptionStrength: string;
+  encryptionMethod: string;
+  allowPrinting: boolean;
+  allowCopying: boolean;
+  allowEditing: boolean;
+  allowComments: boolean;
+  outputFileName: string;
 };
 
 const defaultSettings: ToolSettings = {
@@ -111,7 +210,7 @@ const defaultSettings: ToolSettings = {
   rotation: "90",
   rotationScope: "selected",
   compression: "medium",
-  conversionMode: "selected",
+  conversionMode: "all",
   preserveLayout: true,
   extractMode: "tables",
   oneSheetPerPage: true,
@@ -123,9 +222,24 @@ const defaultSettings: ToolSettings = {
   fitMode: "fit-page",
   ocrLang: "eng",
   ocrOutput: "txt",
+  ocrRecognizeText: true,
+  ocrSearchablePdf: true,
+  ocrImageEnhancement: true,
+  ocrAutoRotate: true,
+  ocrTextDetectionMode: "auto",
   editTool: "text",
+  editorLayers: "[]",
   watermarkText: "DocNova",
   password: "",
+  confirmPassword: "",
+  ownerPassword: "",
+  encryptionStrength: "AES-256",
+  encryptionMethod: "password",
+  allowPrinting: true,
+  allowCopying: false,
+  allowEditing: false,
+  allowComments: true,
+  outputFileName: "",
 };
 
 const panelStyle: React.CSSProperties = {
@@ -150,6 +264,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
   const [isDraggingUpload, setIsDraggingUpload] = useState(false);
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [draggingQueueId, setDraggingQueueId] = useState<string | null>(null);
+  const [organizerViewMode, setOrganizerViewMode] = useState<"grid" | "list">("grid");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const catMeta = categoryMeta[tool.category];
@@ -194,6 +309,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
             label: `Page ${pageNumber}`,
             kind: "pdf" as PreviewKind,
             thumbnail: firstImage ? `data:image/jpeg;base64,${firstImage.image}` : undefined,
+            rotation: 0,
           };
         });
 
@@ -263,6 +379,11 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     setStatus("idle");
     setReplaceTargetId(null);
     setSelectionOrder(prev => prev.filter(id => !replacedItemIds.has(id)));
+    const outputNameFiles = replaceId ? [nextFiles[0]] : acceptsMultiple ? [...files, ...nextFiles] : nextFiles;
+    setSettings(prev => ({
+      ...prev,
+      outputFileName: defaultOutputBaseName(tool, outputNameFiles),
+    }));
     setFiles(prev => {
       const base = replaceId ? prev.filter(file => file.id !== replaceId) : acceptsMultiple ? prev : [];
       return [...base, ...nextFiles];
@@ -278,10 +399,10 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
       const { sourceFileUrl, sourceFileName } = location.state;
       // Properly clear location.state using React Router instead of breaking history
       navigate(location.pathname, { replace: true, state: {} });
-      
+
       setStatus("processing");
       setProcessingLabel("Loading file...");
-      
+
       fetch(sourceFileUrl)
         .then(res => {
           if (!res.ok) throw new Error("Failed to load previous file");
@@ -346,6 +467,63 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     setSelectionOrder(allItems.filter(item => !current.has(item.id)).map(item => item.id));
   };
 
+  const addMoreFiles = useCallback(() => {
+    setReplaceTargetId(null);
+    inputRef.current?.click();
+  }, []);
+
+  const deleteSelectedItems = useCallback(() => {
+    const toDelete = new Set(selectionOrder);
+    setFiles(prev => prev.map(f => ({
+      ...f,
+      items: f.items.filter(item => !toDelete.has(item.id))
+    })).filter(f => f.items.length > 0));
+    setSelectionOrder([]);
+    resetOutput(output);
+    setOutput(null);
+  }, [selectionOrder, output]);
+
+  const duplicateSelectedItems = useCallback(() => {
+    const toDuplicate = new Set(selectionOrder);
+    setFiles(prev => prev.map(f => {
+      const newItems = [...f.items];
+      let insertOffset = 1;
+      f.items.forEach((item, index) => {
+        if (toDuplicate.has(item.id)) {
+          const clone = { ...item, id: item.id + '-copy-' + Math.random().toString(36).substr(2, 5) };
+          newItems.splice(index + insertOffset, 0, clone);
+          insertOffset++;
+        }
+      });
+      return { ...f, items: newItems };
+    }));
+    resetOutput(output);
+    setOutput(null);
+  }, [selectionOrder, output]);
+
+  const rotateSelectedItems = useCallback((degrees: string) => {
+    const add = parseInt(degrees, 10);
+    if (!Number.isFinite(add) || selectionOrder.length === 0) return;
+    const selected = new Set(selectionOrder);
+    const normalizeRotation = (value: number) => ((value % 360) + 360) % 360;
+    const firstSelectedRotation = selectedItems[0]?.rotation || 0;
+    const nextRotation = normalizeRotation(firstSelectedRotation + add);
+
+    setFiles(prev => prev.map(file => ({
+      ...file,
+      items: file.items.map(item => selected.has(item.id) ? {
+        ...item,
+        rotation: normalizeRotation((item.rotation || 0) + add),
+      } : item),
+    })));
+
+    if (tool.id === "rotate-pdf") {
+      setSettings(prev => ({ ...prev, rotation: String(nextRotation) }));
+    }
+    resetOutput(output);
+    setOutput(null);
+  }, [selectionOrder, selectedItems, output, tool.id]);
+
   const removeQueueItem = (id: string) => setSelectionOrder(prev => prev.filter(itemId => itemId !== id));
 
   const dropOnQueueItem = (targetId: string) => {
@@ -375,12 +553,17 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     setOutput(null);
   };
 
-  const handleProcess = async () => {
+  const handleProcess = async (settingsOverride?: Partial<ToolSettings> | React.MouseEvent) => {
+    const immediateSettings = settingsOverride && !("preventDefault" in settingsOverride)
+      ? settingsOverride as Partial<ToolSettings>
+      : {};
+    const effectiveSettings = { ...settings, ...immediateSettings };
+
     if (files.length === 0) {
       setErrorMsg("Upload a file first.");
       return;
     }
-    if (tool.hasPassword && !settings.password.trim()) {
+    if (tool.hasPassword && !effectiveSettings.password.trim()) {
       setErrorMsg("Enter the password first.");
       return;
     }
@@ -404,24 +587,44 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
       await animateProgress(setProgress, 8, 28, 320);
       setProcessingLabel("Applying settings");
       await animateProgress(setProgress, 28, 48, 280);
-      const processed = await processTool(tool, files, selectedItems, settings, setProcessingLabel);
+      const processed = await processTool(tool, files, selectedItems, effectiveSettings, setProcessingLabel);
+      const customOutputName = buildOutputFileName(effectiveSettings.outputFileName, processed.downloadName);
+      const namedProcessed = {
+        ...processed,
+        downloadName: customOutputName,
+        items: processed.items.map((item, index) => index === 0 ? { ...item, name: customOutputName } : item),
+      };
       setProcessingLabel("Generating output preview");
-      const resultJob = await pdfApi.createResultJob(processed.downloadBlob, {
-        outputFileName: processed.downloadName,
+      const resultJob = await pdfApi.createResultJob(namedProcessed.downloadBlob, {
+        outputFileName: namedProcessed.downloadName,
         toolType: tool.id,
         toolLabel: tool.label,
         outputFormat: tool.outputFormat,
-        summary: processed.summary,
-        items: processed.items.map(item => ({
+        summary: namedProcessed.summary,
+        items: namedProcessed.items.map(item => ({
           name: item.name,
           size: item.size,
           kind: item.kind,
         })),
       });
-      resetOutput(processed);
+
+      let loadedPreview = null;
+      try {
+        setProcessingLabel("Finalizing document preview");
+        loadedPreview = resultJob.kind === "pdf"
+          ? await pdfApi.getResultPreview(resultJob.jobId, { pageRange: `1-${Math.min(4, Math.max(resultJob.pageCount, 1))}` })
+          : await pdfApi.getResultPreview(resultJob.jobId);
+      } catch (e) {}
+
+      resetOutput(namedProcessed);
       await animateProgress(setProgress, 78, 100, 350);
       setStatus("done");
-      navigate(`/result/${resultJob.jobId}`);
+      navigate(`/result/${resultJob.jobId}`, {
+        state: {
+          preloadedJob: resultJob,
+          preloadedPreview: loadedPreview
+        }
+      });
     } catch (error) {
       setStatus("error");
       setProgress(0);
@@ -437,629 +640,3748 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     pdfApi.downloadBlob(output.downloadBlob, output.downloadName);
   };
 
+  const isOrganizerWorkspace = files.length > 0 && tool.category === "organize";
+  const isSingleFileConversionWorkspace = files.length === 1 && singleFileConversionTools.has(tool.id);
+  const isPdfEditorWorkspace = files.length > 0 && pdfEditorWorkspaceTools.has(tool.id);
+  const isSecureWorkspace = files.length === 1 && secureWorkspaceTools.has(tool.id);
+  const isOcrWorkspace = files.length === 1 && ocrWorkspaceTools.has(tool.id);
+  const isViewportLockedWorkspace = isSingleFileConversionWorkspace || isPdfEditorWorkspace || isSecureWorkspace || isOcrWorkspace;
+  const isLoadedWorkspace = isOrganizerWorkspace || isSingleFileConversionWorkspace || isPdfEditorWorkspace || isSecureWorkspace || isOcrWorkspace;
+  const updateOrganizerSettings = useCallback((patch: Partial<ToolSettings>) => {
+    resetOutput(output);
+    setOutput(null);
+    setSettings(prev => ({ ...prev, ...patch }));
+  }, [output]);
+
+  const renderOrganizerSettings = () => {
+    if (tool.id === "split-pdf") {
+      return (
+        <div>
+          <OrganizeLabel>Split mode</OrganizeLabel>
+          <OrganizeRadioRow checked={settings.splitMode === "every"} label="Split into individual pages" onClick={() => updateOrganizerSettings({ splitMode: "every" })} />
+          <OrganizeRadioRow checked={settings.splitMode === "selected"} label="Extract selected pages" onClick={() => updateOrganizerSettings({ splitMode: "selected" })} />
+          <OrganizeRadioRow checked={settings.splitMode === "range"} label="Use page range" onClick={() => updateOrganizerSettings({ splitMode: "range" })} />
+          {settings.splitMode === "range" && (
+            <input
+              type="text"
+              value={settings.pageRange}
+              placeholder="1-3, 5, 8-10"
+              onChange={event => updateOrganizerSettings({ pageRange: event.target.value })}
+              className="mt-3 h-9 w-full rounded-md border px-3 text-sm outline-none"
+              style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    if (tool.id === "rotate-pdf") {
+      return (
+        <div className="space-y-4">
+          <div>
+            <OrganizeLabel>Rotation</OrganizeLabel>
+            <OrganizeRadioRow checked={settings.rotation === "270"} label="90 degrees left" onClick={() => updateOrganizerSettings({ rotation: "270" })} />
+            <OrganizeRadioRow checked={settings.rotation === "90"} label="90 degrees right" onClick={() => updateOrganizerSettings({ rotation: "90" })} />
+            <OrganizeRadioRow checked={settings.rotation === "180"} label="180 degrees" onClick={() => updateOrganizerSettings({ rotation: "180" })} />
+          </div>
+          <div>
+            <OrganizeLabel>Apply to</OrganizeLabel>
+            <OrganizeRadioRow checked={settings.rotationScope === "selected"} label="Selected pages" onClick={() => updateOrganizerSettings({ rotationScope: "selected" })} />
+            <OrganizeRadioRow checked={settings.rotationScope === "all"} label="All pages" onClick={() => updateOrganizerSettings({ rotationScope: "all" })} />
+          </div>
+        </div>
+      );
+    }
+
+    if (tool.id === "delete-pages") {
+      return (
+        <div>
+          <OrganizeLabel>Delete mode</OrganizeLabel>
+          <OrganizeRadioRow checked label="Remove selected pages" />
+          <p className="mt-3 rounded-md border px-3 py-2 text-xs leading-relaxed" style={{ borderColor: "rgba(248,113,113,0.28)", background: "rgba(248,113,113,0.08)", color: "#fca5a5" }}>
+            Select pages in the canvas, then process to remove them from the final PDF.
+          </p>
+        </div>
+      );
+    }
+
+    if (tool.id === "reorder-pages") {
+      return (
+        <div>
+          <OrganizeLabel>Reorder mode</OrganizeLabel>
+          <OrganizeRadioRow checked label="Use current page order" />
+          <OrganizeRadioRow checked={false} label="Keep original file grouping" />
+        </div>
+      );
+    }
+
+    if (tool.id === "extract-pages") {
+      return (
+        <div>
+          <OrganizeLabel>Extract mode</OrganizeLabel>
+          <OrganizeRadioRow checked={settings.conversionMode === "selected"} label="Selected pages only" onClick={() => updateOrganizerSettings({ conversionMode: "selected" })} />
+          <OrganizeRadioRow checked={settings.conversionMode === "all"} label="All pages" onClick={() => updateOrganizerSettings({ conversionMode: "all" })} />
+        </div>
+      );
+    }
+
+    if (tool.id === "insert-pages") {
+      return (
+        <div>
+          <OrganizeLabel>Insert mode</OrganizeLabel>
+          <OrganizeRadioRow checked label="Insert selected pages in canvas order" />
+          <OrganizeRadioRow checked={false} label="Append after existing pages" />
+        </div>
+      );
+    }
+
+    if (tool.id === "resize-pdf") {
+      return (
+        <div className="space-y-4">
+          <div>
+            <OrganizeLabel>Page size</OrganizeLabel>
+            <OrganizeRadioRow checked={settings.pageSize === "A4"} label="A4" onClick={() => updateOrganizerSettings({ pageSize: "A4" })} />
+            <OrganizeRadioRow checked={settings.pageSize === "Letter"} label="Letter" onClick={() => updateOrganizerSettings({ pageSize: "Letter" })} />
+            <OrganizeRadioRow checked={settings.pageSize === "Legal"} label="Legal" onClick={() => updateOrganizerSettings({ pageSize: "Legal" })} />
+          </div>
+          <div>
+            <OrganizeLabel>Orientation</OrganizeLabel>
+            <OrganizeRadioRow checked={settings.orientation === "portrait"} label="Portrait" onClick={() => updateOrganizerSettings({ orientation: "portrait" })} />
+            <OrganizeRadioRow checked={settings.orientation === "landscape"} label="Landscape" onClick={() => updateOrganizerSettings({ orientation: "landscape" })} />
+          </div>
+        </div>
+      );
+    }
+
+    if (tool.id === "compress-pdf") {
+      return (
+        <div>
+          <OrganizeLabel>Compression</OrganizeLabel>
+          <OrganizeRadioRow checked={settings.compression === "low"} label="Low compression, best quality" onClick={() => updateOrganizerSettings({ compression: "low" })} />
+          <OrganizeRadioRow checked={settings.compression === "medium"} label="Balanced compression" onClick={() => updateOrganizerSettings({ compression: "medium" })} />
+          <OrganizeRadioRow checked={settings.compression === "high"} label="High compression, smaller file" onClick={() => updateOrganizerSettings({ compression: "high" })} />
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <OrganizeLabel>Mode</OrganizeLabel>
+        <OrganizeRadioRow checked label={tool.action} />
+      </div>
+    );
+  };
+
+  const workflowShellStyle: React.CSSProperties = {
+    color: "var(--dn-t1)",
+    paddingTop: isLoadedWorkspace ? "0" : "48px",
+    minHeight: isViewportLockedWorkspace ? "calc(100vh - 60px)" : isLoadedWorkspace ? "calc(100vh - 60px)" : "100vh",
+    height: isViewportLockedWorkspace ? "calc(100vh - 60px)" : undefined,
+    overflow: isViewportLockedWorkspace ? "hidden" : undefined,
+    background: "var(--dn-bg)",
+    transition: "var(--dn-transition)",
+    fontFamily: "'Inter', sans-serif",
+    position: "relative",
+  };
+  const workflowContentStyle: React.CSSProperties = isOrganizerWorkspace
+    ? { maxWidth: "none", margin: 0, padding: 0, position: "relative", zIndex: 10, height: "calc(100vh - 60px)", display: "flex", flexDirection: "column" }
+    : isViewportLockedWorkspace
+      ? { width: "100%", maxWidth: "none", margin: 0, padding: 0, position: "relative", zIndex: 10, height: "calc(100vh - 60px)", overflow: "hidden" }
+      : { width: "100%", maxWidth: "none", margin: 0, padding: "2rem 1.5rem", position: "relative", zIndex: 10 };
+
   return (
-    <div style={{ color: "var(--dn-t1)", paddingTop: "60px", minHeight: "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif", position: "relative" }}>
-      {/* Background Blobs (Dark Mode Only) */}
+    <div style={workflowShellStyle}>
+      {status === "processing" && (
+        <ProcessingOverlay
+          title={`${tool.action} document...`}
+          description="Applying AI operations and generating your output. This may take a few moments."
+          progressMessage="Processing Output"
+          files={files}
+        />
+      )}
       <div className="dn-dark-blobs fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#2563eb]/15 rounded-full blur-[100px] animate-[drift1_25s_ease-in-out_infinite]"></div>
         <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#0267b8]/15 rounded-full blur-[120px] animate-[drift2_30s_ease-in-out_infinite_reverse]"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#b4c5ff]/5 rounded-full blur-[150px] animate-[drift1_40s_ease-in-out_infinite]"></div>
       </div>
 
-      <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "1.5rem 1.5rem 2rem", position: "relative", zIndex: 10 }}>
+      <div style={workflowContentStyle}>
         <style>{`
           ::-webkit-scrollbar { display: none !important; }
           * { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+          ${isViewportLockedWorkspace ? `
+          .dn-main-wrap {
+            height: 100vh !important;
+            min-height: 100vh !important;
+            overflow: hidden !important;
+          }
+          .dn-main-wrap > footer {
+            display: none !important;
+          }
+          ` : ""}
+          .document-viewer,
+          .settings-content,
+          .thumbnail-scroll {
+            -ms-overflow-style: auto !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: var(--dn-convert-scroll-thumb) var(--dn-convert-scroll-track) !important;
+            --dn-convert-scroll-thumb: rgba(100, 116, 139, 0.5);
+            --dn-convert-scroll-track: rgba(226, 232, 240, 0.42);
+          }
+          [data-theme="dark"] .document-viewer,
+          [data-theme="dark"] .settings-content,
+          [data-theme="dark"] .thumbnail-scroll {
+            --dn-convert-scroll-thumb: rgba(96, 165, 250, 0.58);
+            --dn-convert-scroll-track: rgba(15, 23, 42, 0.5);
+          }
+          html:not([data-theme="light"]) .document-viewer,
+          html:not([data-theme="light"]) .settings-content,
+          html:not([data-theme="light"]) .thumbnail-scroll {
+            --dn-convert-scroll-thumb: rgba(96, 165, 250, 0.58);
+            --dn-convert-scroll-track: rgba(15, 23, 42, 0.5);
+          }
+          .document-viewer::-webkit-scrollbar,
+          .settings-content::-webkit-scrollbar,
+          .thumbnail-scroll::-webkit-scrollbar {
+            display: block !important;
+            width: 8px;
+            height: 8px;
+          }
+          .document-viewer::-webkit-scrollbar-thumb,
+          .settings-content::-webkit-scrollbar-thumb,
+          .thumbnail-scroll::-webkit-scrollbar-thumb {
+            background: var(--dn-convert-scroll-thumb);
+            border: 2px solid var(--dn-convert-scroll-track);
+            border-radius: 999px;
+          }
+          .document-viewer::-webkit-scrollbar-track,
+          .settings-content::-webkit-scrollbar-track,
+          .thumbnail-scroll::-webkit-scrollbar-track {
+            background: var(--dn-convert-scroll-track);
+          }
+          .pdf-editor-scroll {
+            -ms-overflow-style: auto !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(100, 116, 139, 0.42) transparent !important;
+          }
+          .pdf-editor-scroll::-webkit-scrollbar {
+            display: block !important;
+            width: 8px;
+            height: 8px;
+          }
+          .pdf-editor-scroll::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.42);
+            border-radius: 999px;
+          }
+          .pdf-editor-scroll::-webkit-scrollbar-track {
+            background: transparent;
+          }
           @keyframes spin { to { transform: rotate(360deg); } }
           @media (max-width: 980px) {
             .dn-workflow-grid { grid-template-columns: 1fr !important; }
             .dn-sticky-panel { position: static !important; }
           }
           [data-theme="light"] .dn-dark-blobs { display: none; }
-          html:not([data-theme="dark"]) .dn-dark-blobs { display: none; } /* Fallback */
+          html:not([data-theme="dark"]) .dn-dark-blobs { display: none; }
+
+          .thumbnail-item {
+              width: fit-content;
+              margin: 0 auto;
+          }
+          .thumbnail-preview {
+              width: 100%;
+              height: auto;
+              object-fit: contain;
+              border-radius: 8px;
+          }
+          .dn-glassmorphism-button {
+            position: relative;
+            isolation: isolate;
+            overflow: hidden;
+            border-color: rgba(255,255,255,0.12) !important;
+            background: rgba(9,14,28,0.54) !important;
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 30px rgba(0,0,0,0.22);
+          }
+          .dn-glassmorphism-button::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            border-radius: inherit;
+            background: linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.025));
+            opacity: 1;
+            pointer-events: none;
+          }
+          .dn-glassmorphism-button:hover {
+            border-color: rgba(255,255,255,0.18) !important;
+            background: rgba(12,18,34,0.68) !important;
+          }
+          [data-theme="light"] .dn-glassmorphism-button {
+            border-color: rgba(148,163,184,0.24) !important;
+            background: rgba(255,255,255,0.58) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.82), 0 10px 24px rgba(15,23,42,0.12);
+          }
+          .active-thumbnail {
+              box-shadow: 0 0 0 2px #2563eb;
+          }
           @keyframes drift1 {
-              0% { transform: translate(0, 0) scale(1); }
-              33% { transform: translate(5vw, 5vh) scale(1.1); }
-              66% { transform: translate(-2vw, 8vh) scale(0.9); }
-              100% { transform: translate(0, 0) scale(1); }
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(5vw, 5vh) scale(1.1); }
+            66% { transform: translate(-2vw, 8vh) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
           }
           @keyframes drift2 {
-              0% { transform: translate(0, 0) scale(1); }
-              33% { transform: translate(-5vw, -5vh) scale(0.95); }
-              66% { transform: translate(4vw, -2vh) scale(1.05); }
-              100% { transform: translate(0, 0) scale(1); }
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-5vw, -5vh) scale(0.95); }
+            66% { transform: translate(4vw, -2vh) scale(1.05); }
+            100% { transform: translate(0, 0) scale(1); }
           }
         `}</style>
 
-        <Link to={`/${tool.category}`} style={{ textDecoration: "none" }}>
-          <motion.div whileHover={{ x: -3 }} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.875rem", marginBottom: "1.25rem", cursor: "pointer" }}>
-            <ArrowLeft size={15} /> {catMeta.label}
-          </motion.div>
-        </Link>
-
-        <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.25rem" }}>
-          <div style={{ width: 60, height: 60, borderRadius: "4px", background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42`, flexShrink: 0 }}>
-            <tool.icon size={28} color="#fff" />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontSize: "clamp(1.8rem,4vw,2.7rem)", lineHeight: 1.05, fontWeight: 920, margin: 0 }}>{tool.label}</h1>
-            <p style={{ color: "var(--dn-t3)", marginTop: "0.55rem", maxWidth: 760, lineHeight: 1.6 }}>{tool.desc}</p>
-            <p style={{ color: "var(--dn-t4)", fontSize: "0.78rem", marginTop: "0.35rem" }}>
-              Upload, preview, adjust settings, process, preview the final output, then download.
-            </p>
-          </div>
-        </header>
-
-        <section
-          onDrop={event => {
-            event.preventDefault();
-            setIsDraggingUpload(false);
-            addFiles(Array.from(event.dataTransfer.files));
+        <input
+          ref={inputRef}
+          type="file"
+          accept={tool.accepts}
+          multiple={acceptsMultiple && !replaceTargetId}
+          style={{ display: "none" }}
+          onChange={event => {
+            if (event.target.files) addFiles(Array.from(event.target.files), replaceTargetId);
+            event.target.value = "";
           }}
-          onDragOver={event => {
-            event.preventDefault();
-            setIsDraggingUpload(true);
-          }}
-          onDragLeave={() => setIsDraggingUpload(false)}
-          onClick={() => inputRef.current?.click()}
-          style={{
-            minHeight: 168,
-            borderRadius: "4px",
-            border: `2px dashed ${isDraggingUpload ? tool.color : "var(--dn-border2)"}`,
-            background: isDraggingUpload ? `${tool.color}14` : "var(--dn-bg-card)",
-            display: "grid",
-            placeItems: "center",
-            textAlign: "center",
-            cursor: "pointer",
-            boxShadow: "var(--dn-shadow)",
-            marginBottom: "1rem",
-          }}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept={tool.accepts}
-            multiple={acceptsMultiple && !replaceTargetId}
-            style={{ display: "none" }}
-            onChange={event => {
-              if (event.target.files) addFiles(Array.from(event.target.files), replaceTargetId);
-              event.target.value = "";
-            }}
-          />
-          <div>
-            <div style={{ width: 58, height: 58, margin: "0 auto 0.85rem", borderRadius: "4px", display: "grid", placeItems: "center", background: `${tool.color}18`, color: tool.color, boxShadow: `0 0 30px ${tool.color}24` }}>
-              <Upload size={26} />
-            </div>
-            <div style={{ color: "var(--dn-t1)", fontWeight: 800 }}>{isDraggingUpload ? "Drop files here" : `Upload ${tool.label} files`}</div>
-            <div style={{ color: "var(--dn-t4)", fontSize: "0.82rem", marginTop: "0.35rem" }}>
-              {acceptsMultiple ? "Multiple files supported." : "One file at a time."} Accepted: {tool.accepts}
-            </div>
-          </div>
-        </section>
+        />
 
-        <AnimatePresence>
-          {errorMsg && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginBottom: "1rem", padding: "0.85rem 1rem", borderRadius: "4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.22)", color: "#f87171", fontSize: "0.86rem" }}>
-              <AlertCircle size={16} /> <span style={{ flex: 1 }}>{errorMsg}</span>
-              <button type="button" onClick={() => setErrorMsg("")} style={{ border: "none", background: "transparent", color: "#f87171", cursor: "pointer", display: "grid", placeItems: "center" }}>
-                <X size={15} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!isOrganizerWorkspace && (
+          <>
+            {!isSingleFileConversionWorkspace && !isPdfEditorWorkspace && !isSecureWorkspace && !isOcrWorkspace && (
+              <>
+                <Link to={"/" + tool.category} style={{ textDecoration: "none" }}>
+                  <motion.div whileHover={{ x: -3 }} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.875rem", marginBottom: "1.25rem", cursor: "pointer" }}>
+                    <ArrowLeft size={15} /> {catMeta.label}
+                  </motion.div>
+                </Link>
 
-        {files.length > 0 && (
-          <div className="dn-workflow-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 330px", gap: "1rem", alignItems: "start" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <SelectionToolbar
-                selectedCount={selectedItems.length}
-                totalCount={allItems.length}
-                selectedSize={selectedSize}
-                onSelectAll={selectAll}
-                onDeselectAll={clearSelection}
-                onInvert={invertSelection}
-              />
+                <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.25rem" }}>
+                  <div style={{ width: 60, height: 60, borderRadius: "4px", background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: "0 8px 28px " + tool.color + "42", flexShrink: 0 }}>
+                    <tool.icon size={28} color="#fff" />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <h1 style={{ fontSize: "clamp(1.8rem,4vw,2.7rem)", lineHeight: 1.05, fontWeight: 920, margin: 0 }}>{tool.label}</h1>
+                    <p style={{ color: "var(--dn-t3)", marginTop: "0.55rem", maxWidth: 760, lineHeight: 1.6 }}>{tool.desc}</p>
+                  </div>
+                </header>
 
-              <UniversalFilePreview
-                files={files}
-                selectedIds={selectedIds}
-                rotation={tool.id === "rotate-pdf" ? settings.rotation : "0"}
-                onToggleItem={toggleItem}
-                onRemoveFile={removeFile}
-                onReplaceFile={replaceFile}
-                onSelectFile={(fileId) => selectItems(files.find(file => file.id === fileId)?.items || [])}
-                onDeselectFile={(fileId) => deselectItems(files.find(file => file.id === fileId)?.items || [])}
-              />
-
-              {selectedItems.length > 0 && queueTools.has(tool.id) && (
-                <QueuePanel
-                  title={tool.id === "image-to-pdf" || tool.id === "jpg-to-pdf" || tool.id === "png-to-pdf" ? "Image Order" : "Selection Queue"}
-                  items={selectedItems}
-                  draggingId={draggingQueueId}
-                  onDragStart={setDraggingQueueId}
-                  onDropOnItem={dropOnQueueItem}
-                  onRemove={removeQueueItem}
-                />
-              )}
-
-              <ToolSettingsPanel
-                tool={tool}
-                settings={settings}
-                selectedItems={selectedItems}
-                allItems={allItems}
-                files={files}
-                onChange={(patch) => {
-                  resetOutput(output);
-                  setOutput(null);
-                  setSettings(prev => ({ ...prev, ...patch }));
-                }}
-              />
-
-              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-                <motion.button
-                  whileHover={{ scale: 1.02, boxShadow: `0 0 34px ${tool.color}38` }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleProcess}
-                  disabled={status === "processing"}
+                <section
+                  onDrop={event => {
+                    event.preventDefault();
+                    setIsDraggingUpload(false);
+                    addFiles(Array.from(event.dataTransfer.files));
+                  }}
+                  onDragOver={event => {
+                    event.preventDefault();
+                    setIsDraggingUpload(true);
+                  }}
+                  onDragLeave={() => setIsDraggingUpload(false)}
+                  onClick={() => inputRef.current?.click()}
                   style={{
-                    border: "none",
-                    borderRadius: "4px",
-                    background: `linear-gradient(135deg,${tool.color},#60a5fa)`,
-                    color: "#fff",
-                    padding: "0.9rem 1.25rem",
-                    fontWeight: 850,
-                    fontSize: "0.94rem",
-                    cursor: status === "processing" ? "not-allowed" : "pointer",
-                    fontFamily: "'Inter', sans-serif",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.55rem",
+                    minHeight: "clamp(420px, calc(100vh - 320px), 680px)",
+                    borderRadius: "5px",
+                    border: "2px dashed " + (isDraggingUpload ? tool.color : "var(--dn-border2)"),
+                    background: isDraggingUpload ? tool.color + "14" : "var(--dn-bg-card)",
+                    display: "grid",
+                    placeItems: "center",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    boxShadow: "var(--dn-shadow)",
+                    marginBottom: "1rem",
                   }}
                 >
-                  {status === "processing" ? <Loader2 size={17} style={{ animation: "spin 0.8s linear infinite" }} /> : <Settings size={17} />}
-                  {tool.action}
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleReset}
-                  style={{ border: "1px solid var(--dn-border)", borderRadius: "4px", background: "var(--dn-bg-card)", color: "var(--dn-t2)", padding: "0.9rem 1rem", fontWeight: 750, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
-                >
-                  <X size={16} /> Clear
-                </motion.button>
-                <span style={{ color: "var(--dn-t4)", fontSize: "0.8rem" }}>
-                  Download appears after the final output preview.
-                </span>
+                  <div>
+                    <div style={{ width: 58, height: 58, margin: "0 auto 0.85rem", borderRadius: "4px", display: "grid", placeItems: "center", background: tool.color + "18", color: tool.color, boxShadow: "0 0 30px " + tool.color + "24" }}>
+                      <Upload size={26} />
+                    </div>
+                    <div style={{ color: "var(--dn-t1)", fontWeight: 800 }}>{isDraggingUpload ? "Drop files here" : "Upload " + tool.label + " files"}</div>
+                    <div style={{ color: "var(--dn-t4)", fontSize: "0.82rem", marginTop: "0.35rem" }}>
+                      {acceptsMultiple ? "Multiple files supported." : "One file at a time."} Accepted: {tool.accepts}
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
+
+            <AnimatePresence>
+              {errorMsg && (
+                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginBottom: "1rem", padding: "0.85rem 1rem", borderRadius: "4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.22)", color: "#f87171", fontSize: "0.86rem" }}>
+                  <AlertCircle size={16} /> <span style={{ flex: 1 }}>{errorMsg}</span>
+                  <button type="button" onClick={() => setErrorMsg("")} style={{ border: "none", background: "transparent", color: "#f87171", cursor: "pointer", display: "grid", placeItems: "center" }}>
+                    <X size={15} />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {files.length > 0 && (
+              isPdfEditorWorkspace ? (
+                <PdfEditorPreviewWorkspace
+                  tool={tool}
+                  file={files[0]}
+                  items={allItems}
+                  status={status}
+                  onSave={handleProcess}
+                  onClear={handleReset}
+                  onSettingsChange={updateOrganizerSettings}
+                />
+              ) : isSecureWorkspace ? (
+                <SecurePdfWorkspace
+                  tool={tool}
+                  file={files[0]}
+                  items={allItems}
+                  settings={settings}
+                  status={status}
+                  onSettingsChange={updateOrganizerSettings}
+                  onProcess={handleProcess}
+                  onClear={handleReset}
+                />
+              ) : isOcrWorkspace ? (
+                <OcrWorkspace
+                  tool={tool}
+                  file={files[0]}
+                  items={allItems}
+                  settings={settings}
+                  status={status}
+                  onSettingsChange={updateOrganizerSettings}
+                  onProcess={handleProcess}
+                  onClear={handleReset}
+                />
+              ) : isSingleFileConversionWorkspace ? (
+                <SingleFileConversionPreview
+                  tool={tool}
+                  file={files[0]}
+                  items={allItems}
+                  settings={settings}
+                  status={status}
+                  onSettingsChange={updateOrganizerSettings}
+                  onConvert={handleProcess}
+                />
+              ) : (
+                <section style={{ ...panelStyle, borderRadius: "4px", padding: "1rem", display: "grid", gap: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ color: "var(--dn-t1)", fontWeight: 850 }}>{files.length} file(s) ready</div>
+                      <div style={{ color: "var(--dn-t4)", fontSize: "0.78rem", marginTop: "0.2rem" }}>{selectedItems.length}/{allItems.length || 0} preview items selected</div>
+                    </div>
+                    <button type="button" onClick={handleReset} style={{ border: "1px solid var(--dn-border)", borderRadius: "4px", background: "var(--dn-bg-card)", color: "var(--dn-t2)", padding: "0.72rem 0.9rem", fontWeight: 750, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                      <X size={16} /> Clear
+                    </button>
+                  </div>
+
+                  <div style={{ display: "grid", gap: "0.55rem" }}>
+                    {files.map(file => (
+                      <div key={file.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", borderRadius: "4px", padding: "0.75rem" }}>
+                        <FileKindIcon kind={file.kind} />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ color: "var(--dn-t1)", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</div>
+                          <div style={{ color: "var(--dn-t4)", fontSize: "0.72rem" }}>{formatBytes(file.size)} - {file.loading ? "Preparing preview" : file.items.length + " item(s)"}</div>
+                        </div>
+                        <IconButton label="Remove file" onClick={() => removeFile(file.id)} danger>
+                          <Trash2 size={14} />
+                        </IconButton>
+                      </div>
+                    ))}
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleProcess}
+                    disabled={status === "processing"}
+                    style={{ border: "none", borderRadius: "4px", background: "linear-gradient(135deg," + tool.color + ",#60a5fa)", color: "#fff", padding: "0.9rem 1.25rem", fontWeight: 850, fontSize: "0.94rem", cursor: status === "processing" ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.55rem" }}
+                  >
+                    {status === "processing" ? <Loader2 size={17} style={{ animation: "spin 0.8s linear infinite" }} /> : <Settings size={17} />}
+                    {tool.action}
+                  </motion.button>
+
+                  {output && <OutputPreviewPanel tool={tool} output={output} onDownload={handleDownload} />}
+                </section>
+              )
+            )}
+          </>
+        )}
+
+        {isOrganizerWorkspace && (
+          <div className="flex flex-1 w-full overflow-hidden bg-transparent" style={{ color: "var(--dn-t1)" }}>
+            {/* Main Center */}
+            <section className="flex min-w-0 flex-1 flex-col bg-transparent">
+              {/* Header */}
+              <div className="flex h-16 flex-shrink-0 items-center gap-4 px-6">
+                <div className="flex h-9 w-9 items-center justify-center rounded border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>
+                  <tool.icon size={20} />
+                </div>
+                <div className="flex min-w-0 items-baseline gap-3">
+                  <h1 className="truncate text-lg font-semibold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
+                  <span className="text-sm font-medium text-blue-500">{files.length} files selected</span>
+                </div>
               </div>
 
-              {output && (
-                <OutputPreviewPanel
-                  tool={tool}
-                  output={output}
-                  onDownload={handleDownload}
-                />
-              )}
-            </div>
+              {/* Toolbar */}
+              <div className="flex h-auto min-h-14 flex-shrink-0 items-center justify-between gap-4 px-6 py-2 border-b" style={{ borderColor: "var(--dn-border)" }}>
+                <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto">
+                  <OrganizeToolbarButton icon={<OrganizeCheckBox checked={selectedItems.length === allItems.length && allItems.length > 0} />} text="Select all" onClick={selectedItems.length === allItems.length ? clearSelection : selectAll} />
+                  <div className="mx-1 h-6 w-px" style={{ background: "var(--dn-border)" }} />
+                  <OrganizeToolbarButton icon={<Plus size={17} />} text="Add files" dropdown onClick={addMoreFiles} />
+                  <div className="mx-1 h-6 w-px" style={{ background: "var(--dn-border)" }} />
+                  <OrganizeToolbarButton icon={<RotateCcw size={17} />} text="Rotate left" disabled={selectedItems.length === 0} onClick={() => rotateSelectedItems("-90")} />
+                  <OrganizeToolbarButton icon={<RotateCw size={17} />} text="Rotate right" disabled={selectedItems.length === 0} onClick={() => rotateSelectedItems("90")} />
+                  <OrganizeToolbarButton icon={<Copy size={17} />} text="Duplicate" disabled={selectedItems.length === 0} onClick={duplicateSelectedItems} />
+                  <OrganizeToolbarButton icon={<Trash2 size={17} />} text="Delete" muted={selectedItems.length === 0} disabled={selectedItems.length === 0} onClick={deleteSelectedItems} />
+                </div>
 
-            <aside className="dn-sticky-panel" style={{ ...panelStyle, borderRadius: "4px", padding: "1rem", position: "sticky", top: 96 }}>
-              <WorkflowSteps status={status} hasFiles={files.length > 0} hasSelection={selectedItems.length > 0} hasOutput={!!output} />
-              <div style={{ height: 1, background: "var(--dn-border)", margin: "1rem 0" }} />
-              <div style={{ display: "grid", gap: "0.7rem" }}>
-                <Stat label="Files" value={String(files.length)} />
-                <Stat label="Selected" value={`${selectedItems.length}/${allItems.length || 0}`} />
-                <Stat label="Estimated output" value={formatBytes(selectedSize || files.reduce((sum, file) => sum + file.size, 0))} />
-                <Stat label="Backend" value={tool.backendLib || "DocNova engine"} />
+                <div className="flex flex-shrink-0 items-center gap-4">
+                  <button type="button" className="flex items-center gap-2 text-sm" style={{ color: "var(--dn-t3)" }}>
+                    Sort: <span className="font-medium" style={{ color: "var(--dn-t1)" }}>Custom</span> <ChevronDown size={15} />
+                  </button>
+
+                  <div className="flex overflow-hidden rounded-md border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)" }}>
+                    <button
+                      type="button"
+                      aria-label="List view"
+                      title="List view"
+                      onClick={() => setOrganizerViewMode("list")}
+                      className="p-2 transition"
+                      style={{ color: organizerViewMode === "list" ? "#3b82f6" : "var(--dn-t4)", background: organizerViewMode === "list" ? "rgba(59,130,246,0.1)" : "transparent" }}
+                    >
+                      <List size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Grid view"
+                      title="Grid view"
+                      onClick={() => setOrganizerViewMode("grid")}
+                      className="p-2 transition"
+                      style={{ color: organizerViewMode === "grid" ? "#3b82f6" : "var(--dn-t4)", background: organizerViewMode === "grid" ? "rgba(59,130,246,0.1)" : "transparent" }}
+                    >
+                      <Grid2X2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pages Grid */}
+              <div className="custom-scrollbar flex-1 overflow-y-auto p-6 md:p-8">
+                {files.map((file, fileIndex) => (
+                  <div key={file.id} className="mb-8">
+                    <div className="mb-5 flex items-start gap-2">
+                      <CornerDownRight size={18} color="#2563eb" className="mt-1 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <h2 className="truncate text-sm font-medium" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
+                        <p className="mt-0.5 text-xs font-medium text-blue-500">{file.loading ? "Generating preview..." : file.items.length + " pages"}</p>
+                      </div>
+                    </div>
+
+                    {organizerViewMode === "grid" ? (
+                      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        {file.items.map((item, itemIdx) => (
+                          <OrganizePageCard
+                            key={item.id}
+                            page={{
+                              id: item.id,
+                              label: item.label,
+                              fileName: file.name,
+                              pageNumber: item.index + 1,
+                              totalPages: file.items.length,
+                              thumbnail: item.thumbnail,
+                              rotation: item.rotation || 0,
+                            }}
+                            selected={selectedIds.has(item.id)}
+                            onToggle={() => toggleItem(item)}
+                            isFirst={itemIdx === 0}
+                          />
+                        ))}
+                        {fileIndex === files.length - 1 && (
+                          <OrganizeAddMoreFilesTile
+                            onClick={() => inputRef.current?.click()}
+                            referenceThumbnail={file.items[file.items.length - 1]?.thumbnail}
+                            referenceRotation={file.items[file.items.length - 1]?.rotation || 0}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {file.items.map((item, itemIdx) => {
+                          const selected = selectedIds.has(item.id);
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => toggleItem(item)}
+                              className="group flex min-h-20 w-full items-center gap-4 rounded-md px-3 py-2 text-left transition-colors"
+                              style={{
+                                border: selected ? "1px solid #2563eb" : "1px solid var(--dn-border)",
+                                background: selected ? "rgba(37,99,235,0.14)" : "rgba(255,255,255,0.02)",
+                                color: "var(--dn-t1)",
+                              }}
+                            >
+                              <OrganizeCheckBox checked={selected} />
+                              <div className="grid h-16 w-12 flex-shrink-0 place-items-center overflow-hidden rounded-[4px]" style={{ background: item.thumbnail ? "#fff" : "var(--dn-bg-subtle)" }}>
+                                {item.thumbnail ? (
+                                  <img
+                                    src={item.thumbnail}
+                                    alt=""
+                                    className="block max-h-full max-w-full object-contain"
+                                    style={{ transform: `rotate(${item.rotation || 0}deg)` }}
+                                  />
+                                ) : (
+                                  <FileKindIcon kind={item.kind} compact />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>{item.label}</div>
+                                <div className="truncate text-xs" style={{ color: "var(--dn-t4)" }}>{file.name}</div>
+                              </div>
+                              <span className="w-12 flex-shrink-0 text-right text-xs font-semibold" style={{ color: "var(--dn-t4)" }}>{itemIdx + 1}</span>
+                            </button>
+                          );
+                        })}
+                        {fileIndex === files.length - 1 && (
+                          <button
+                            type="button"
+                            onClick={() => inputRef.current?.click()}
+                            className="flex min-h-16 w-full items-center justify-center gap-3 rounded-md border border-dashed text-sm font-semibold transition hover:border-blue-500 hover:text-blue-500"
+                            style={{ borderColor: "var(--dn-border)", background: "rgba(255,255,255,0.02)", color: "var(--dn-t3)" }}
+                          >
+                            <Plus size={18} />
+                            Add more files
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Right Sidebar */}
+            <aside className="relative z-20 flex w-[320px] flex-shrink-0 flex-col" style={{ background: "var(--dn-bg-card)", borderLeft: "1px solid var(--dn-border)" }}>
+              <div className="flex-1 overflow-hidden">
+                <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+                  <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Conversion Settings</h2>
+                  <div className="space-y-4">{renderOrganizerSettings()}</div>
+                </div>
+
+                <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+                  <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Output Settings</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <OrganizeLabel>Output format</OrganizeLabel>
+                      <OrganizeSelect value="PDF" />
+                    </div>
+                    <div>
+                      <OrganizeLabel>Save to</OrganizeLabel>
+                      <OrganizeSelect value="Downloads folder" />
+                    </div>
+                    <div>
+                      <OrganizeLabel>File name</OrganizeLabel>
+                      <input
+                        type="text"
+                        value={settings.outputFileName || defaultOutputBaseName(tool, files)}
+                        onChange={event => updateOrganizerSettings({ outputFileName: event.target.value })}
+                        className="h-9 w-full rounded-md border px-3 text-sm font-semibold outline-none transition focus:border-blue-500"
+                        style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-5 py-4">
+                  <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>File Details</h2>
+                  <div className="space-y-2.5">
+                    <OrganizeDetailRow label="Total files" value={files.length} />
+                    <OrganizeDetailRow label="Total pages" value={allItems.length} />
+                    <OrganizeDetailRow label="Estimated size" value={formatBytes(files.reduce((sum, file) => sum + file.size, 0))} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="z-10 p-5 pt-5" style={{ background: "linear-gradient(to top, var(--dn-bg-card) 60%, transparent)" }}>
+                <button
+                  onClick={handleProcess}
+                  disabled={status === "processing"}
+                  className="flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-blue-700 font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {status === "processing" ? <Loader2 size={20} className="animate-spin" /> : "Process Files"}
+                  {status !== "processing" && <ArrowRight size={20} />}
+                </button>
+
+                <p className="mt-3 flex items-center justify-center gap-2 text-xs font-medium text-gray-400">
+                  <Lock size={14} />
+                  Your files are secure and private
+                </p>
               </div>
             </aside>
           </div>
         )}
-
-        <ProcessingModal open={status === "processing"} progress={progress} label={processingLabel} color={tool.color} />
       </div>
     </div>
   );
 }
 
-export function SelectionToolbar({
-  selectedCount,
-  totalCount,
-  selectedSize,
-  onSelectAll,
-  onDeselectAll,
-  onInvert,
-}: {
-  selectedCount: number;
-  totalCount: number;
-  selectedSize: number;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
-  onInvert: () => void;
-}) {
-  return (
-    <div style={{ ...panelStyle, borderRadius: "4px", padding: "1rem", display: "flex", gap: "0.65rem", flexWrap: "wrap", alignItems: "center" }}>
-      <ToolbarButton onClick={onSelectAll}>Select All</ToolbarButton>
-      <ToolbarButton onClick={onDeselectAll}>Deselect All</ToolbarButton>
-      <ToolbarButton onClick={onInvert}>Invert Selection</ToolbarButton>
-      <div style={{ marginLeft: "auto", color: "var(--dn-t3)", fontSize: "0.78rem" }}>
-        {selectedCount} selected / {totalCount} items - est. {formatBytes(selectedSize)}
-      </div>
-    </div>
-  );
-}
+/* ═══════════════════════════════════════════════════════════════
+   SECURE PDF WORKSPACE
+   Pre-conversion review page for: Lock, Unlock, Protect,
+   Remove Password, Encrypt, Decrypt
+   ═══════════════════════════════════════════════════════════════ */
 
-export function UniversalFilePreview({
-  files,
-  selectedIds,
-  rotation,
-  onToggleItem,
-  onRemoveFile,
-  onReplaceFile,
-  onSelectFile,
-  onDeselectFile,
+function SecurePdfWorkspace({
+  tool,
+  file,
+  items,
+  settings,
+  status,
+  onSettingsChange,
+  onProcess,
+  onClear,
 }: {
-  files: WorkflowFile[];
-  selectedIds: Set<string>;
-  rotation: string;
-  onToggleItem: (item: PreviewItem) => void;
-  onRemoveFile: (fileId: string) => void;
-  onReplaceFile: (fileId: string) => void;
-  onSelectFile: (fileId: string) => void;
-  onDeselectFile: (fileId: string) => void;
+  tool: Tool;
+  file: WorkflowFile;
+  items: PreviewItem[];
+  settings: ToolSettings;
+  status: WorkflowStatus;
+  onSettingsChange: (patch: Partial<ToolSettings>) => void;
+  onProcess: () => void;
+  onClear: () => void;
 }) {
-  const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [fullscreen, setFullscreen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [zoom, setZoom] = useState(100);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showOwnerPassword, setShowOwnerPassword] = useState(false);
+  const viewerRef = useRef<HTMLDivElement | null>(null);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const previewItems = items.length ? items : fallbackPreviewItems(file, tool);
+  const pageCount = Math.max(previewItems.length, file.loading ? 0 : 1);
+
+  const toolId = tool.id;
+  const isLock = toolId === "lock-pdf" || toolId === "protect-pdf";
+  const isUnlock = toolId === "unlock-pdf" || toolId === "remove-password";
+  const isEncrypt = toolId === "encrypt-pdf";
+  const isDecrypt = toolId === "decrypt-pdf";
+
+  const passwordsMatch =
+    isLock || isEncrypt
+      ? settings.password === settings.confirmPassword
+      : true;
+  const canProcess =
+    status !== "processing" &&
+    settings.password.length > 0 &&
+    passwordsMatch;
+
+  const badgeText = isUnlock || isDecrypt ? (isDecrypt ? "Ready to Decrypt" : "Ready to Unlock") : isEncrypt ? "Ready to Encrypt" : "Ready to Secure";
+  const badgeColor = isUnlock || isDecrypt ? "#a78bfa" : isEncrypt ? "#fbbf24" : "#22c55e";
+  const badgeBg = isUnlock || isDecrypt ? "rgba(167,139,250,0.12)" : isEncrypt ? "rgba(251,191,36,0.12)" : "rgba(34,197,94,0.11)";
+
+  useEffect(() => {
+    setActiveIndex(0);
+    setZoom(100);
+    pageRefs.current.clear();
+  }, [file.id]);
+
+  useEffect(() => {
+    const root = viewerRef.current;
+    if (!root || previewItems.length <= 1) return;
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) =>
+          Math.abs(a.boundingClientRect.top - root.getBoundingClientRect().top) -
+          Math.abs(b.boundingClientRect.top - root.getBoundingClientRect().top)
+        );
+      const nextIndex = Number((visible[0]?.target as HTMLElement | undefined)?.dataset.previewIndex);
+      if (Number.isFinite(nextIndex)) setActiveIndex(nextIndex);
+    }, { root, threshold: [0.28, 0.5, 0.72], rootMargin: "-18% 0px -58% 0px" });
+    pageRefs.current.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, [file.id, previewItems.length]);
+
+  const change = (patch: Partial<ToolSettings>) => onSettingsChange(patch);
 
   return (
-    <>
-      {files.map(file => (
-        <section key={file.id} style={{ ...panelStyle, borderRadius: "4px", padding: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-            <FileKindIcon kind={file.kind} />
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ color: "var(--dn-t1)", fontWeight: 800, fontSize: "0.94rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</div>
-                <div style={{ color: "var(--dn-t4)", fontSize: "0.72rem" }}>
-                  {formatBytes(file.size)} - {file.items.length || (file.loading ? "..." : "0")} preview items
-                </div>
-                {file.previewStatus && (
-                  <div style={{ color: "#93c5fd", fontSize: "0.72rem", fontWeight: 750, marginTop: "0.18rem" }}>{file.previewStatus}</div>
-                )}
+    <div
+      className="convert-page grid h-[calc(100vh-60px)] w-full grid-cols-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_320px]"
+      style={{ color: "var(--dn-t1)" }}
+    >
+      {/* ── CENTER ── */}
+      <main className="preview-workspace flex h-[calc(100vh-60px)] min-w-0 flex-col overflow-hidden px-5 py-4">
+
+        {/* Breadcrumb header */}
+        <div className="mb-3 flex shrink-0 items-center gap-4">
+          <button
+            type="button"
+            onClick={onClear}
+            className="grid h-8 w-8 place-items-center rounded-md transition"
+            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t3)" }}
+            onMouseOver={e => { e.currentTarget.style.color = "var(--dn-t1)"; e.currentTarget.style.borderColor = "#3b82f6"; }}
+            onMouseOut={e => { e.currentTarget.style.color = "var(--dn-t3)"; e.currentTarget.style.borderColor = "var(--dn-border)"; }}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
+          <span className="text-sm font-semibold text-blue-500">Secure PDF</span>
+        </div>
+
+        {/* File bar */}
+        <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.color }}>
+              <tool.icon size={20} />
+            </div>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
+              <p className="mt-1 text-sm" style={{ color: "var(--dn-t3)" }}>
+                {file.loading ? "Preparing..." : `${pageCount} ${pageCount === 1 ? "page" : "pages"}`} · {formatBytes(file.size)}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" style={{ background: badgeBg, color: badgeColor }}>
+            <ShieldCheck size={15} />
+            {badgeText}
+          </div>
+        </section>
+
+        {/* Two-column inner layout: thumbnails + preview */}
+        <section className="grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-[160px_minmax(0,1fr)]">
+
+          {/* Left thumbnail strip */}
+          <aside className="flex min-h-0 min-w-0 flex-col">
+            <div className="mb-3 flex shrink-0 items-center justify-between">
+              <h3 className="text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Pages</h3>
+              <span className="text-sm font-semibold" style={{ color: "var(--dn-t3)" }}>
+                {file.loading ? "..." : pageCount}
+              </span>
+            </div>
+            <div className="thumbnail-scroll grid min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
+              {previewItems.map((item, index) => {
+                const active = index === activeIndex;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveIndex(index);
+                      pageRefs.current.get(index)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    className="thumbnail-item transition-colors"
+                    style={{ color: active ? "#3b82f6" : "var(--dn-t2)" }}
+                  >
+                    <div className={active ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>
+                      <PreviewSurface item={item} isThumbnail />
+                    </div>
+                    <p className="mt-2 truncate text-xs font-semibold">{item.label}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          {/* Center preview canvas */}
+          <section className="relative flex min-h-0 min-w-0 flex-col">
+            <div
+              ref={viewerRef}
+              className="document-viewer flex min-h-0 flex-1 items-start justify-center overflow-auto p-8"
+              style={{ background: "transparent" }}
+            >
+              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", transition: "width 0.2s ease" }}>
+                {previewItems.length
+                  ? previewItems.map((item, index) => (
+                      <div
+                        key={item.id}
+                        data-preview-index={index}
+                        ref={el => { if (el) pageRefs.current.set(index, el); else pageRefs.current.delete(index); }}
+                        style={{ width: "100%", boxShadow: "0 24px 70px rgba(15,23,42,0.18)", scrollMarginTop: 16 }}
+                      >
+                        <PreviewSurface item={item} />
+                      </div>
+                    ))
+                  : <EmptyPanel text="Preview is preparing." />}
               </div>
-            <ToolbarButton onClick={() => onSelectFile(file.id)}>Select File</ToolbarButton>
-            <ToolbarButton onClick={() => onDeselectFile(file.id)}>Clear File</ToolbarButton>
-            <IconButton label="Replace file" onClick={() => onReplaceFile(file.id)}>
-              <RefreshCw size={14} />
-            </IconButton>
-            <IconButton label="Remove file" onClick={() => onRemoveFile(file.id)} danger>
-              <Trash2 size={14} />
-            </IconButton>
+            </div>
+
+            {/* Floating zoom controls */}
+            <div
+              className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap"
+              style={{ background: "transparent", boxShadow: "none" }}
+            >
+              <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => setZoom(prev => Math.max(50, prev - 10))} />
+              <button type="button" className="dn-glassmorphism-button h-10 min-w-[60px] whitespace-nowrap rounded-[4px] border px-4 text-sm font-extrabold transition-colors" style={{ color: "rgba(255,255,255,0.95)" }}>
+                {zoom}%
+              </button>
+              <ConversionToolButton label="Zoom in" icon={<ZoomIn size={16} />} compact onClick={() => setZoom(prev => Math.min(180, prev + 10))} />
+              <div className="mx-1 h-5 w-px" style={{ background: "rgba(255,255,255,0.18)" }} />
+              <span className="inline-flex h-10 items-center rounded-[4px] border px-4 text-xs font-semibold whitespace-nowrap" style={{ borderColor: "rgba(255,255,255,0.14)", background: "rgba(15,23,42,0.55)", color: "rgba(255,255,255,0.7)" }}>
+                {activeIndex + 1} / {pageCount}
+              </span>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      {/* ── RIGHT SIDEBAR ── */}
+      <aside
+        className="settings-sidebar flex h-[calc(100vh-60px)] min-h-0 flex-col overflow-hidden border-l xl:sticky xl:top-[60px]"
+        style={{ background: "var(--dn-bg-card)", borderColor: "var(--dn-border)" }}
+      >
+        {/* Sidebar header */}
+        <div className="flex shrink-0 items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+          <div className="grid h-10 w-10 place-items-center rounded-lg" style={{ background: `${tool.color}22`, color: tool.color }}>
+            <tool.icon size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h3>
+            <p className="mt-0.5 truncate text-xs" style={{ color: "var(--dn-t3)" }}>{tool.desc}</p>
+          </div>
+        </div>
+
+        {/* Scrollable settings */}
+        <div className="settings-content min-h-0 flex-1 overflow-y-auto">
+
+          {/* ── LOCK / PROTECT ── */}
+          {(isLock) && (
+            <>
+              <ConversionPanelSection title="Set Password">
+                <SecurePasswordField
+                  label="New password"
+                  value={settings.password}
+                  show={showPassword}
+                  onToggleShow={() => setShowPassword(p => !p)}
+                  onChange={v => change({ password: v })}
+                  placeholder="Enter password..."
+                />
+                <SecurePasswordField
+                  label="Confirm password"
+                  value={settings.confirmPassword}
+                  show={showConfirmPassword}
+                  onToggleShow={() => setShowConfirmPassword(p => !p)}
+                  onChange={v => change({ confirmPassword: v })}
+                  placeholder="Re-enter password..."
+                  error={settings.confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match" : undefined}
+                />
+              </ConversionPanelSection>
+              <ConversionPanelSection title="Encryption Strength">
+                {(["AES-256", "AES-128", "RC4-128"] as const).map(s => (
+                  <ConversionRadio
+                    key={s}
+                    label={s}
+                    checked={settings.encryptionStrength === s}
+                    onClick={() => change({ encryptionStrength: s })}
+                  />
+                ))}
+              </ConversionPanelSection>
+              <ConversionPanelSection title="Permissions">
+                <SecurePermissionToggle label="Allow Printing" checked={settings.allowPrinting} onChange={v => change({ allowPrinting: v })} />
+                <SecurePermissionToggle label="Allow Copying" checked={settings.allowCopying} onChange={v => change({ allowCopying: v })} />
+                <SecurePermissionToggle label="Allow Editing" checked={settings.allowEditing} onChange={v => change({ allowEditing: v })} />
+                <SecurePermissionToggle label="Allow Comments" checked={settings.allowComments} onChange={v => change({ allowComments: v })} />
+              </ConversionPanelSection>
+              <SecureSecuritySummary
+                strength={settings.encryptionStrength}
+                permissions={[settings.allowPrinting, settings.allowCopying, settings.allowEditing, settings.allowComments]}
+                isSet={settings.password.length > 0 && passwordsMatch}
+              />
+            </>
+          )}
+
+          {/* ── UNLOCK / REMOVE PASSWORD ── */}
+          {(isUnlock) && (
+            <>
+              <ConversionPanelSection title="Enter Current Password">
+                <SecurePasswordField
+                  label="Current password"
+                  value={settings.password}
+                  show={showPassword}
+                  onToggleShow={() => setShowPassword(p => !p)}
+                  onChange={v => change({ password: v })}
+                  placeholder="Enter current password..."
+                />
+              </ConversionPanelSection>
+              <ConversionPanelSection title="Security Status">
+                <SecureStatusCard
+                  icon={<Lock size={16} />}
+                  title="PDF is Password Protected"
+                  desc="Enter the correct password to remove protection."
+                  color="#f59e0b"
+                />
+              </ConversionPanelSection>
+            </>
+          )}
+
+          {/* ── ENCRYPT ── */}
+          {(isEncrypt) && (
+            <>
+              <ConversionPanelSection title="Encryption Method">
+                {(["password", "certificate"] as const).map(m => (
+                  <ConversionRadio
+                    key={m}
+                    label={m === "password" ? "Password-based encryption" : "Certificate-based encryption"}
+                    checked={settings.encryptionMethod === m}
+                    onClick={() => change({ encryptionMethod: m })}
+                  />
+                ))}
+              </ConversionPanelSection>
+              <ConversionPanelSection title="Encryption Strength">
+                {(["AES-256", "AES-128", "RC4-128"] as const).map(s => (
+                  <ConversionRadio
+                    key={s}
+                    label={s}
+                    checked={settings.encryptionStrength === s}
+                    onClick={() => change({ encryptionStrength: s })}
+                  />
+                ))}
+              </ConversionPanelSection>
+              <ConversionPanelSection title="Passwords">
+                <SecurePasswordField
+                  label="User password"
+                  value={settings.password}
+                  show={showPassword}
+                  onToggleShow={() => setShowPassword(p => !p)}
+                  onChange={v => change({ password: v })}
+                  placeholder="User password..."
+                />
+                <SecurePasswordField
+                  label="Confirm user password"
+                  value={settings.confirmPassword}
+                  show={showConfirmPassword}
+                  onToggleShow={() => setShowConfirmPassword(p => !p)}
+                  onChange={v => change({ confirmPassword: v })}
+                  placeholder="Re-enter user password..."
+                  error={settings.confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match" : undefined}
+                />
+                <SecurePasswordField
+                  label="Owner password (optional)"
+                  value={settings.ownerPassword}
+                  show={showOwnerPassword}
+                  onToggleShow={() => setShowOwnerPassword(p => !p)}
+                  onChange={v => change({ ownerPassword: v })}
+                  placeholder="Owner password..."
+                />
+              </ConversionPanelSection>
+              <ConversionPanelSection title="Permissions">
+                <SecurePermissionToggle label="Allow Printing" checked={settings.allowPrinting} onChange={v => change({ allowPrinting: v })} />
+                <SecurePermissionToggle label="Allow Copying" checked={settings.allowCopying} onChange={v => change({ allowCopying: v })} />
+                <SecurePermissionToggle label="Allow Editing" checked={settings.allowEditing} onChange={v => change({ allowEditing: v })} />
+                <SecurePermissionToggle label="Allow Comments" checked={settings.allowComments} onChange={v => change({ allowComments: v })} />
+              </ConversionPanelSection>
+              <SecureSecuritySummary
+                strength={settings.encryptionStrength}
+                permissions={[settings.allowPrinting, settings.allowCopying, settings.allowEditing, settings.allowComments]}
+                isSet={settings.password.length > 0 && passwordsMatch}
+              />
+            </>
+          )}
+
+          {/* ── DECRYPT ── */}
+          {(isDecrypt) && (
+            <>
+              <ConversionPanelSection title="Enter Password">
+                <SecurePasswordField
+                  label="Password"
+                  value={settings.password}
+                  show={showPassword}
+                  onToggleShow={() => setShowPassword(p => !p)}
+                  onChange={v => change({ password: v })}
+                  placeholder="Enter PDF password..."
+                />
+              </ConversionPanelSection>
+              <ConversionPanelSection title="Encryption Details">
+                <SecureStatusCard
+                  icon={<Shield size={16} />}
+                  title="Encrypted PDF Detected"
+                  desc="This PDF is encrypted. Enter the owner or user password to decrypt."
+                  color="#a78bfa"
+                />
+              </ConversionPanelSection>
+              <ConversionPanelSection title="Security Summary">
+                <ConversionDetail label="File name" value={file.name.length > 22 ? file.name.slice(0, 20) + "…" : file.name} />
+                <ConversionDetail label="File size" value={formatBytes(file.size)} />
+                <ConversionDetail label="Total pages" value={file.loading ? "Preparing..." : String(pageCount)} />
+                <ConversionDetail label="Encryption" value="AES-256" />
+              </ConversionPanelSection>
+            </>
+          )}
+
+          {/* File details — always shown */}
+          <ConversionPanelSection title="File Details">
+            <ConversionDetail label="File name" value={file.name.length > 22 ? file.name.slice(0, 20) + "…" : file.name} />
+            <ConversionDetail label="File size" value={formatBytes(file.size)} />
+            <ConversionDetail label="Total pages" value={file.loading ? "Preparing..." : String(pageCount)} />
+            <ConversionDetail label="Format" value={tool.outputFormat ?? "PDF"} />
+          </ConversionPanelSection>
+        </div>
+
+        {/* Sticky CTA */}
+        <div className="convert-cta sticky bottom-0 shrink-0 border-t p-4" style={{ background: "var(--dn-bg-card)", borderColor: "var(--dn-border)" }}>
+          {!passwordsMatch && (
+            <p className="mb-3 flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold" style={{ background: "rgba(239,68,68,0.08)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.22)" }}>
+              <AlertCircle size={13} /> Passwords do not match
+            </p>
+          )}
+          {(isLock || isEncrypt) && settings.password.length === 0 && (
+            <p className="mb-3 flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold" style={{ background: "rgba(251,191,36,0.08)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.22)" }}>
+              <AlertCircle size={13} /> Enter a password to continue
+            </p>
+          )}
+          {(isUnlock || isDecrypt) && settings.password.length === 0 && (
+            <p className="mb-3 flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold" style={{ background: "rgba(251,191,36,0.08)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.22)" }}>
+              <AlertCircle size={13} /> Enter the PDF password to continue
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={onProcess}
+            disabled={!canProcess}
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-lg font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ background: canProcess ? "#2563eb" : "var(--dn-bg-subtle)", color: canProcess ? "#fff" : "var(--dn-t3)" }}
+            onMouseOver={e => { if (canProcess) e.currentTarget.style.background = "#1d4ed8"; }}
+            onMouseOut={e => { if (canProcess) e.currentTarget.style.background = "#2563eb"; }}
+          >
+            {status === "processing" ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <>
+                <tool.icon size={18} />
+                {tool.action}
+                <ArrowRight size={18} />
+              </>
+            )}
+          </button>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs" style={{ color: "var(--dn-t4)" }}>
+            <Lock size={11} /> Your files are encrypted and never stored permanently
+          </p>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+/* ── Secure PDF helper atoms ── */
+
+function SecurePasswordField({
+  label,
+  value,
+  show,
+  onToggleShow,
+  onChange,
+  placeholder,
+  error,
+}: {
+  label: string;
+  value: string;
+  show: boolean;
+  onToggleShow: () => void;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  error?: string;
+}) {
+  return (
+    <div>
+      <ConversionLabel>{label}</ConversionLabel>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoComplete="new-password"
+          className="h-10 w-full rounded-md pr-10 pl-3 text-sm outline-none transition"
+          style={{
+            border: `1px solid ${error ? "#ef4444" : "var(--dn-border)"}`,
+            background: "var(--dn-bg-subtle)",
+            color: "var(--dn-t1)",
+          }}
+        />
+        <button
+          type="button"
+          onClick={onToggleShow}
+          className="absolute right-3 top-1/2 -translate-y-1/2 transition"
+          style={{ color: "var(--dn-t4)" }}
+          onMouseOver={e => e.currentTarget.style.color = "var(--dn-t1)"}
+          onMouseOut={e => e.currentTarget.style.color = "var(--dn-t4)"}
+        >
+          {show ? <EyeOff size={15} /> : <EyeIcon size={15} />}
+        </button>
+      </div>
+      {error && <p className="mt-1 text-xs" style={{ color: "#ef4444" }}>{error}</p>}
+    </div>
+  );
+}
+
+function SecurePermissionToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center justify-between gap-3 py-1 text-left text-sm font-medium transition"
+      style={{ color: "var(--dn-t1)" }}
+    >
+      <span>{label}</span>
+      <span
+        className="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors"
+        style={{ background: checked ? "#2563eb" : "var(--dn-border)" }}
+      >
+        <span
+          className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all"
+          style={{ left: checked ? "18px" : "2px" }}
+        />
+      </span>
+    </button>
+  );
+}
+
+function SecureSecuritySummary({
+  strength,
+  permissions,
+  isSet,
+}: {
+  strength: string;
+  permissions: boolean[];
+  isSet: boolean;
+}) {
+  const permLabels = ["Print", "Copy", "Edit", "Comment"];
+  const allowedCount = permissions.filter(Boolean).length;
+  return (
+    <ConversionPanelSection title="Security Summary">
+      <div
+        className="rounded-lg p-3 text-xs"
+        style={{
+          background: isSet ? "rgba(34,197,94,0.07)" : "rgba(251,191,36,0.06)",
+          border: `1px solid ${isSet ? "rgba(34,197,94,0.22)" : "rgba(251,191,36,0.22)"}`,
+        }}
+      >
+        <div className="mb-2 flex items-center gap-2 font-semibold" style={{ color: isSet ? "#22c55e" : "#f59e0b" }}>
+          <ShieldCheck size={14} />
+          {isSet ? "Password set — ready to secure" : "No password set yet"}
+        </div>
+        <div className="space-y-1" style={{ color: "var(--dn-t3)" }}>
+          <div className="flex justify-between">
+            <span>Encryption</span>
+            <span className="font-semibold" style={{ color: "var(--dn-t1)" }}>{strength}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Permissions</span>
+            <span className="font-semibold" style={{ color: "var(--dn-t1)" }}>
+              {allowedCount === 0 ? "None" : allowedCount === permissions.length ? "All" : permLabels.filter((_, i) => permissions[i]).join(", ")}
+            </span>
+          </div>
+        </div>
+      </div>
+    </ConversionPanelSection>
+  );
+}
+
+function SecureStatusCard({
+  icon,
+  title,
+  desc,
+  color,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  color: string;
+}) {
+  return (
+    <div
+      className="flex items-start gap-3 rounded-lg p-3 text-sm"
+      style={{
+        background: `${color}12`,
+        border: `1px solid ${color}35`,
+      }}
+    >
+      <span className="mt-0.5 flex-shrink-0" style={{ color }}>{icon}</span>
+      <div>
+        <p className="mb-0.5 font-semibold" style={{ color: "var(--dn-t1)" }}>{title}</p>
+        <p className="text-xs leading-relaxed" style={{ color: "var(--dn-t3)" }}>{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── end SecurePdfWorkspace ─── */
+
+/* ═══════════════════════════════════════════════════════════════
+   OCR WORKSPACE
+   Pre-processing review page for: PDF OCR, Image OCR
+   ═══════════════════════════════════════════════════════════════ */
+
+function OcrWorkspace({
+  tool,
+  file,
+  items,
+  settings,
+  status,
+  onSettingsChange,
+  onProcess,
+  onClear,
+}: {
+  tool: Tool;
+  file: WorkflowFile;
+  items: PreviewItem[];
+  settings: ToolSettings;
+  status: WorkflowStatus;
+  onSettingsChange: (patch: Partial<ToolSettings>) => void;
+  onProcess: () => void;
+  onClear: () => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [zoom, setZoom] = useState(100);
+  const viewerRef = useRef<HTMLDivElement | null>(null);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const previewItems = items.length ? items : fallbackPreviewItems(file, tool);
+  const pageCount = Math.max(previewItems.length, file.loading ? 0 : 1);
+
+  const isImageOcr = tool.id === "image-ocr";
+  const unitLabel = isImageOcr ? (pageCount === 1 ? "image" : "images") : (pageCount === 1 ? "page" : "pages");
+  const badgeText = isImageOcr ? "Ready for Image OCR" : "Ready for OCR";
+  const ctaLabel = isImageOcr ? "Run Image OCR" : "Run PDF OCR";
+  const useCustomRange = settings.conversionMode === "range";
+
+  useEffect(() => {
+    setActiveIndex(0);
+    setZoom(100);
+    pageRefs.current.clear();
+  }, [file.id]);
+
+  useEffect(() => {
+    const root = viewerRef.current;
+    if (!root || previewItems.length <= 1) return;
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) =>
+          Math.abs(a.boundingClientRect.top - root.getBoundingClientRect().top) -
+          Math.abs(b.boundingClientRect.top - root.getBoundingClientRect().top)
+        );
+      const nextIndex = Number((visible[0]?.target as HTMLElement | undefined)?.dataset.previewIndex);
+      if (Number.isFinite(nextIndex)) setActiveIndex(nextIndex);
+    }, { root, threshold: [0.28, 0.5, 0.72], rootMargin: "-18% 0px -58% 0px" });
+    pageRefs.current.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, [file.id, previewItems.length]);
+
+  const change = (patch: Partial<ToolSettings>) => onSettingsChange(patch);
+  const canProcess = status !== "processing" && !file.loading;
+
+  return (
+    <div
+      className="convert-page grid h-[calc(100vh-60px)] w-full grid-cols-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_320px]"
+      style={{ color: "var(--dn-t1)" }}
+    >
+      {/* ── CENTER ── */}
+      <main className="preview-workspace flex h-[calc(100vh-60px)] min-w-0 flex-col overflow-hidden px-5 py-4">
+
+        {/* Breadcrumb header */}
+        <div className="mb-3 flex shrink-0 items-center gap-4">
+          <button
+            type="button"
+            onClick={onClear}
+            className="grid h-8 w-8 place-items-center rounded-md transition"
+            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t3)" }}
+            onMouseOver={e => { e.currentTarget.style.color = "var(--dn-t1)"; e.currentTarget.style.borderColor = "#3b82f6"; }}
+            onMouseOut={e => { e.currentTarget.style.color = "var(--dn-t3)"; e.currentTarget.style.borderColor = "var(--dn-border)"; }}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
+          <span className="text-sm font-semibold text-blue-500">OCR</span>
+        </div>
+
+        {/* File bar */}
+        <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.color }}>
+              <tool.icon size={20} />
+            </div>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
+              <p className="mt-1 text-sm" style={{ color: "var(--dn-t3)" }}>
+                {file.loading ? "Preparing..." : `${pageCount} ${unitLabel}`} · {formatBytes(file.size)}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" style={{ background: "rgba(6,182,212,0.12)", color: "#22d3ee" }}>
+            <ScanLine size={15} />
+            {badgeText}
+          </div>
+        </section>
+
+        {/* Two-column inner layout: thumbnails + preview */}
+        <section className="grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-[160px_minmax(0,1fr)]">
+
+          {/* Left thumbnail strip */}
+          <aside className="flex min-h-0 min-w-0 flex-col">
+            <div className="mb-3 flex shrink-0 items-center justify-between">
+              <h3 className="text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>{isImageOcr ? "Images" : "Pages"}</h3>
+              <span className="text-sm font-semibold" style={{ color: "var(--dn-t3)" }}>
+                {file.loading ? "..." : pageCount}
+              </span>
+            </div>
+            <div className="thumbnail-scroll grid min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
+              {previewItems.map((item, index) => {
+                const active = index === activeIndex;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveIndex(index);
+                      pageRefs.current.get(index)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    className="thumbnail-item transition-colors"
+                    style={{ color: active ? "#3b82f6" : "var(--dn-t2)" }}
+                  >
+                    <div className={active ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>
+                      <PreviewSurface item={item} isThumbnail />
+                    </div>
+                    <p className="mt-2 truncate text-xs font-semibold">{item.label}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          {/* Center preview canvas */}
+          <section className="relative flex min-h-0 min-w-0 flex-col">
+            <div
+              ref={viewerRef}
+              className="document-viewer flex min-h-0 flex-1 items-start justify-center overflow-auto p-8"
+              style={{ background: "transparent" }}
+            >
+              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", transition: "width 0.2s ease" }}>
+                {previewItems.length
+                  ? previewItems.map((item, index) => (
+                      <div
+                        key={item.id}
+                        data-preview-index={index}
+                        ref={el => { if (el) pageRefs.current.set(index, el); else pageRefs.current.delete(index); }}
+                        style={{ width: "100%", boxShadow: "0 24px 70px rgba(15,23,42,0.18)", scrollMarginTop: 16 }}
+                      >
+                        <PreviewSurface item={item} />
+                      </div>
+                    ))
+                  : <EmptyPanel text="Preview is preparing." />}
+              </div>
+            </div>
+
+            {/* Floating zoom controls */}
+            <div
+              className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap"
+              style={{ background: "transparent", boxShadow: "none" }}
+            >
+              <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => setZoom(prev => Math.max(50, prev - 10))} />
+              <button type="button" className="dn-glassmorphism-button h-10 min-w-[60px] whitespace-nowrap rounded-[4px] border px-4 text-sm font-extrabold transition-colors" style={{ color: "rgba(255,255,255,0.95)" }}>
+                {zoom}%
+              </button>
+              <ConversionToolButton label="Zoom in" icon={<ZoomIn size={16} />} compact onClick={() => setZoom(prev => Math.min(180, prev + 10))} />
+              <div className="mx-1 h-5 w-px" style={{ background: "rgba(255,255,255,0.18)" }} />
+              <span className="inline-flex h-10 items-center rounded-[4px] border px-4 text-xs font-semibold whitespace-nowrap" style={{ borderColor: "rgba(255,255,255,0.14)", background: "rgba(15,23,42,0.55)", color: "rgba(255,255,255,0.7)" }}>
+                {activeIndex + 1} / {pageCount}
+              </span>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      {/* ── RIGHT SIDEBAR ── */}
+      <aside
+        className="settings-sidebar flex h-[calc(100vh-60px)] min-h-0 flex-col overflow-hidden border-l xl:sticky xl:top-[60px]"
+        style={{ background: "var(--dn-bg-card)", borderColor: "var(--dn-border)" }}
+      >
+        {/* Sidebar header */}
+        <div className="flex shrink-0 items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+          <div className="grid h-10 w-10 place-items-center rounded-lg" style={{ background: `${tool.color}22`, color: tool.color }}>
+            <tool.icon size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h3>
+            <p className="mt-0.5 truncate text-xs" style={{ color: "var(--dn-t3)" }}>{tool.desc}</p>
+          </div>
+        </div>
+
+        {/* Scrollable settings */}
+        <div className="settings-content min-h-0 flex-1 overflow-y-auto">
+
+          <ConversionPanelSection title="OCR Language">
+            <OcrSelect
+              value={settings.ocrLang}
+              onChange={v => change({ ocrLang: v })}
+              options={ocrLanguages}
+            />
+          </ConversionPanelSection>
+
+          {/* ── PDF OCR ── */}
+          {!isImageOcr && (
+            <>
+              <ConversionPanelSection title="Output Format">
+                <OcrSelect
+                  value={settings.ocrOutput}
+                  onChange={v => change({ ocrOutput: v })}
+                  options={[
+                    { value: "txt", label: "Plain Text (.txt)" },
+                    { value: "pdf", label: "Searchable PDF (.pdf)" },
+                    { value: "docx", label: "Word Document (.docx)" },
+                  ]}
+                />
+              </ConversionPanelSection>
+
+              <ConversionPanelSection title="Recognition">
+                <ConversionToggle label="Recognize text" checked={settings.ocrRecognizeText} onChange={v => change({ ocrRecognizeText: v })} />
+                <ConversionToggle label="Preserve layout" checked={settings.preserveLayout} onChange={v => change({ preserveLayout: v })} />
+                <ConversionToggle label="Searchable PDF" checked={settings.ocrSearchablePdf} onChange={v => change({ ocrSearchablePdf: v })} />
+              </ConversionPanelSection>
+
+              <ConversionPanelSection title="Page Range">
+                <ConversionRadio label="All pages" checked={!useCustomRange} onClick={() => change({ conversionMode: "all", pageRange: "" })} />
+                <ConversionRadio label="Custom range" checked={useCustomRange} onClick={() => change({ conversionMode: "range" })} />
+                <input
+                  value={settings.pageRange}
+                  placeholder="e.g. 1-3, 5, 8-10"
+                  onChange={e => change({ conversionMode: "range", pageRange: e.target.value })}
+                  className="mt-1 h-10 w-full rounded-md px-3 text-sm outline-none transition"
+                  style={{ border: `1px solid ${useCustomRange ? "#3b82f6" : "var(--dn-border)"}`, background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+                />
+              </ConversionPanelSection>
+            </>
+          )}
+
+          {/* ── IMAGE OCR ── */}
+          {isImageOcr && (
+            <>
+              <ConversionPanelSection title="Image Processing">
+                <ConversionToggle label="Image enhancement" checked={settings.ocrImageEnhancement} onChange={v => change({ ocrImageEnhancement: v })} />
+                <ConversionToggle label="Auto rotate" checked={settings.ocrAutoRotate} onChange={v => change({ ocrAutoRotate: v })} />
+              </ConversionPanelSection>
+
+              <ConversionPanelSection title="Text Detection Mode">
+                {([
+                  { value: "auto", label: "Automatic" },
+                  { value: "sparse", label: "Sparse text" },
+                  { value: "dense", label: "Dense / block text" },
+                  { value: "single-line", label: "Single line" },
+                ] as const).map(m => (
+                  <ConversionRadio
+                    key={m.value}
+                    label={m.label}
+                    checked={settings.ocrTextDetectionMode === m.value}
+                    onClick={() => change({ ocrTextDetectionMode: m.value })}
+                  />
+                ))}
+              </ConversionPanelSection>
+
+              <ConversionPanelSection title="Output Format">
+                <OcrSelect
+                  value={settings.ocrOutput}
+                  onChange={v => change({ ocrOutput: v })}
+                  options={[
+                    { value: "txt", label: "Plain Text (.txt)" },
+                    { value: "pdf", label: "Searchable PDF (.pdf)" },
+                  ]}
+                />
+              </ConversionPanelSection>
+            </>
+          )}
+
+          {/* File details */}
+          <ConversionPanelSection title="File Details">
+            <ConversionDetail label="File name" value={file.name.length > 22 ? file.name.slice(0, 20) + "…" : file.name} />
+            <ConversionDetail label="File size" value={formatBytes(file.size)} />
+            <ConversionDetail label={isImageOcr ? "Total images" : "Total pages"} value={file.loading ? "Preparing..." : String(pageCount)} />
+            <ConversionDetail label="Language" value={ocrLanguages.find(l => l.value === settings.ocrLang)?.label ?? settings.ocrLang} />
+          </ConversionPanelSection>
+        </div>
+
+        {/* Sticky CTA */}
+        <div className="convert-cta sticky bottom-0 shrink-0 border-t p-4" style={{ background: "var(--dn-bg-card)", borderColor: "var(--dn-border)" }}>
+          <button
+            type="button"
+            onClick={onProcess}
+            disabled={!canProcess}
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-lg font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ background: canProcess ? "#2563eb" : "var(--dn-bg-subtle)", color: canProcess ? "#fff" : "var(--dn-t3)" }}
+            onMouseOver={e => { if (canProcess) e.currentTarget.style.background = "#1d4ed8"; }}
+            onMouseOut={e => { if (canProcess) e.currentTarget.style.background = "#2563eb"; }}
+          >
+            {status === "processing" ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <>
+                <ScanLine size={18} />
+                {ctaLabel}
+                <ArrowRight size={18} />
+              </>
+            )}
+          </button>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs" style={{ color: "var(--dn-t4)" }}>
+            <CheckCircle2 size={11} /> File ready for processing
+          </p>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function OcrSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: ReadonlyArray<{ value: string; label: string }>;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="h-11 w-full appearance-none rounded-md border px-3 pr-9 text-sm font-semibold outline-none transition focus:border-blue-500"
+        style={{ background: "var(--dn-bg-subtle)", borderColor: "var(--dn-border)", color: "var(--dn-t1)" }}
+      >
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value} style={{ background: "var(--dn-bg-card)", color: "var(--dn-t1)" }}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--dn-t3)" }} />
+    </div>
+  );
+}
+
+/* ─── end OcrWorkspace ─── */
+
+function SingleFileConversionPreview({
+  tool,
+  file,
+  items,
+  settings,
+  status,
+  onSettingsChange,
+  onConvert,
+}: {
+  tool: Tool;
+  file: WorkflowFile;
+  items: PreviewItem[];
+  settings: ToolSettings;
+  status: WorkflowStatus;
+  onSettingsChange: (patch: Partial<ToolSettings>) => void;
+  onConvert: () => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [zoom, setZoom] = useState(100);
+  const [rotation, setRotation] = useState(0);
+  const [outputName, setOutputName] = useState(stripExtension(file.name));
+  const viewerRef = useRef<HTMLDivElement | null>(null);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const previewItems = items.length ? items : fallbackPreviewItems(file, tool);
+  const pageCount = Math.max(previewItems.length, file.loading ? 0 : 1);
+  const output = conversionOutputMeta(tool);
+  const estimatedRatio = tool.id.includes("jpg") || tool.id.includes("image") ? 1.18 : tool.id.includes("pdf") ? 0.72 : 0.86;
+
+  useEffect(() => {
+    setActiveIndex(0);
+    setZoom(100);
+    setRotation(0);
+    setOutputName(stripExtension(file.name));
+    pageRefs.current.clear();
+  }, [file.id, file.name]);
+
+  useEffect(() => {
+    const root = viewerRef.current;
+    if (!root || previewItems.length <= 1) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => Math.abs(a.boundingClientRect.top - root.getBoundingClientRect().top) - Math.abs(b.boundingClientRect.top - root.getBoundingClientRect().top));
+      const nextIndex = Number((visible[0]?.target as HTMLElement | undefined)?.dataset.previewIndex);
+      if (Number.isFinite(nextIndex)) setActiveIndex(nextIndex);
+    }, { root, threshold: [0.28, 0.5, 0.72], rootMargin: "-18% 0px -58% 0px" });
+
+    pageRefs.current.forEach(element => observer.observe(element));
+    return () => observer.disconnect();
+  }, [file.id, previewItems.length]);
+
+  const changeSettings = (patch: Partial<ToolSettings>) => onSettingsChange(patch);
+  const useCustomRange = settings.conversionMode === "range";
+  const pageLabel = file.loading ? "Preparing..." : pageCount + (pageCount === 1 ? " page" : " pages");
+
+  return (
+    <div className="convert-page grid h-[calc(100vh-60px)] w-full grid-cols-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_320px]" style={{ color: "var(--dn-t1)" }}>
+      <main className="preview-workspace flex h-[calc(100vh-60px)] min-w-0 flex-col overflow-hidden px-5 py-4">
+        <div className="mb-3 flex shrink-0 items-center gap-4">
+          <h1 className="text-2xl font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
+          <span className="text-sm font-semibold text-blue-500">Convert single file</span>
+        </div>
+
+        <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.color }}>
+              <FileKindIcon kind={file.kind} />
+            </div>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
+              <p className="mt-1 text-sm" style={{ color: "var(--dn-t3)" }}>{pageLabel} - {formatBytes(file.size)}</p>
+            </div>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" style={{ background: "rgba(34,197,94,0.11)", color: "#22c55e" }}>
+            <CheckCircle2 size={16} />
+            Ready to convert
+          </div>
+        </section>
+
+        <section className="grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-[160px_minmax(0,1fr)]">
+          <aside className="flex min-h-0 min-w-0 flex-col">
+            <div className="mb-3 flex shrink-0 items-center justify-between">
+              <h3 className="text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Pages</h3>
+              <span className="text-sm font-semibold" style={{ color: "var(--dn-t3)" }}>{file.loading ? "..." : pageCount}</span>
+            </div>
+            <div className="thumbnail-scroll grid min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
+              {previewItems.map((item, index) => {
+                const selected = index === activeIndex;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveIndex(index);
+                      pageRefs.current.get(index)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    className="thumbnail-item transition-colors"
+                    style={{
+                      color: selected ? "#3b82f6" : "var(--dn-t2)",
+                    }}
+                  >
+                    <div className={selected ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>
+                      <PreviewSurface item={item} isThumbnail={true} />
+                    </div>
+                    <p className="mt-2 truncate text-xs font-semibold">{item.label}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <section className="relative flex min-h-0 min-w-0 flex-col">
+            <div ref={viewerRef} className="document-viewer flex min-h-0 flex-1 items-start justify-center overflow-auto p-8" style={{ background: "transparent" }}>
+              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", transition: "width 0.2s ease" }}>
+                {previewItems.length ? previewItems.map((item, index) => (
+                  <div
+                    key={item.id}
+                    data-preview-index={index}
+                    ref={element => {
+                      if (element) pageRefs.current.set(index, element);
+                      else pageRefs.current.delete(index);
+                    }}
+                    style={{ width: "100%", transform: "rotate(" + rotation + "deg)", transition: "transform 0.2s ease", boxShadow: "0 24px 70px rgba(15,23,42,0.18)", scrollMarginTop: 16 }}
+                  >
+                    <PreviewSurface item={item} />
+                  </div>
+                )) : <EmptyPanel text="Preview is preparing." />}
+              </div>
+            </div>
+
+            <div
+              className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap bg-transparent"
+              style={{ background: "transparent", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }}
+            >
+              <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => setZoom(prev => Math.max(50, prev - 10))} />
+              <button type="button" className="dn-glassmorphism-button h-10 min-w-[60px] whitespace-nowrap rounded-[4px] border px-4 text-sm font-extrabold transition-colors" style={{ color: "rgba(255,255,255,0.95)" }}>{zoom}%</button>
+              <ConversionToolButton label="Zoom in" icon={<ZoomIn size={16} />} compact onClick={() => setZoom(prev => Math.min(180, prev + 10))} />
+              <ConversionToolButton label="Rotate left" icon={<RotateCcw size={17} />} onClick={() => setRotation(prev => prev - 90)} />
+              <ConversionToolButton label="Rotate right" icon={<RotateCw size={17} />} onClick={() => setRotation(prev => prev + 90)} />
+              <ConversionToolButton label="Extract text" icon={<Download size={17} />} onClick={() => changeSettings({ preserveLayout: false, extractMode: "text" })} />
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <aside className="settings-sidebar flex h-[calc(100vh-60px)] min-h-0 flex-col overflow-hidden border-l xl:sticky xl:top-[60px]" style={{ background: "var(--dn-bg-card)", borderColor: "var(--dn-border)" }}>
+        <div className="settings-content min-h-0 flex-1 overflow-y-auto">
+          <ConversionPanelSection title="Conversion Settings">
+            <ConversionLabel>Output format</ConversionLabel>
+            <ConversionSelect value={output.formatLabel} />
+            <ConversionToggle label="Preserve layout" checked={settings.preserveLayout} onChange={value => changeSettings({ preserveLayout: value })} />
+            <ConversionToggle label="Extract text if possible" checked={settings.extractMode === "text" || !settings.preserveLayout} onChange={value => changeSettings({ extractMode: value ? "text" : "tables", preserveLayout: !value })} />
+          </ConversionPanelSection>
+
+          <ConversionPanelSection title="Page Range">
+            <ConversionRadio label="All pages" checked={!useCustomRange} onClick={() => changeSettings({ conversionMode: "all", pageRange: "" })} />
+            <ConversionRadio label="Custom range" checked={useCustomRange} onClick={() => changeSettings({ conversionMode: "range" })} />
+            <input
+              value={settings.pageRange}
+              placeholder="e.g. 1-3, 5, 8-10"
+              onChange={event => changeSettings({ conversionMode: "range", pageRange: event.target.value })}
+              className="mt-3 h-10 w-full rounded-md border px-3 text-sm outline-none transition-colors"
+              style={{ background: "var(--dn-bg-subtle)", borderColor: useCustomRange ? "#3b82f6" : "var(--dn-border)", color: "var(--dn-t1)" }}
+            />
+          </ConversionPanelSection>
+
+          <ConversionPanelSection title="Output Settings">
+            <ConversionLabel>Save to</ConversionLabel>
+            <ConversionSelect value="Original folder" />
+            <ConversionLabel>File name</ConversionLabel>
+            <input
+              value={outputName}
+              onChange={event => setOutputName(event.target.value)}
+              className="h-10 w-full rounded-md border px-3 text-sm outline-none transition-colors"
+              style={{ background: "var(--dn-bg-subtle)", borderColor: "var(--dn-border)", color: "var(--dn-t1)" }}
+            />
+          </ConversionPanelSection>
+
+          <ConversionPanelSection title="File Details">
+            <ConversionDetail label="File size" value={formatBytes(file.size)} />
+            <ConversionDetail label="Total pages" value={file.loading ? "Preparing..." : String(pageCount)} />
+            <ConversionDetail label="Estimated output" value={"~ " + formatBytes(Math.max(1, file.size * estimatedRatio))} />
+          </ConversionPanelSection>
+        </div>
+
+        <div className="convert-cta sticky bottom-0 shrink-0 border-t p-4" style={{ background: "var(--dn-bg-card)", borderColor: "var(--dn-border)" }}>
+          <button
+            type="button"
+            onClick={onConvert}
+            disabled={status === "processing"}
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-lg bg-blue-600 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {status === "processing" ? <Loader2 size={20} className="animate-spin" /> : output.cta}
+            {status !== "processing" && <ArrowRight size={20} />}
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+type EditorToolKey = "edit" | "annotate" | "add-text" | "add-image" | "highlight" | "draw" | "crop" | "redact" | "watermark" | "page-numbers";
+
+const editorToolTabs: Array<{ id: EditorToolKey; label: string; icon: React.ReactNode }> = [
+  { id: "edit", label: "Edit Text", icon: <Type size={17} /> },
+  { id: "annotate", label: "Annotate", icon: <PenLine size={17} /> },
+  { id: "add-text", label: "Add Text", icon: <Type size={17} /> },
+  { id: "add-image", label: "Add Image", icon: <ImageIcon size={17} /> },
+  { id: "highlight", label: "Highlight", icon: <Highlighter size={17} /> },
+  { id: "draw", label: "Draw", icon: <PenLine size={17} /> },
+  { id: "crop", label: "Crop", icon: <Crop size={17} /> },
+  { id: "redact", label: "Redact", icon: <Eraser size={17} /> },
+  { id: "watermark", label: "Watermark", icon: <Droplet size={17} /> },
+  { id: "page-numbers", label: "Page Numbers", icon: <Hash size={17} /> },
+];
+
+type EditorLayer = {
+  id: string;
+  pageIndex: number;
+  type: EditorToolKey;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  text: string;
+  color: string;
+  opacity: number;
+  fontSize?: number;
+  font?: string;
+  align?: "left" | "center" | "right" | "justify";
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  brushSize?: number;
+  temporary?: boolean;
+  applied?: boolean;
+};
+
+function PdfEditorPreviewWorkspace({
+  tool,
+  file,
+  items,
+  status,
+  onSave,
+  onClear,
+  onSettingsChange,
+}: {
+  tool: Tool;
+  file: WorkflowFile;
+  items: PreviewItem[];
+  status: WorkflowStatus;
+  onSave: (settingsOverride?: Partial<ToolSettings>) => void;
+  onClear: () => void;
+  onSettingsChange: (patch: Partial<ToolSettings>) => void;
+}) {
+  const [activeTool, setActiveTool] = useState<EditorToolKey>(() => editorToolFromToolId(tool.id));
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [zoom, setZoom] = useState(100);
+  const [layers, setLayers] = useState<EditorLayer[]>([]);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [history, setHistory] = useState<EditorLayer[][]>([]);
+  const [future, setFuture] = useState<EditorLayer[][]>([]);
+  const [isDirty, setIsDirty] = useState(false);
+  const editSnapshotRef = useRef<EditorLayer[] | null>(null);
+  const pages = items.length ? items : fallbackPreviewItems(file, tool);
+  const activeItem = pages[activeIndex] || pages[0];
+  const pageCount = file.loading ? 0 : Math.max(pages.length, 1);
+
+  const pushHistory = useCallback((snapshot: EditorLayer[]) => {
+    setHistory(prev => [...prev, snapshot].slice(-40));
+    setFuture([]);
+    setIsDirty(true);
+  }, []);
+
+  const commitLayers = useCallback((updater: (current: EditorLayer[]) => EditorLayer[]) => {
+    setLayers(current => {
+      const next = updater(current);
+      if (next !== current) pushHistory(current);
+      return next;
+    });
+  }, [pushHistory]);
+
+  const removeTemporaryLayers = useCallback((current: EditorLayer[]) => (
+    current.filter(layer => {
+      if (!layer.temporary) return true;
+      if (layer.type !== "draw") return false;
+      return parseDrawPaths(layer.text).some(path => path.length > 1);
+    }).map(layer => layer.temporary ? { ...layer, temporary: false } : layer)
+  ), []);
+
+  const ensureLayerForTool = useCallback((toolKey: EditorToolKey, pageIndex: number) => {
+    setLayers(current => {
+      const existing = current.find(layer => layer.pageIndex === pageIndex && layer.type === toolKey && !(layer.type === "crop" && layer.applied));
+      if (existing) {
+        setSelectedLayerId(existing.id);
+        return current;
+      }
+      const nextLayer = createEditorLayer(toolKey, pageIndex, true);
+      setSelectedLayerId(nextLayer.id);
+      return [...current, nextLayer];
+    });
+  }, []);
+
+  const commitSelectedLayerForExport = useCallback((source: EditorLayer[]) => (
+    source.map(layer => {
+      if (layer.id !== selectedLayerId) return layer;
+      return { ...layer, temporary: false, applied: layer.type === "crop" ? true : layer.applied };
+    })
+  ), [selectedLayerId]);
+
+  const exportableLayers = useCallback((source: EditorLayer[]) => (
+    source.filter(layer => !layer.temporary || layer.applied)
+  ), []);
+
+  const saveEditor = useCallback(() => {
+    const committedLayers = commitSelectedLayerForExport(layers);
+    const editorLayers = JSON.stringify(exportableLayers(committedLayers));
+    setLayers(committedLayers);
+    onSettingsChange({ editorLayers, editTool: activeTool });
+    window.setTimeout(() => onSave({ editorLayers, editTool: activeTool }), 0);
+  }, [activeTool, commitSelectedLayerForExport, exportableLayers, layers, onSave, onSettingsChange]);
+
+  useEffect(() => {
+    const next = editorToolFromToolId(tool.id);
+    const nextLayer = createEditorLayer(next, 0, true);
+    setActiveTool(next);
+    setActiveIndex(0);
+    setZoom(100);
+    setLayers([nextLayer]);
+    setSelectedLayerId(nextLayer.id);
+    setHistory([]);
+    setFuture([]);
+    setIsDirty(false);
+    onSettingsChange({ editTool: next });
+  }, [file.id, tool.id]);
+
+  useEffect(() => {
+    ensureLayerForTool(activeTool, activeIndex);
+  }, [activeIndex, activeTool, ensureLayerForTool]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      onSettingsChange({ editorLayers: JSON.stringify(exportableLayers(layers)) });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [exportableLayers, layers, onSettingsChange]);
+
+  const switchTool = (next: EditorToolKey) => {
+    setLayers(current => removeTemporaryLayers(current));
+    setActiveTool(next);
+    setSelectedLayerId(null);
+    onSettingsChange({ editTool: next });
+    ensureLayerForTool(next, activeIndex);
+  };
+
+  const undo = useCallback(() => {
+    setHistory(prev => {
+      if (!prev.length) return prev;
+      const previous = prev[prev.length - 1];
+      setFuture(next => [layers, ...next].slice(0, 40));
+      setLayers(previous);
+      setSelectedLayerId(previous[previous.length - 1]?.id || null);
+      setIsDirty(true);
+      return prev.slice(0, -1);
+    });
+  }, [layers]);
+
+  const redo = useCallback(() => {
+    setFuture(prev => {
+      if (!prev.length) return prev;
+      const nextLayers = prev[0];
+      setHistory(next => [...next, layers].slice(-40));
+      setLayers(nextLayers);
+      setSelectedLayerId(nextLayers[nextLayers.length - 1]?.id || null);
+      setIsDirty(true);
+      return prev.slice(1);
+    });
+  }, [layers]);
+
+  const resetEditor = useCallback(() => {
+    const nextLayer = createEditorLayer(editorToolFromToolId(tool.id), activeIndex, true);
+    pushHistory(layers);
+    setLayers([nextLayer]);
+    setSelectedLayerId(nextLayer.id);
+    setActiveTool(nextLayer.type);
+  }, [activeIndex, layers, pushHistory, tool.id]);
+
+  const patchLayer = useCallback((layerId: string, patch: Partial<EditorLayer>, record = true) => {
+    const meaningfulPatch = Object.keys(patch).some(key => !["applied", "temporary"].includes(key));
+    const apply = (current: EditorLayer[]) => current.map(layer => layer.id === layerId ? { ...layer, ...patch, ...(meaningfulPatch ? { temporary: false } : {}) } : layer);
+    if (record) {
+      commitLayers(apply);
+    } else {
+      setLayers(apply);
+      setIsDirty(true);
+    }
+  }, [commitLayers]);
+
+  const duplicateLayer = useCallback((layerId = selectedLayerId) => {
+    if (!layerId) return;
+    commitLayers(current => {
+      const source = current.find(layer => layer.id === layerId);
+      if (!source) return current;
+      const clone = { ...source, id: makeEditorLayerId(source.type), x: source.x + 24, y: source.y + 24, temporary: false, applied: false };
+      setSelectedLayerId(clone.id);
+      return [...current, clone];
+    });
+  }, [commitLayers, selectedLayerId]);
+
+  const deleteLayer = useCallback((layerId = selectedLayerId) => {
+    if (!layerId) return;
+    commitLayers(current => {
+      const next = current.filter(layer => layer.id !== layerId);
+      setSelectedLayerId(next.find(layer => layer.pageIndex === activeIndex)?.id || null);
+      return next;
+    });
+  }, [activeIndex, commitLayers, selectedLayerId]);
+
+  const rotateLayer = useCallback((layerId = selectedLayerId) => {
+    if (!layerId) return;
+    commitLayers(current => current.map(layer => layer.id === layerId ? { ...layer, temporary: false, rotation: (layer.rotation + 15) % 360 } : layer));
+  }, [commitLayers, selectedLayerId]);
+
+  const applyActiveTool = useCallback(() => {
+    if (!selectedLayerId) return;
+    commitLayers(current => current.map(layer => {
+      if (layer.id !== selectedLayerId) return layer;
+      return { ...layer, temporary: false, applied: layer.type === "crop" ? true : layer.applied };
+    }));
+    if (activeTool === "crop") setSelectedLayerId(null);
+  }, [activeTool, commitLayers, selectedLayerId]);
+
+  const cancelSelectedTemporary = useCallback(() => {
+    if (!selectedLayerId) {
+      setSelectedLayerId(null);
+      return;
+    }
+    setLayers(current => {
+      const selected = current.find(layer => layer.id === selectedLayerId);
+      if (!selected?.temporary) return current;
+      return current.filter(layer => layer.id !== selectedLayerId);
+    });
+    setSelectedLayerId(null);
+  }, [selectedLayerId]);
+
+  const beginTextEdit = useCallback(() => {
+    editSnapshotRef.current = layers;
+  }, [layers]);
+
+  const endTextEdit = useCallback(() => {
+    if (editSnapshotRef.current) pushHistory(editSnapshotRef.current);
+    editSnapshotRef.current = null;
+  }, [pushHistory]);
+
+  const beginLayerDrag = useCallback((event: React.PointerEvent, layerId: string, mode: "move" | "resize") => {
+    event.preventDefault();
+    event.stopPropagation();
+    setSelectedLayerId(layerId);
+    const source = layers.find(layer => layer.id === layerId);
+    if (!source) return;
+    const startSnapshot = layers;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const scale = zoom / 100;
+    let moved = false;
+
+    const onMove = (moveEvent: PointerEvent) => {
+      moved = true;
+      const dx = (moveEvent.clientX - startX) / scale;
+      const dy = (moveEvent.clientY - startY) / scale;
+      setLayers(current => current.map(layer => {
+        if (layer.id !== layerId) return layer;
+        if (mode === "resize") {
+          return { ...layer, temporary: false, width: Math.max(44, snapToGrid(source.width + dx)), height: Math.max(28, snapToGrid(source.height + dy)) };
+        }
+        return {
+          ...layer,
+          temporary: false,
+          x: clamp(snapToGrid(source.x + dx), 0, 680 - layer.width),
+          y: clamp(snapToGrid(source.y + dy), 0, 900 - layer.height),
+        };
+      }));
+    };
+
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      if (moved) pushHistory(startSnapshot);
+      setIsDirty(moved || isDirty);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, [isDirty, layers, pushHistory, zoom]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const editingText = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        saveEditor();
+        return;
+      }
+      if (editingText) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        undo();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        redo();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        duplicateLayer();
+      } else if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        deleteLayer();
+      } else if (event.key === "Escape") {
+        cancelSelectedTemporary();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [cancelSelectedTemporary, deleteLayer, duplicateLayer, redo, saveEditor, undo]);
+
+  const activeLayer = layers.find(layer => layer.id === selectedLayerId) || null;
+
+  return (
+    <div className="pdf-editor-page flex h-[calc(100vh-60px)] w-full flex-col overflow-hidden" style={{ background: "var(--dn-bg)", color: "var(--dn-t1)" }}>
+      <style>{`
+        .pdf-editor-layer {
+          transition: box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+        }
+        .pdf-editor-layer:hover {
+          box-shadow: 0 0 0 1px rgba(59,130,246,0.45), 0 10px 24px rgba(15,23,42,0.14);
+        }
+        .ped-tool-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          height: 36px;
+          padding: 0 12px;
+          border-radius: 6px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          white-space: nowrap;
+          flex-shrink: 0;
+          transition: background 0.15s, color 0.15s;
+          border: none;
+          cursor: pointer;
+        }
+        .ped-tool-tab-active {
+          background: rgba(37,99,235,0.14);
+          color: #3b82f6;
+          box-shadow: inset 0 0 0 1px rgba(59,130,246,0.22);
+        }
+        .ped-tool-tab-inactive {
+          background: transparent;
+          color: var(--dn-t3);
+        }
+        .ped-tool-tab-inactive:hover {
+          background: var(--dn-bg-subtle);
+          color: var(--dn-t1);
+        }
+        .ped-action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          height: 36px;
+          padding: 0 10px;
+          border-radius: 6px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          border: 1px solid var(--dn-border);
+          background: var(--dn-bg-card);
+          color: var(--dn-t2);
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .ped-action-btn:hover:not(:disabled) {
+          background: var(--dn-bg-subtle);
+          border-color: #3b82f6;
+          color: var(--dn-t1);
+        }
+        .ped-action-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        .ped-icon-btn {
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 6px;
+          border: 1px solid var(--dn-border);
+          background: var(--dn-bg-card);
+          color: var(--dn-t2);
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .ped-icon-btn:hover:not(:disabled) {
+          background: var(--dn-bg-subtle);
+          border-color: #3b82f6;
+          color: var(--dn-t1);
+        }
+        .ped-icon-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+      `}</style>
+
+      {/* ── Header: same height/rhythm as Merge PDF ── */}
+      <div className="flex h-16 shrink-0 items-center gap-4 px-6" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+
+        {/* Left: back + tool identity */}
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label="Back to upload"
+          className="ped-icon-btn shrink-0"
+        >
+          <ArrowLeft size={18} />
+        </button>
+
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>
+          <tool.icon size={20} />
+        </div>
+
+        <div className="flex min-w-0 items-baseline gap-3">
+          <h1 className="truncate text-lg font-semibold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
+          <span className="shrink-0 text-sm font-medium text-blue-500">
+            {file.loading ? "Preparing…" : `${pageCount} ${pageCount === 1 ? "page" : "pages"}`}
+          </span>
+        </div>
+
+        {/* File info pill */}
+        <div className="ml-2 hidden min-w-0 items-center gap-3 lg:flex">
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded text-white" style={{ background: "#ef4444" }}>
+            <FileText size={16} />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold" style={{ color: "var(--dn-t1)", maxWidth: 240 }}>{file.name}</p>
+            <p className="text-xs" style={{ color: "var(--dn-t3)" }}>{formatBytes(file.size)}</p>
+          </div>
+        </div>
+
+        <div className="ml-2 hidden shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold md:flex" style={{ background: "rgba(34,197,94,0.11)", color: "#22c55e" }}>
+          <Check size={13} />
+          Ready to edit
+        </div>
+
+        {/* Right: action buttons */}
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={saveEditor}
+            disabled={status === "processing"}
+            aria-label="Export PDF"
+            className="ped-icon-btn"
+          >
+            <Download size={17} />
+          </button>
+          <button
+            type="button"
+            aria-label="More options"
+            className="ped-icon-btn"
+          >
+            <MoreVertical size={17} />
+          </button>
+          <button
+            type="button"
+            onClick={saveEditor}
+            disabled={status === "processing"}
+            className="flex h-9 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {status === "processing" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+            Save Changes
+          </button>
+        </div>
+      </div>
+
+      {/* ── Combined toolbar: tool tabs + undo/redo + zoom + page counter ── */}
+      <div
+        className="pdf-editor-scroll flex h-auto min-h-[56px] shrink-0 items-center justify-between gap-4 overflow-x-auto px-6 py-2"
+        style={{ borderBottom: "1px solid var(--dn-border)" }}
+      >
+        {/* Tool tabs */}
+        <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
+          {editorToolTabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => switchTool(tab.id)}
+              className={`ped-tool-tab ${activeTool === tab.id ? "ped-tool-tab-active" : "ped-tool-tab-inactive"}`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Toolbar controls */}
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="mx-1 h-5 w-px shrink-0" style={{ background: "var(--dn-border)" }} />
+          <button type="button" disabled={history.length === 0} onClick={undo} className="ped-action-btn" title="Undo (Ctrl+Z)">
+            <Undo2 size={15} /> Undo
+          </button>
+          <button type="button" disabled={future.length === 0} onClick={redo} className="ped-action-btn" title="Redo (Ctrl+Y)">
+            <Redo2 size={15} /> Redo
+          </button>
+          <div className="mx-1 h-5 w-px shrink-0" style={{ background: "var(--dn-border)" }} />
+          <button type="button" onClick={() => setZoom(prev => Math.max(60, prev - 10))} className="ped-icon-btn" title="Zoom out">
+            <Minus size={15} />
+          </button>
+          <span
+            className="grid h-9 w-[58px] shrink-0 place-items-center rounded-md text-sm font-semibold"
+            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+          >
+            {zoom}%
+          </span>
+          <button type="button" onClick={() => setZoom(prev => Math.min(160, prev + 10))} className="ped-icon-btn" title="Zoom in">
+            <Plus size={15} />
+          </button>
+          <button type="button" onClick={() => setZoom(100)} className="ped-icon-btn" title="Pan / reset zoom">
+            <Hand size={15} />
+          </button>
+          <div className="mx-1 h-5 w-px shrink-0" style={{ background: "var(--dn-border)" }} />
+          <span
+            className="grid h-9 w-[72px] shrink-0 place-items-center rounded-md text-sm font-semibold"
+            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+          >
+            {activeIndex + 1} / {Math.max(pageCount, 1)}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Three-column workspace ── */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+
+        {/* Left: page thumbnails — mirrors Merge PDF main section header + grid */}
+        <aside
+          className="flex w-[176px] shrink-0 flex-col"
+          style={{ borderRight: "1px solid var(--dn-border)", background: "var(--dn-bg-card)" }}
+        >
+          {/* Section header */}
+          <div className="flex h-[52px] shrink-0 items-center justify-between px-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+            <h2 className="text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Pages</h2>
+            <span className="text-sm font-medium" style={{ color: "var(--dn-t3)" }}>
+              {file.loading ? "…" : pageCount}
+            </span>
           </div>
 
-          {file.loading && <PreviewSkeleton />}
-          {file.error && (
-            <div style={{ color: "#f87171", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: "4px", padding: "0.85rem", fontSize: "0.84rem" }}>
-              {file.error}
+          {/* Thumbnail grid */}
+          <div className="pdf-editor-scroll min-h-0 flex-1 overflow-y-auto p-3">
+            <div className="grid grid-cols-1 gap-4">
+              {pages.map((item, index) => {
+                const active = index === activeIndex;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveIndex(index)}
+                    className="group relative flex flex-col items-center bg-transparent"
+                    style={{ border: "none", cursor: "pointer" }}
+                  >
+                    <div
+                      style={{
+                        width: "100%",
+                        borderRadius: 4,
+                        overflow: "hidden",
+                        background: "#fff",
+                        boxShadow: active
+                          ? "0 0 0 2px #2563eb, 0 4px 12px rgba(37,99,235,0.18)"
+                          : "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)",
+                      }}
+                    >
+                      <PreviewSurface item={item} isThumbnail />
+                    </div>
+                    <span
+                      className="mt-2 truncate text-center text-xs font-medium w-full"
+                      style={{ color: active ? "#3b82f6" : "var(--dn-t3)" }}
+                    >
+                      {item.label || `Page ${index + 1}`}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          )}
-          {!file.loading && !file.error && (
-            <PageThumbnailGrid
-              items={file.items}
-              selectedIds={selectedIds}
-              rotation={rotation}
-              onToggleItem={onToggleItem}
-              onPreviewItem={(item) => {
-                setPreviewItem(item);
-                setZoom(1);
-              }}
-            />
-          )}
-        </section>
-      ))}
+          </div>
+        </aside>
 
-      {previewItem && (
-        <PreviewModal
-          item={previewItem}
-          zoom={zoom}
-          fullscreen={fullscreen}
-          onClose={() => {
-            setPreviewItem(null);
-            setFullscreen(false);
-          }}
-          onZoomIn={() => setZoom(prev => Math.min(prev + 0.2, 2.4))}
-          onZoomOut={() => setZoom(prev => Math.max(prev - 0.2, 0.6))}
-          onToggleFullscreen={() => setFullscreen(prev => !prev)}
+        {/* Center: canvas — transparent so ambient blobs show through */}
+        <main className="pdf-editor-scroll relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto" style={{ background: "transparent" }}>
+          <EditorCanvasV2
+            item={activeItem}
+            activeTool={activeTool}
+            zoom={zoom}
+            pageIndex={activeIndex}
+            layers={layers}
+            selectedLayerId={selectedLayerId}
+            onSelectLayer={setSelectedLayerId}
+            onPatchLayer={patchLayer}
+            onBeginDrag={beginLayerDrag}
+            onDuplicateLayer={duplicateLayer}
+            onDeleteLayer={deleteLayer}
+            onRotateLayer={rotateLayer}
+            onCommitSnapshot={pushHistory}
+            onTextFocus={beginTextEdit}
+            onTextBlur={endTextEdit}
+          />
+        </main>
+
+        {/* Right: settings sidebar — mirrors Merge PDF right sidebar exactly */}
+        <aside
+          className="relative z-20 flex w-[320px] shrink-0 flex-col"
+          style={{ background: "var(--dn-bg-card)", borderLeft: "1px solid var(--dn-border)" }}
+        >
+          {/* Active tool header — mirrors Merge PDF "Conversion Settings" section header */}
+          <div className="flex shrink-0 items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+            <div
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-md"
+              style={{ background: "rgba(37,99,235,0.12)", color: "#3b82f6" }}
+            >
+              {editorToolTabs.find(t => t.id === activeTool)?.icon}
+            </div>
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>{editorPanelTitle(activeTool)}</h2>
+              <p className="mt-0.5 truncate text-xs" style={{ color: "var(--dn-t3)" }}>{editorPanelDescription(activeTool)}</p>
+            </div>
+          </div>
+
+          {/* Scrollable settings body */}
+          <div className="pdf-editor-scroll min-h-0 flex-1 overflow-y-auto">
+
+            {/* Tool-specific settings — each EditorPanelSection already has px-5 py-4 + border-b */}
+            <EditorSettingsSections
+              activeTool={activeTool}
+              selectedLayer={activeLayer}
+              onPatchSelected={patch => activeLayer && patchLayer(activeLayer.id, patch)}
+              onDeleteSelected={() => activeLayer && deleteLayer(activeLayer.id)}
+            />
+
+            {/* Selected object properties — mirrors Merge PDF "Output Settings" section */}
+            {activeLayer && (
+              <section className="px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+                <h3 className="mb-3 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Selected Object</h3>
+                <div className="space-y-3">
+                  <EditorColorInput
+                    label="Color"
+                    value={activeLayer.color || "#0f172a"}
+                    onChange={value => patchLayer(activeLayer.id, { color: value })}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <EditorNumberField label="X" value={activeLayer.x} onChange={value => patchLayer(activeLayer.id, { x: value })} />
+                    <EditorNumberField label="Y" value={activeLayer.y} onChange={value => patchLayer(activeLayer.id, { y: value })} />
+                    <EditorNumberField label="Width" value={activeLayer.width} onChange={value => patchLayer(activeLayer.id, { width: Math.max(44, value) })} />
+                    <EditorNumberField label="Height" value={activeLayer.height} onChange={value => patchLayer(activeLayer.id, { height: Math.max(28, value) })} />
+                    <EditorNumberField label="Rotate" value={activeLayer.rotation} onChange={value => patchLayer(activeLayer.id, { rotation: value })} />
+                    <EditorNumberField label="Opacity %" value={Math.round(activeLayer.opacity * 100)} onChange={value => patchLayer(activeLayer.id, { opacity: clamp(value, 5, 100) / 100 })} />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* File details — mirrors Merge PDF "File Details" section */}
+            <section className="px-5 py-4">
+              <h3 className="mb-3 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>File Details</h3>
+              <div className="space-y-2.5">
+                <OrganizeDetailRow label="File name" value={file.name.length > 20 ? file.name.slice(0, 18) + "…" : file.name} />
+                <OrganizeDetailRow label="File size" value={formatBytes(file.size)} />
+                <OrganizeDetailRow label="Total pages" value={file.loading ? "…" : String(pageCount)} />
+                <OrganizeDetailRow label="Active tool" value={editorPanelTitle(activeTool) || "—"} />
+                <OrganizeDetailRow label="Layers" value={String(layers.filter(l => !l.temporary).length)} />
+              </div>
+            </section>
+          </div>
+
+          {/* Sticky apply/save CTA — mirrors Merge PDF process button area */}
+          <div className="z-10 p-5" style={{ background: `linear-gradient(to top, var(--dn-bg-card) 60%, transparent)`, borderTop: "1px solid var(--dn-border)" }}>
+            <button
+              type="button"
+              onClick={applyActiveTool}
+              className="flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-blue-700 font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {editorPrimaryAction(activeTool)}
+              <ArrowRight size={18} />
+            </button>
+
+            <p className="mt-3 flex items-center justify-center gap-2 text-xs font-medium" style={{ color: "var(--dn-t4)" }}>
+              <Lock size={13} />
+              Your files are secure and private
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      {/* ── Sticky bottom bar — mirrors Merge PDF process area but in footer form ── */}
+      <div
+        className="sticky bottom-0 flex h-14 shrink-0 items-center justify-between px-6"
+        style={{ borderTop: "1px solid var(--dn-border)", background: "var(--dn-bg-card)", boxShadow: "0 -2px 12px rgba(15,23,42,0.06)" }}
+      >
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={undo}
+            disabled={history.length === 0}
+            className="ped-action-btn"
+          >
+            <Undo2 size={15} /> Undo
+          </button>
+          <button
+            type="button"
+            onClick={redo}
+            disabled={future.length === 0}
+            className="ped-action-btn"
+          >
+            <Redo2 size={15} /> Redo
+          </button>
+          <div className="mx-1 h-5 w-px" style={{ background: "var(--dn-border)" }} />
+          <button
+            type="button"
+            onClick={resetEditor}
+            className="ped-action-btn"
+          >
+            <RotateCcw size={15} /> Reset
+          </button>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--dn-t3)" }}>
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: isDirty ? "#f59e0b" : "#22c55e", flexShrink: 0 }}
+            />
+            {isDirty ? "Unsaved changes" : "All saved locally"}
+          </span>
+          <button
+            type="button"
+            onClick={saveEditor}
+            disabled={status === "processing"}
+            className="flex h-10 items-center gap-2 rounded-lg bg-blue-700 px-5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {status === "processing" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+            Save & Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function makeEditorLayerId(type: EditorToolKey) {
+  return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function createEditorLayer(type: EditorToolKey, pageIndex: number, temporary = true): EditorLayer {
+  const base = {
+    id: makeEditorLayerId(type),
+    type,
+    pageIndex,
+    rotation: 0,
+    color: "#0f172a",
+    opacity: 1,
+    font: "Helvetica",
+    fontSize: 24,
+    align: "center" as const,
+    bold: false,
+    italic: false,
+    underline: false,
+    brushSize: 5,
+    temporary,
+    applied: false,
+  };
+  if (type === "highlight") return { ...base, x: 118, y: 344, width: 440, height: 36, color: "#facc15", opacity: 0.55, text: "" };
+  if (type === "draw") return { ...base, x: 0, y: 0, width: 680, height: 900, color: "#2563eb", text: "[]" };
+  if (type === "crop") return { ...base, x: 56, y: 64, width: 568, height: 772, text: "" };
+  if (type === "redact") return { ...base, x: 156, y: 420, width: 360, height: 40, text: "" };
+  if (type === "watermark") return { ...base, x: 92, y: 410, width: 500, height: 90, rotation: -24, color: "#2563eb", opacity: 0.22, fontSize: 52, text: "CONFIDENTIAL" };
+  if (type === "page-numbers") return { ...base, x: 300, y: 846, width: 92, height: 34, color: "#ffffff", fontSize: 14, text: "Page 1" };
+  if (type === "add-image") return { ...base, x: 180, y: 310, width: 320, height: 180, color: "#2563eb", text: "" };
+  if (type === "annotate") return { ...base, x: 138, y: 262, width: 360, height: 90, color: "#1d4ed8", opacity: 0.95, fontSize: 18, text: "Annotation note" };
+  return { ...base, x: 132, y: 244, width: 416, height: 72, color: "#0f172a", text: type === "add-text" ? "New text" : "Editable text area" };
+}
+
+function editorLayerBackground(layer: EditorLayer) {
+  if (layer.type === "highlight") return "rgba(250,204,21,0.45)";
+  if (layer.type === "redact") return "#020617";
+  if (layer.type === "crop") return "transparent";
+  if (layer.type === "add-image") return "transparent";
+  if (layer.type === "page-numbers") return "#020617";
+  if (layer.type === "annotate") return "transparent";
+  return "transparent";
+}
+
+function renderEditorLayerContent(layer: EditorLayer, activeTool: EditorToolKey, handlers: { onInput: (value: string) => void; onFocus: () => void; onBlur: () => void }) {
+  if (layer.type === "draw") {
+    const paths = parseDrawPaths(layer.text);
+    return (
+      <svg className="h-full w-full" viewBox="0 0 680 900" fill="none" preserveAspectRatio="none">
+        {paths.map((points, index) => (
+          <polyline key={index} points={points.map(point => `${point.x},${point.y}`).join(" ")} stroke={layer.color || "#2563eb"} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        ))}
+      </svg>
+    );
+  }
+  if (layer.type === "crop") return <div className="h-full w-full border-2 border-dashed border-cyan-500" />;
+  if (layer.type === "add-image") {
+    if (layer.text.startsWith("data:image/")) {
+      return <img src={layer.text} alt="" className="h-full w-full object-contain" draggable={false} />;
+    }
+    return <div className="grid h-full w-full place-items-center border-2 border-dashed border-blue-500/70 text-sm font-bold text-blue-600">Upload image</div>;
+  }
+  const editable = layer.type === "edit" || layer.type === "add-text" || layer.type === "annotate";
+  if (editable) {
+    return <EditorEditableText layer={layer} activeTool={activeTool} onCommit={handlers.onInput} onFocus={handlers.onFocus} onBlur={handlers.onBlur} />;
+  }
+  return (
+    <div
+      data-editor-content="true"
+      contentEditable={editable}
+      suppressContentEditableWarning
+      onFocus={handlers.onFocus}
+      onBlur={handlers.onBlur}
+      onInput={event => handlers.onInput(event.currentTarget.textContent || "")}
+      className="grid h-full w-full place-items-center px-3 outline-none"
+      style={{
+        fontSize: layer.fontSize ?? (layer.type === "page-numbers" ? 14 : activeTool === "watermark" ? 52 : 24),
+        color: layer.color,
+        fontFamily: layer.font ? `${layer.font}, sans-serif` : "Helvetica, Arial, sans-serif",
+        fontWeight: layer.bold ? 700 : 400,
+        fontStyle: layer.italic ? "italic" : "normal",
+        textDecoration: layer.underline ? "underline" : "none",
+        letterSpacing: layer.type === "watermark" ? "0.12em" : 0,
+        textAlign: layer.align ?? "center",
+      }}
+    >
+      {layer.text}
+    </div>
+  );
+}
+
+function EditorEditableText({ layer, activeTool, onCommit, onFocus, onBlur }: { layer: EditorLayer; activeTool: EditorToolKey; onCommit: (value: string) => void; onFocus: () => void; onBlur: () => void }) {
+  const textRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (textRef.current && textRef.current.textContent !== layer.text && document.activeElement !== textRef.current) {
+      textRef.current.textContent = layer.text;
+    }
+  }, [layer.id, layer.text]);
+
+  return (
+    <div
+      ref={textRef}
+      data-editor-content="true"
+      contentEditable
+      suppressContentEditableWarning
+      onFocus={onFocus}
+      onBlur={event => {
+        onCommit(event.currentTarget.textContent || "");
+        onBlur();
+      }}
+      onKeyDown={event => event.stopPropagation()}
+      className="flex h-full w-full items-center overflow-hidden px-3 outline-none"
+      style={{
+        fontSize: layer.fontSize ?? (activeTool === "watermark" ? 52 : 24),
+        color: layer.color,
+        fontFamily: layer.font ? `${layer.font}, sans-serif` : "Helvetica, Arial, sans-serif",
+        fontWeight: layer.bold ? 700 : 400,
+        fontStyle: layer.italic ? "italic" : "normal",
+        textDecoration: layer.underline ? "underline" : "none",
+        letterSpacing: layer.type === "watermark" ? "0.12em" : 0,
+        textAlign: layer.align ?? "center",
+        justifyContent: layer.align === "left" ? "flex-start" : layer.align === "right" ? "flex-end" : "center",
+      }}
+    >
+      {layer.text}
+    </div>
+  );
+}
+
+function parseDrawPaths(value: string): Array<Array<{ x: number; y: number }>> {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Array.isArray) : [];
+  } catch {
+    return [];
+  }
+}
+
+function snapToGrid(value: number) {
+  return Math.round(value / 8) * 8;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function fitEditorImageToPage(naturalWidth: number, naturalHeight: number) {
+  const maxWidth = 440;
+  const maxHeight = 360;
+  const ratio = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight, 1);
+  const width = Math.max(40, Math.round(naturalWidth * ratio));
+  const height = Math.max(40, Math.round(naturalHeight * ratio));
+  return {
+    width,
+    height,
+    x: Math.round((680 - width) / 2),
+    y: Math.round((900 - height) / 2),
+  };
+}
+
+function EditorCanvasV2({
+  item,
+  activeTool,
+  zoom,
+  pageIndex,
+  layers,
+  selectedLayerId,
+  onSelectLayer,
+  onPatchLayer,
+  onBeginDrag,
+  onDuplicateLayer,
+  onDeleteLayer,
+  onRotateLayer,
+  onCommitSnapshot,
+  onTextFocus,
+  onTextBlur,
+}: {
+  item?: PreviewItem;
+  activeTool: EditorToolKey;
+  zoom: number;
+  pageIndex: number;
+  layers: EditorLayer[];
+  selectedLayerId: string | null;
+  onSelectLayer: (id: string | null) => void;
+  onPatchLayer: (id: string, patch: Partial<EditorLayer>, record?: boolean) => void;
+  onBeginDrag: (event: React.PointerEvent, id: string, mode: "move" | "resize") => void;
+  onDuplicateLayer: (id?: string | null) => void;
+  onDeleteLayer: (id?: string | null) => void;
+  onRotateLayer: (id?: string | null) => void;
+  onCommitSnapshot: (snapshot: EditorLayer[]) => void;
+  onTextFocus: () => void;
+  onTextBlur: () => void;
+}) {
+  const scale = zoom / 100;
+  const pageLayers = layers.filter(layer => layer.pageIndex === pageIndex && !(layer.type === "crop" && layer.applied && layer.id !== selectedLayerId));
+  const pageRef = useRef<HTMLDivElement | null>(null);
+  const drawSnapshotRef = useRef<string | null>(null);
+  const drawingPathsRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
+
+  const activeDrawLayer = activeTool === "draw" ? pageLayers.find(layer => layer.type === "draw") : null;
+  const getPagePoint = (event: React.PointerEvent | PointerEvent) => {
+    const rect = pageRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
+    return {
+      x: clamp(((event.clientX - rect.left) / rect.width) * 680, 0, 680),
+      y: clamp(((event.clientY - rect.top) / rect.height) * 900, 0, 900),
+    };
+  };
+
+  const beginDraw = (event: React.PointerEvent) => {
+    if (!activeDrawLayer || activeTool !== "draw") return;
+    const target = event.target as HTMLElement;
+    if (target.closest("button") || target.dataset.editorContent === "true") return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSelectLayer(activeDrawLayer.id);
+    const start = getPagePoint(event);
+    const existingPaths = parseDrawPaths(activeDrawLayer.text);
+    const nextPaths = [...existingPaths, [start]];
+    drawingPathsRef.current = nextPaths;
+    drawSnapshotRef.current = activeDrawLayer.text;
+    onPatchLayer(activeDrawLayer.id, { text: JSON.stringify(nextPaths), temporary: false }, false);
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const point = getPagePoint(moveEvent);
+      const paths = drawingPathsRef.current.length ? drawingPathsRef.current : nextPaths;
+      const last = paths[paths.length - 1] || [];
+      const previous = last[last.length - 1];
+      if (previous && Math.hypot(previous.x - point.x, previous.y - point.y) < 3) return;
+      paths[paths.length - 1] = [...last, point];
+      drawingPathsRef.current = [...paths];
+      onPatchLayer(activeDrawLayer.id, { text: JSON.stringify(paths), temporary: false }, false);
+    };
+
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      const finalText = JSON.stringify(drawingPathsRef.current);
+      const initialText = drawSnapshotRef.current;
+      drawSnapshotRef.current = null;
+      drawingPathsRef.current = [];
+      if (initialText !== finalText) onCommitSnapshot(layers);
+      onPatchLayer(activeDrawLayer.id, { text: finalText, temporary: false }, false);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  return (
+    <div className="mx-auto" style={{ width: 680 * scale, height: 900 * scale }}>
+      <div
+        ref={pageRef}
+        className="relative h-[900px] w-[680px] origin-top-left overflow-hidden bg-white"
+        style={{ transform: `scale(${scale})`, boxShadow: "0 24px 70px rgba(15,23,42,0.28)", outline: "1px solid rgba(15,23,42,0.10)", cursor: activeTool === "draw" ? "crosshair" : "default" }}
+        onPointerDown={event => {
+          if (activeTool === "draw") beginDraw(event);
+          else onSelectLayer(null);
+        }}
+      >
+        {item?.thumbnail ? (
+          <img src={item.thumbnail} alt={item.label} className="absolute inset-0 h-full w-full object-contain" />
+        ) : (
+          <div className="absolute inset-0 bg-white px-14 py-12 text-center">
+            <div className="mb-12 flex items-start justify-between">
+              <h2 className="text-3xl font-bold text-slate-950"><span className="text-blue-600">DocNova</span> PDF</h2>
+              <div className="h-16 w-16 bg-slate-900" />
+            </div>
+            <p className="mb-4 text-slate-500">This document is ready for editing</p>
+            <div className="mx-auto mb-8 w-[420px] border px-10 py-6 text-3xl font-bold text-slate-950">Selected text block</div>
+            <div className="mx-auto h-32 w-[460px] rounded bg-slate-100" />
+          </div>
+        )}
+
+        {pageLayers.map(layer => {
+          const selected = layer.id === selectedLayerId;
+          const layerStyle: React.CSSProperties = {
+            left: layer.x,
+            top: layer.y,
+            width: layer.width,
+            height: layer.height,
+            transform: `rotate(${layer.rotation}deg)`,
+            opacity: layer.opacity,
+            border: selected ? "2px dashed #2563eb" : layer.type === "crop" ? "1px dashed rgba(6,182,212,0.75)" : "1px solid transparent",
+            background: editorLayerBackground(layer),
+            color: layer.color,
+            cursor: selected && (layer.type === "edit" || layer.type === "add-text") ? "text" : "move",
+          };
+          return (
+            <div
+              key={layer.id}
+              className="pdf-editor-layer absolute z-10"
+              style={layerStyle}
+              onPointerDown={event => {
+                if (layer.type === "draw" && activeTool === "draw") return;
+                if ((event.target as HTMLElement).dataset.editorContent === "true") {
+                  event.stopPropagation();
+                  onSelectLayer(layer.id);
+                  return;
+                }
+                onBeginDrag(event, layer.id, "move");
+              }}
+              onClick={event => {
+                event.stopPropagation();
+                onSelectLayer(layer.id);
+              }}
+            >
+              {selected && (
+                <div className="absolute left-1/2 top-[-48px] z-30 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 shadow-xl">
+                  <button type="button" aria-label="Move selection" className="grid h-8 w-8 cursor-move place-items-center rounded-md text-slate-600 transition hover:bg-blue-50 hover:text-blue-600" onPointerDown={event => onBeginDrag(event, layer.id, "move")}><PenLine size={16} /></button>
+                  <button type="button" aria-label="Duplicate selection" className="grid h-8 w-8 place-items-center rounded-md text-slate-600 transition hover:bg-blue-50 hover:text-blue-600" onClick={event => { event.stopPropagation(); onDuplicateLayer(layer.id); }}><Copy size={16} /></button>
+                  <button type="button" aria-label="Delete selection" className="grid h-8 w-8 place-items-center rounded-md text-slate-600 transition hover:bg-red-50 hover:text-red-600" onClick={event => { event.stopPropagation(); onDeleteLayer(layer.id); }}><Trash2 size={16} /></button>
+                  <button type="button" aria-label="Rotate selection" className="grid h-8 w-8 place-items-center rounded-md text-slate-600 transition hover:bg-slate-100" onClick={event => { event.stopPropagation(); onRotateLayer(layer.id); }}><RotateCw size={16} /></button>
+                </div>
+              )}
+
+              {renderEditorLayerContent(layer, activeTool, {
+                onInput: value => onPatchLayer(layer.id, { text: value, temporary: false }, false),
+                onFocus: onTextFocus,
+                onBlur: onTextBlur,
+              })}
+
+              {selected && (
+                <>
+                  <span className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full bg-blue-600" />
+                  <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-blue-600" />
+                  <span className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-blue-600" />
+                  <button
+                    type="button"
+                    aria-label="Resize selection"
+                    className="absolute -bottom-1.5 -right-1.5 h-4 w-4 rounded-full bg-blue-600 shadow"
+                    onPointerDown={event => onBeginDrag(event, layer.id, "resize")}
+                  />
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EditorCanvas({ item, activeTool, zoom }: { item?: PreviewItem; activeTool: EditorToolKey; zoom: number }) {
+  const scale = zoom / 100;
+  return (
+    <div className="mx-auto origin-top" style={{ width: 680 * scale, transform: "scale(" + scale + ")", transformOrigin: "top center" }}>
+      <div className="relative min-h-[900px] w-[680px] overflow-hidden bg-white" style={{ boxShadow: "0 24px 70px rgba(15,23,42,0.28)", outline: "1px solid rgba(15,23,42,0.10)" }}>
+        {item?.thumbnail ? (
+          <img src={item.thumbnail} alt={item.label} className="absolute inset-0 h-full w-full object-contain" />
+        ) : (
+          <div className="absolute inset-0 bg-white px-14 py-12 text-center">
+            <div className="mb-12 flex items-start justify-between">
+              <h2 className="text-3xl font-bold text-slate-950"><span className="text-blue-600">DocNova</span> PDF</h2>
+              <div className="h-16 w-16 bg-slate-900" />
+            </div>
+            <p className="mb-4 text-slate-500">This document is ready for editing</p>
+            <div className="mx-auto mb-8 w-[420px] border px-10 py-6 text-3xl font-bold text-slate-950">Selected text block</div>
+            <div className="mx-auto h-32 w-[460px] rounded bg-slate-100" />
+          </div>
+        )}
+
+        {/* floating selection toolbar — always white/light since it sits ON the page canvas */}
+        <div className="absolute left-1/2 top-[178px] z-20 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 shadow-xl">
+          <button type="button" aria-label="Edit selection" className="grid h-8 w-8 place-items-center rounded-md text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"><PenLine size={16} /></button>
+          <button type="button" aria-label="Copy selection" className="grid h-8 w-8 place-items-center rounded-md text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"><Copy size={16} /></button>
+          <button type="button" aria-label="Delete selection" className="grid h-8 w-8 place-items-center rounded-md text-slate-600 transition hover:bg-red-50 hover:text-red-600"><Trash2 size={16} /></button>
+          <button type="button" aria-label="More selection options" className="grid h-8 w-8 place-items-center rounded-md text-slate-600 transition hover:bg-slate-100"><MoreVertical size={16} /></button>
+        </div>
+
+        {(activeTool === "edit" || activeTool === "add-text") && (
+          <div className="absolute left-[132px] top-[244px] z-10 w-[416px] border-2 border-dashed border-blue-500 bg-blue-50/35 px-5 py-4 text-center text-2xl font-bold text-slate-950">
+            Editable text area
+            <span className="absolute -left-1 -top-1 h-2 w-2 rounded-full bg-blue-600" />
+            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600" />
+            <span className="absolute -bottom-1 -left-1 h-2 w-2 rounded-full bg-blue-600" />
+            <span className="absolute -bottom-1 -right-1 h-2 w-2 rounded-full bg-blue-600" />
+          </div>
+        )}
+        {activeTool === "highlight" && <div className="absolute left-[118px] top-[344px] z-10 h-9 w-[440px] rounded bg-yellow-300/55" />}
+        {activeTool === "draw" && (
+          <svg className="absolute left-[140px] top-[390px] z-10 h-28 w-[390px]" viewBox="0 0 390 112" fill="none">
+            <path d="M8 82 C70 8, 122 116, 186 42 S300 6, 382 78" stroke="#2563eb" strokeWidth="8" strokeLinecap="round" />
+          </svg>
+        )}
+        {activeTool === "crop" && <div className="absolute inset-x-14 inset-y-16 z-10 border-2 border-dashed border-cyan-500 bg-cyan-500/5" />}
+        {activeTool === "redact" && (
+          <>
+            <div className="absolute left-[156px] top-[420px] z-10 h-9 w-[360px] bg-slate-950" />
+            <div className="absolute left-[190px] top-[476px] z-10 h-8 w-[292px] bg-slate-950" />
+          </>
+        )}
+        {activeTool === "watermark" && <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 -rotate-24 text-6xl font-black tracking-[0.18em] text-blue-600/20">CONFIDENTIAL</div>}
+        {activeTool === "page-numbers" && <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 rounded-full bg-slate-950 px-4 py-1 text-sm font-semibold text-white">Page 1</div>}
+      </div>
+    </div>
+  );
+}
+
+function EditorSettingsPanel({
+  activeTool,
+  selectedLayer,
+  onPatchSelected,
+  onApplyActiveTool,
+}: {
+  activeTool: EditorToolKey;
+  selectedLayer?: EditorLayer | null;
+  onPatchSelected?: (patch: Partial<EditorLayer>) => void;
+  onApplyActiveTool?: () => void;
+}) {
+  const active = editorToolTabs.find(item => item.id === activeTool) || editorToolTabs[0];
+  return (
+    <aside className="flex min-h-0 flex-col" style={{ borderLeft: "1px solid var(--dn-border)", background: "var(--dn-bg-card)" }}>
+      <div className="flex shrink-0 items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+        <div className="grid h-11 w-11 place-items-center rounded-lg" style={{ background: "rgba(37,99,235,0.12)", color: "#3b82f6" }}>{active.icon}</div>
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-bold" style={{ color: "var(--dn-t1)" }}>{editorPanelTitle(activeTool)}</h3>
+          <p className="mt-0.5 text-xs" style={{ color: "var(--dn-t3)" }}>{editorPanelDescription(activeTool)}</p>
+        </div>
+      </div>
+      <div className="pdf-editor-scroll min-h-0 flex-1 overflow-y-auto">
+        <EditorSettingsSections activeTool={activeTool} selectedLayer={selectedLayer} onPatchSelected={onPatchSelected} />
+        {selectedLayer && (
+          <EditorPanelSection title="Selected Object">
+            <div className="mb-3">
+              <EditorColorInput label="Color" value={selectedLayer.color || "#0f172a"} onChange={value => onPatchSelected?.({ color: value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <EditorNumberField label="X" value={selectedLayer.x} onChange={value => onPatchSelected?.({ x: value })} />
+              <EditorNumberField label="Y" value={selectedLayer.y} onChange={value => onPatchSelected?.({ y: value })} />
+              <EditorNumberField label="Width" value={selectedLayer.width} onChange={value => onPatchSelected?.({ width: Math.max(44, value) })} />
+              <EditorNumberField label="Height" value={selectedLayer.height} onChange={value => onPatchSelected?.({ height: Math.max(28, value) })} />
+              <EditorNumberField label="Rotate" value={selectedLayer.rotation} onChange={value => onPatchSelected?.({ rotation: value })} />
+              <EditorNumberField label="Opacity" value={Math.round(selectedLayer.opacity * 100)} onChange={value => onPatchSelected?.({ opacity: clamp(value, 5, 100) / 100 })} />
+            </div>
+          </EditorPanelSection>
+        )}
+      </div>
+      <div className="shrink-0 p-4" style={{ borderTop: "1px solid var(--dn-border)" }}>
+        <button type="button" onClick={onApplyActiveTool} className="h-11 w-full rounded-lg text-sm font-semibold text-white transition hover:bg-blue-700" style={{ background: "#2563eb" }}>{editorPrimaryAction(activeTool)}</button>
+      </div>
+    </aside>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   EDITOR SETTINGS SECTIONS — every control is wired to the layer
+   ───────────────────────────────────────────────────────────── */
+
+const FONT_LIST = [
+  "Inter", "Roboto", "Open Sans", "Lato", "Poppins", "Montserrat",
+  "Helvetica", "Arial", "Times New Roman", "Georgia", "Courier New", "Verdana",
+];
+
+function EditorSettingsSections({
+  activeTool,
+  selectedLayer,
+  onPatchSelected,
+  onDeleteSelected,
+}: {
+  activeTool: EditorToolKey;
+  selectedLayer?: EditorLayer | null;
+  onPatchSelected?: (patch: Partial<EditorLayer>) => void;
+  onDeleteSelected?: () => void;
+}) {
+  const patch = (p: Partial<EditorLayer>) => onPatchSelected?.(p);
+
+  /* ── Draw ── */
+  if (activeTool === "draw") {
+    return (
+      <>
+        <EditorPanelSection title="Brush">
+          <EditorNumberField
+            label="Brush size (px)"
+            value={selectedLayer?.brushSize ?? 5}
+            onChange={value => patch({ brushSize: clamp(value, 1, 40) })}
+          />
+          <EditorNumberField
+            label="Opacity (%)"
+            value={Math.round((selectedLayer?.opacity ?? 1) * 100)}
+            onChange={value => patch({ opacity: clamp(value, 5, 100) / 100 })}
+          />
+          <EditorColorInput
+            label="Stroke color"
+            value={selectedLayer?.color ?? "#2563eb"}
+            onChange={value => patch({ color: value })}
+          />
+          <EditorColorSwatches
+            colors={["#0f172a", "#2563eb", "#ef4444", "#facc15", "#22c55e", "#a855f7"]}
+            value={selectedLayer?.color ?? "#2563eb"}
+            onChange={value => patch({ color: value })}
+          />
+        </EditorPanelSection>
+        {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
+      </>
+    );
+  }
+
+  /* ── Crop ── */
+  if (activeTool === "crop") {
+    return (
+      <>
+        <EditorPanelSection title="Crop Area">
+          <div className="grid grid-cols-2 gap-3">
+            <EditorNumberField label="X" value={selectedLayer?.x ?? 56} onChange={value => patch({ x: clamp(value, 0, 680) })} />
+            <EditorNumberField label="Y" value={selectedLayer?.y ?? 64} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+            <EditorNumberField label="Width" value={selectedLayer?.width ?? 568} onChange={value => patch({ width: clamp(value, 44, 680) })} />
+            <EditorNumberField label="Height" value={selectedLayer?.height ?? 772} onChange={value => patch({ height: clamp(value, 44, 900) })} />
+          </div>
+        </EditorPanelSection>
+        {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
+      </>
+    );
+  }
+
+  /* ── Redact ── */
+  if (activeTool === "redact") {
+    return (
+      <>
+        <EditorPanelSection title="Redaction">
+          <EditorColorInput
+            label="Redaction color"
+            value={selectedLayer?.color ?? "#020617"}
+            onChange={value => patch({ color: value })}
+          />
+          <EditorColorSwatches
+            colors={["#020617", "#ef4444", "#1d4ed8", "#ffffff"]}
+            value={selectedLayer?.color ?? "#020617"}
+            onChange={value => patch({ color: value })}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <EditorNumberField label="Width" value={selectedLayer?.width ?? 360} onChange={value => patch({ width: Math.max(20, value) })} />
+            <EditorNumberField label="Height" value={selectedLayer?.height ?? 40} onChange={value => patch({ height: Math.max(10, value) })} />
+          </div>
+        </EditorPanelSection>
+        {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
+      </>
+    );
+  }
+
+  /* ── Watermark ── */
+  if (activeTool === "watermark") {
+    return (
+      <>
+        <EditorPanelSection title="Watermark Text">
+          <textarea
+            value={selectedLayer?.text ?? "CONFIDENTIAL"}
+            onChange={e => patch({ text: e.target.value })}
+            placeholder="Watermark text..."
+            rows={2}
+            className="w-full resize-none rounded-md p-3 text-sm outline-none transition focus:border-blue-500"
+            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+          />
+        </EditorPanelSection>
+        <EditorPanelSection title="Style">
+          <EditorNumberField label="Font size" value={selectedLayer?.fontSize ?? 52} onChange={value => patch({ fontSize: clamp(value, 10, 120) })} />
+          <EditorColorInput
+            label="Color"
+            value={selectedLayer?.color ?? "#2563eb"}
+            onChange={value => patch({ color: value })}
+          />
+          <EditorColorSwatches
+            colors={["#2563eb", "#ef4444", "#0f172a", "#64748b", "#f59e0b"]}
+            value={selectedLayer?.color ?? "#2563eb"}
+            onChange={value => patch({ color: value })}
+          />
+        </EditorPanelSection>
+        <EditorPanelSection title="Placement">
+          <div className="grid grid-cols-2 gap-3">
+            <EditorNumberField label="Opacity (%)" value={Math.round((selectedLayer?.opacity ?? 0.22) * 100)} onChange={value => patch({ opacity: clamp(value, 1, 100) / 100 })} />
+            <EditorNumberField label="Rotate (°)" value={selectedLayer?.rotation ?? -24} onChange={value => patch({ rotation: value })} />
+            <EditorNumberField label="X" value={selectedLayer?.x ?? 92} onChange={value => patch({ x: clamp(value, 0, 680) })} />
+            <EditorNumberField label="Y" value={selectedLayer?.y ?? 410} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+          </div>
+        </EditorPanelSection>
+        {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
+      </>
+    );
+  }
+
+  /* ── Page Numbers ── */
+  if (activeTool === "page-numbers") {
+    return (
+      <>
+        <EditorPanelSection title="Number Format">
+          <div>
+            <EditorLabel>Text template</EditorLabel>
+            <input
+              type="text"
+              value={selectedLayer?.text ?? "Page 1"}
+              onChange={e => patch({ text: e.target.value })}
+              placeholder="e.g. Page 1"
+              className="h-10 w-full rounded-md px-3 text-sm outline-none transition focus:border-blue-500"
+              style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+            />
+          </div>
+        </EditorPanelSection>
+        <EditorPanelSection title="Style">
+          <EditorNumberField label="Font size" value={selectedLayer?.fontSize ?? 14} onChange={value => patch({ fontSize: clamp(value, 8, 36) })} />
+          <EditorColorInput
+            label="Color"
+            value={selectedLayer?.color ?? "#ffffff"}
+            onChange={value => patch({ color: value })}
+          />
+          <EditorColorSwatches
+            colors={["#ffffff", "#0f172a", "#2563eb", "#64748b", "#ef4444"]}
+            value={selectedLayer?.color ?? "#ffffff"}
+            onChange={value => patch({ color: value })}
+          />
+        </EditorPanelSection>
+        <EditorPanelSection title="Position">
+          <div className="grid grid-cols-2 gap-3">
+            <EditorNumberField label="X" value={selectedLayer?.x ?? 300} onChange={value => patch({ x: clamp(value, 0, 680) })} />
+            <EditorNumberField label="Y" value={selectedLayer?.y ?? 846} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+          </div>
+        </EditorPanelSection>
+        {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
+      </>
+    );
+  }
+
+  /* ── Add Image ── */
+  if (activeTool === "add-image") {
+    const uploadImage = (file?: File) => {
+      if (!file || !file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const src = String(reader.result || "");
+        const img = new Image();
+        img.onload = () => {
+          const fit = fitEditorImageToPage(img.naturalWidth || 1, img.naturalHeight || 1);
+          patch({ text: src, ...fit, temporary: false });
+        };
+        img.onerror = () => patch({ text: src, temporary: false });
+        img.src = src;
+      };
+      reader.readAsDataURL(file);
+    };
+    return (
+      <>
+        <EditorPanelSection title="Image">
+          <label
+            className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm font-semibold transition hover:border-blue-500 hover:bg-blue-500/10 hover:text-blue-500"
+            style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t3)" }}
+          >
+            <ImageIcon size={20} />
+            {selectedLayer?.text?.startsWith("data:image/") ? "Replace Image" : "Upload Image"}
+            <input type="file" accept="image/*" className="hidden" onChange={e => uploadImage(e.target.files?.[0])} />
+          </label>
+        </EditorPanelSection>
+        <EditorPanelSection title="Transform">
+          <div className="grid grid-cols-2 gap-3">
+            <EditorNumberField label="Width" value={selectedLayer?.width ?? 320} onChange={value => patch({ width: Math.max(32, value) })} />
+            <EditorNumberField label="Height" value={selectedLayer?.height ?? 180} onChange={value => patch({ height: Math.max(32, value) })} />
+            <EditorNumberField label="Opacity (%)" value={Math.round((selectedLayer?.opacity ?? 1) * 100)} onChange={value => patch({ opacity: clamp(value, 5, 100) / 100 })} />
+            <EditorNumberField label="Rotate (°)" value={selectedLayer?.rotation ?? 0} onChange={value => patch({ rotation: value })} />
+            <EditorNumberField label="X" value={selectedLayer?.x ?? 180} onChange={value => patch({ x: clamp(value, 0, 680) })} />
+            <EditorNumberField label="Y" value={selectedLayer?.y ?? 310} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+          </div>
+        </EditorPanelSection>
+        {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
+      </>
+    );
+  }
+
+  /* ── Annotate / Highlight ── */
+  if (activeTool === "annotate" || activeTool === "highlight") {
+    const isHighlight = activeTool === "highlight";
+    const defaultColors = isHighlight
+      ? ["#fde047", "#bef264", "#93c5fd", "#fca5a5", "#d8b4fe"]
+      : ["#2563eb", "#ef4444", "#f59e0b", "#22c55e", "#a855f7"];
+    return (
+      <>
+        <EditorPanelSection title={isHighlight ? "Highlight Style" : "Annotation"}>
+          <EditorColorInput
+            label="Color"
+            value={selectedLayer?.color ?? defaultColors[0]}
+            onChange={value => patch({ color: value })}
+          />
+          <EditorColorSwatches
+            colors={defaultColors}
+            value={selectedLayer?.color ?? defaultColors[0]}
+            onChange={value => patch({ color: value })}
+          />
+          <EditorNumberField
+            label="Opacity (%)"
+            value={Math.round((selectedLayer?.opacity ?? (isHighlight ? 0.55 : 0.8)) * 100)}
+            onChange={value => patch({ opacity: clamp(value, 5, 100) / 100 })}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <EditorNumberField label="Width" value={selectedLayer?.width ?? 440} onChange={value => patch({ width: Math.max(20, value) })} />
+            <EditorNumberField label="Height" value={selectedLayer?.height ?? (isHighlight ? 36 : 90)} onChange={value => patch({ height: Math.max(10, value) })} />
+          </div>
+        </EditorPanelSection>
+        {!isHighlight && (
+          <EditorPanelSection title="Text Content">
+            <textarea
+              value={selectedLayer?.text ?? ""}
+              onChange={e => patch({ text: e.target.value })}
+              placeholder="Annotation text..."
+              rows={3}
+              className="w-full resize-none rounded-md p-3 text-sm outline-none transition focus:border-blue-500"
+              style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+            />
+          </EditorPanelSection>
+        )}
+        {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
+      </>
+    );
+  }
+
+  /* ── Edit Text / Add Text (default) ── */
+  return (
+    <>
+      <EditorPanelSection title="Text Content">
+        <textarea
+          value={selectedLayer?.text ?? ""}
+          onChange={e => patch({ text: e.target.value })}
+          placeholder="Type your text..."
+          rows={4}
+          className="w-full resize-none rounded-md p-3 text-sm outline-none transition focus:border-blue-500"
+          style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
         />
-      )}
+      </EditorPanelSection>
+
+      <EditorPanelSection title="Typography">
+        {/* Font family */}
+        <EditorFontSelect
+          value={selectedLayer?.font ?? "Helvetica"}
+          onChange={value => patch({ font: value })}
+        />
+
+        {/* Font size + color in a row */}
+        <div className="grid grid-cols-2 gap-3">
+          <EditorNumberField
+            label="Size (px)"
+            value={selectedLayer?.fontSize ?? 24}
+            onChange={value => patch({ fontSize: clamp(value, 8, 120) })}
+          />
+          <div>
+            <EditorLabel>Color</EditorLabel>
+            <label
+              className="flex h-10 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-sm font-semibold"
+              style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+            >
+              <input
+                type="color"
+                value={selectedLayer?.color ?? "#0f172a"}
+                onChange={e => patch({ color: e.target.value })}
+                className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
+              />
+              <span className="truncate text-xs">{(selectedLayer?.color ?? "#0f172a").toUpperCase()}</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Color swatches */}
+        <EditorColorSwatches
+          colors={["#0f172a", "#ffffff", "#2563eb", "#ef4444", "#22c55e", "#f59e0b"]}
+          value={selectedLayer?.color ?? "#0f172a"}
+          onChange={value => patch({ color: value })}
+        />
+
+        {/* Style toggles: Bold · Italic · Underline */}
+        <div>
+          <EditorLabel>Style</EditorLabel>
+          <div className="flex gap-2">
+            <EditorStyleButton
+              active={!!selectedLayer?.bold}
+              onClick={() => patch({ bold: !selectedLayer?.bold })}
+              title="Bold"
+            >
+              <Bold size={15} />
+            </EditorStyleButton>
+            <EditorStyleButton
+              active={!!selectedLayer?.italic}
+              onClick={() => patch({ italic: !selectedLayer?.italic })}
+              title="Italic"
+            >
+              <Italic size={15} />
+            </EditorStyleButton>
+            <EditorStyleButton
+              active={!!selectedLayer?.underline}
+              onClick={() => patch({ underline: !selectedLayer?.underline })}
+              title="Underline"
+            >
+              <Underline size={15} />
+            </EditorStyleButton>
+          </div>
+        </div>
+
+        {/* Alignment */}
+        <div>
+          <EditorLabel>Alignment</EditorLabel>
+          <div className="flex gap-2">
+            {(["left", "center", "right", "justify"] as const).map((a, i) => {
+              const icons = [<AlignLeft size={15} />, <AlignCenter size={15} />, <AlignRight size={15} />, <AlignJustify size={15} />];
+              const isActive = (selectedLayer?.align ?? "center") === a;
+              return (
+                <EditorStyleButton key={a} active={isActive} onClick={() => patch({ align: a })} title={a}>
+                  {icons[i]}
+                </EditorStyleButton>
+              );
+            })}
+          </div>
+        </div>
+      </EditorPanelSection>
+
+      <EditorPanelSection title="Position">
+        <div className="grid grid-cols-2 gap-3">
+          <EditorNumberField label="X" value={selectedLayer?.x ?? 0} onChange={value => patch({ x: clamp(value, 0, 680) })} />
+          <EditorNumberField label="Y" value={selectedLayer?.y ?? 0} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+          <EditorNumberField label="Width" value={selectedLayer?.width ?? 416} onChange={value => patch({ width: Math.max(44, value) })} />
+          <EditorNumberField label="Height" value={selectedLayer?.height ?? 72} onChange={value => patch({ height: Math.max(20, value) })} />
+          <EditorNumberField label="Rotate (°)" value={selectedLayer?.rotation ?? 0} onChange={value => patch({ rotation: value })} />
+          <EditorNumberField label="Opacity (%)" value={Math.round((selectedLayer?.opacity ?? 1) * 100)} onChange={value => patch({ opacity: clamp(value, 5, 100) / 100 })} />
+        </div>
+      </EditorPanelSection>
+
+      {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
     </>
   );
 }
 
-export function PageThumbnailGrid({
-  items,
-  selectedIds,
-  rotation,
-  onToggleItem,
-  onPreviewItem,
-}: {
-  items: PreviewItem[];
-  selectedIds: Set<string>;
-  rotation: string;
-  onToggleItem: (item: PreviewItem) => void;
-  onPreviewItem: (item: PreviewItem) => void;
-}) {
+/* ─── Small reusable editor UI atoms ─── */
+
+function EditorPanelSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: "0.9rem" }}>
-      {items.map(item => {
-        const selected = selectedIds.has(item.id);
-        const rotateDeg = item.kind === "pdf" ? Number(rotation || 0) : 0;
-        return (
-          <motion.div
-            key={item.id}
-            role="button"
-            tabIndex={0}
-            whileHover={{ y: -4 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onToggleItem(item)}
-            onDoubleClick={() => onPreviewItem(item)}
-            onKeyDown={event => {
-              if (event.key === "Enter" || event.key === " ") onToggleItem(item);
-            }}
-            style={{
-              position: "relative",
-              border: selected ? "2px solid #3b82f6" : "1px solid rgba(148,163,184,0.18)",
-              background: selected ? "rgba(37,99,235,0.12)" : "var(--dn-bg-card)",
-              borderRadius: "4px",
-              padding: "0.45rem",
-              cursor: "pointer",
-              boxShadow: selected ? "0 0 28px rgba(59,130,246,0.28)" : "var(--dn-shadow)",
-              color: "var(--dn-t1)",
-              fontFamily: "'Inter', sans-serif",
-              minHeight: 198,
-            }}
-          >
-            <button
-              type="button"
-              title="Open preview"
-              aria-label={`Open ${item.label} preview`}
-              onClick={event => {
-                event.stopPropagation();
-                onPreviewItem(item);
-              }}
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                zIndex: 2,
-                width: 30,
-                height: 30,
-                border: "1px solid rgba(96,165,250,0.32)",
-                borderRadius: "4px",
-                background: "rgba(2,6,23,0.72)",
-                color: "#bfdbfe",
-                display: "grid",
-                placeItems: "center",
-                cursor: "pointer",
-              }}
-            >
-              <Eye size={14} />
-            </button>
-
-            <PreviewSurface item={item} rotation={rotateDeg} />
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", marginTop: "0.45rem", color: selected ? "#93c5fd" : "var(--dn-t3)", fontSize: "0.74rem", fontWeight: 750 }}>
-              {selected && <Check size={12} />} {item.label}
-            </div>
-          </motion.div>
-        );
-      })}
-    </div>
-  );
-}
-
-export function ToolSettingsPanel({
-  tool,
-  settings,
-  selectedItems,
-  allItems,
-  files,
-  onChange,
-}: {
-  tool: Tool;
-  settings: ToolSettings;
-  selectedItems: PreviewItem[];
-  allItems: PreviewItem[];
-  files: WorkflowFile[];
-  onChange: (patch: Partial<ToolSettings>) => void;
-}) {
-  const remainingItems = tool.id === "delete-pages" ? allItems.filter(item => !selectedItems.some(selected => selected.id === item.id)) : selectedItems;
-
-  return (
-    <section style={{ ...panelStyle, borderRadius: "4px", padding: "1rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginBottom: "0.9rem" }}>
-        <Settings size={17} color="var(--dn-t3)" />
-        <div>
-          <div style={{ color: "var(--dn-t1)", fontWeight: 850, fontSize: "0.96rem" }}>Tool Settings</div>
-          <div style={{ color: "var(--dn-t4)", fontSize: "0.72rem" }}>{selectedItems.length} selected item(s)</div>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gap: "1rem" }}>
-        {tool.id === "split-pdf" && (
-          <>
-            <Segmented label="Split mode" value={settings.splitMode} options={[
-              ["every", "Every page"],
-              ["selected", "Selected pages"],
-              ["range", "Page range"],
-              ["groups", "Custom groups"],
-            ]} onChange={value => onChange({ splitMode: value })} />
-            {settings.splitMode === "range" && <TextInput label="Page range" value={settings.pageRange} placeholder="1-3, 5, 8-10" onChange={value => onChange({ pageRange: value })} />}
-            {settings.splitMode === "groups" && <TextInput label="Custom groups" value={settings.customGroups} placeholder="1-2, 3-5, 9" onChange={value => onChange({ customGroups: value })} />}
-            <PreviewStrip title="Split preview" items={settings.splitMode === "every" ? allItems : selectedItems} empty="Select pages or enter a range to preview split groups." />
-          </>
-        )}
-
-        {tool.id === "rotate-pdf" && (
-          <>
-            <Segmented label="Rotation" value={settings.rotation} options={[["270", "90 left"], ["90", "90 right"], ["180", "180"]]} onChange={value => onChange({ rotation: value })} />
-            <Segmented label="Apply to" value={settings.rotationScope} options={[["selected", "Selected"], ["all", "All pages"]]} onChange={value => onChange({ rotationScope: value })} />
-            <PreviewStrip title="Rotated live preview" items={settings.rotationScope === "all" ? allItems : selectedItems} empty="Select pages to preview rotation." />
-          </>
-        )}
-
-        {tool.id === "delete-pages" && (
-          <>
-            <div style={{ padding: "0.85rem", borderRadius: "4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: "0.82rem", fontWeight: 700 }}>
-              Warning: selected pages will be removed.
-            </div>
-            <PreviewStrip title="Remaining pages preview" items={remainingItems} empty="Select pages to delete and the remaining document appears here." />
-          </>
-        )}
-
-        {(tool.id === "extract-pages" || tool.id === "reorder-pages" || tool.id === "insert-pages") && (
-          <PreviewStrip title="Output order preview" items={selectedItems} empty="Select pages to build the final output order." />
-        )}
-
-        {tool.id === "compress-pdf" && (
-          <>
-            <Segmented label="Compression" value={settings.compression} options={[
-              ["low", "Low / high quality"],
-              ["medium", "Medium"],
-              ["high", "High / smaller file"],
-            ]} onChange={value => onChange({ compression: value })} />
-            <SizeEstimate files={files} level={settings.compression} />
-          </>
-        )}
-
-        {tool.id === "pdf-to-word" && (
-          <>
-            <Segmented label="Conversion" value={settings.conversionMode} options={[["all", "All pages"], ["selected", "Selected pages"]]} onChange={value => onChange({ conversionMode: value })} />
-            <ToggleRow label="Preserve layout" checked={settings.preserveLayout} onChange={value => onChange({ preserveLayout: value })} />
-            <ToggleRow label="Extract text only" checked={!settings.preserveLayout} onChange={value => onChange({ preserveLayout: !value })} />
-          </>
-        )}
-
-        {tool.id === "word-to-pdf" && (
-          <>
-            <Segmented label="Page size" value={settings.pageSize} options={[["A4", "A4"], ["Letter", "Letter"]]} onChange={value => onChange({ pageSize: value })} />
-            <Segmented label="Orientation" value={settings.orientation} options={[["portrait", "Portrait"], ["landscape", "Landscape"]]} onChange={value => onChange({ orientation: value })} />
-            <Segmented label="Margins" value={settings.margins} options={[["compact", "Compact"], ["normal", "Normal"], ["wide", "Wide"]]} onChange={value => onChange({ margins: value })} />
-          </>
-        )}
-
-        {tool.id === "pdf-to-excel" && (
-          <>
-            <Segmented label="Extract" value={settings.extractMode} options={[["tables", "Tables only"], ["text", "All text"], ["page-sheets", "One sheet/page"]]} onChange={value => onChange({ extractMode: value })} />
-            <PreviewStrip title="Pages for extraction" items={selectedItems} empty="Select pages to extract into Excel." />
-          </>
-        )}
-
-        {tool.id === "excel-to-pdf" && (
-          <>
-            <Segmented label="Layout" value={settings.fitMode} options={[["fit-page", "Fit to page"], ["actual", "Actual size"]]} onChange={value => onChange({ fitMode: value })} />
-            <Segmented label="Orientation" value={settings.orientation} options={[["portrait", "Portrait"], ["landscape", "Landscape"]]} onChange={value => onChange({ orientation: value })} />
-            <Segmented label="Page size" value={settings.pageSize} options={[["A4", "A4"], ["Letter", "Letter"]]} onChange={value => onChange({ pageSize: value })} />
-          </>
-        )}
-
-        {tool.id === "pdf-to-powerpoint" && (
-          <PreviewStrip title="Slide preview" items={selectedItems} empty="Select PDF pages to convert into slides." />
-        )}
-
-        {tool.id === "powerpoint-to-pdf" && (
-          <PreviewStrip title="Selected slides" items={selectedItems} empty="Select slides to convert into PDF pages." />
-        )}
-
-        {(tool.id === "pdf-to-jpg" || tool.id === "pdf-to-images") && (
-          <>
-            <Segmented label="Format" value={settings.imageFormat} options={[["jpg", "JPG"], ["png", "PNG"], ["webp", "WEBP"]]} onChange={value => onChange({ imageFormat: value })} />
-            <RangeInput label="Image quality" value={settings.imageQuality} min={40} max={100} onChange={value => onChange({ imageQuality: value })} />
-            <PreviewStrip title="Pages to export" items={selectedItems} empty="Select pages to export as images." />
-          </>
-        )}
-
-        {(tool.id === "image-to-pdf" || tool.id === "jpg-to-pdf" || tool.id === "png-to-pdf") && (
-          <>
-            <Segmented label="Page size" value={settings.pageSize} options={[["A4", "A4"], ["Letter", "Letter"], ["image", "Fit image"]]} onChange={value => onChange({ pageSize: value })} />
-            <Segmented label="Orientation" value={settings.orientation} options={[["portrait", "Portrait"], ["landscape", "Landscape"]]} onChange={value => onChange({ orientation: value })} />
-            <PreviewStrip title="Image order" items={selectedItems} empty="Select and reorder images for the PDF." />
-          </>
-        )}
-
-        {(tool.id === "pdf-ocr" || tool.id === "image-ocr") && (
-          <>
-            <label style={{ display: "grid", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.78rem", fontWeight: 750 }}>
-              OCR language
-              <select value={settings.ocrLang} onChange={event => onChange({ ocrLang: event.target.value })} style={inputStyle}>
-                {ocrLanguages.map(language => <option key={language.value} value={language.value}>{language.label}</option>)}
-              </select>
-            </label>
-            <Segmented label="Output" value={settings.ocrOutput} options={[["txt", "TXT"], ["docx", "DOCX"], ["searchable", "Searchable PDF"]]} onChange={value => onChange({ ocrOutput: value })} />
-          </>
-        )}
-
-        {tool.hasPassword && (
-          <TextInput label={tool.id.includes("unlock") || tool.id.includes("decrypt") || tool.id === "remove-password" ? "Current password" : "New password"} value={settings.password} placeholder="Enter password" password onChange={value => onChange({ password: value })} />
-        )}
-
-        {tool.category === "edit" && (
-          <>
-            <Segmented label="Edit tool" value={settings.editTool} options={[
-              ["text", "Add text"],
-              ["image", "Add image"],
-              ["highlight", "Highlight"],
-              ["draw", "Draw"],
-              ["crop", "Crop"],
-              ["redact", "Redact"],
-              ["watermark", "Watermark"],
-              ["numbers", "Page numbers"],
-            ]} onChange={value => onChange({ editTool: value })} />
-            <TextInput label="Text / watermark" value={settings.watermarkText} placeholder="Enter text" onChange={value => onChange({ watermarkText: value })} />
-            <PreviewStrip title="Live edit preview" items={selectedItems.length ? selectedItems : allItems.slice(0, 3)} empty="Upload a PDF to preview edits." />
-          </>
-        )}
-      </div>
+    <section className="p-5" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+      <h4 className="mb-4 text-sm font-bold" style={{ color: "var(--dn-t1)" }}>{title}</h4>
+      <div className="space-y-4">{children}</div>
     </section>
   );
 }
 
-export function ProcessingModal({ open, progress, label, color }: { open: boolean; progress: number; label: string; color: string }) {
+function EditorLabel({ children }: { children: React.ReactNode }) {
+  return <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--dn-t3)" }}>{children}</p>;
+}
+
+function EditorNumberField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  const rounded = Math.round(value);
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(2,6,23,0.64)", backdropFilter: "blur(18px)", display: "grid", placeItems: "center", padding: "1.5rem" }}>
-          <style>{`
-            @keyframes processingProgressShimmer {
-              from { background-position: 200% 0; }
-              to { background-position: -200% 0; }
-            }
-          `}</style>
-          <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, y: 10 }}
-            style={{ width: "min(92vw, 430px)", minHeight: 248, borderRadius: "4px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "0 28px 90px rgba(0,0,0,0.42)", padding: "1.5rem", display: "grid", placeItems: "center", textAlign: "center" }}>
-            <div style={{ width: "100%" }}>
-              <div style={{ width: 72, height: 72, margin: "0 auto 1rem", borderRadius: "50%", display: "grid", placeItems: "center", background: `${color}12`, position: "relative" }}>
-                <div style={{ position: "absolute", inset: 8, borderRadius: "50%", border: "3px solid rgba(148,163,184,0.18)", borderTopColor: color, animation: "spin 0.82s linear infinite" }} />
-                <Loader2 size={24} color={color} style={{ animation: "spin 1.4s linear infinite" }} />
-              </div>
-              <div style={{ color: "var(--dn-t1)", fontWeight: 900, fontSize: "1.04rem" }}>Processing your file...</div>
-              <div style={{ color: "var(--dn-t4)", fontSize: "0.82rem", marginTop: "0.35rem", minHeight: 20 }}>{label}</div>
-              <div style={{ marginTop: "1.2rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <div style={{ flex: 1, height: 8, borderRadius: 999, overflow: "hidden", background: "rgba(15,23,42,0.54)", border: "1px solid rgba(96,165,250,0.24)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)" }}>
-                  <motion.div
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ height: "100%", borderRadius: 999, background: `linear-gradient(90deg,${color},#60a5fa,#93c5fd)`, backgroundSize: "200% 100%", animation: "processingProgressShimmer 1.8s linear infinite", boxShadow: `0 0 18px ${color}55`, willChange: "width, background-position" }}
-                  />
-                </div>
-                <div style={{ minWidth: 42, color, fontWeight: 900, fontSize: "0.86rem", textAlign: "right" }}>{progress}%</div>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div>
+      <EditorLabel>{label}</EditorLabel>
+      <div
+        className="flex h-10 w-full overflow-hidden rounded-md"
+        style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)" }}
+      >
+        <button
+          type="button"
+          onMouseDown={e => { e.preventDefault(); onChange(rounded - 1); }}
+          className="flex h-full w-8 flex-shrink-0 items-center justify-center text-lg font-bold transition"
+          style={{ color: "var(--dn-t3)", borderRight: "1px solid var(--dn-border)", background: "transparent" }}
+          onMouseOver={e => { e.currentTarget.style.background = "var(--dn-bg-card)"; e.currentTarget.style.color = "var(--dn-t1)"; }}
+          onMouseOut={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--dn-t3)"; }}
+        >
+          <Minus size={13} />
+        </button>
+        <input
+          type="number"
+          value={rounded}
+          onChange={e => onChange(Number(e.target.value) || 0)}
+          className="h-full min-w-0 flex-1 bg-transparent text-center text-sm font-semibold outline-none"
+          style={{ color: "var(--dn-t1)", appearance: "textfield" as React.CSSProperties["appearance"] }}
+        />
+        <button
+          type="button"
+          onMouseDown={e => { e.preventDefault(); onChange(rounded + 1); }}
+          className="flex h-full w-8 flex-shrink-0 items-center justify-center text-lg font-bold transition"
+          style={{ color: "var(--dn-t3)", borderLeft: "1px solid var(--dn-border)", background: "transparent" }}
+          onMouseOver={e => { e.currentTarget.style.background = "var(--dn-bg-card)"; e.currentTarget.style.color = "var(--dn-t1)"; }}
+          onMouseOut={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--dn-t3)"; }}
+        >
+          <Plus size={13} />
+        </button>
+      </div>
+    </div>
   );
+}
+
+function EditorColorInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <EditorLabel>{label}</EditorLabel>
+      <label
+        className="flex h-10 cursor-pointer items-center gap-3 rounded-md px-3 text-sm font-semibold"
+        style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
+      >
+        <input type="color" value={value} onChange={e => onChange(e.target.value)} className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
+        <span>{value.toUpperCase()}</span>
+      </label>
+    </div>
+  );
+}
+
+function EditorColorSwatches({ colors, value, onChange }: { colors: string[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {colors.map(c => (
+        <button
+          key={c}
+          type="button"
+          title={c}
+          aria-label={`Color ${c}`}
+          onClick={() => onChange(c)}
+          className="h-7 w-7 rounded-md transition"
+          style={{
+            background: c,
+            border: value.toLowerCase() === c.toLowerCase()
+              ? "2px solid #3b82f6"
+              : "1.5px solid var(--dn-border)",
+            boxShadow: value.toLowerCase() === c.toLowerCase() ? "0 0 0 2px rgba(59,130,246,0.3)" : "none",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function EditorFontSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="relative">
+      <EditorLabel>Font family</EditorLabel>
+      <button
+        type="button"
+        onClick={() => setOpen(prev => !prev)}
+        className="flex h-10 w-full items-center justify-between rounded-md px-3 text-sm font-semibold transition"
+        style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)", fontFamily: `${value}, sans-serif` }}
+      >
+        <span className="truncate">{value}</span>
+        <ChevronDown size={15} style={{ color: "var(--dn-t3)", flexShrink: 0 }} />
+      </button>
+      {open && (
+        <div
+          className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-md shadow-xl"
+          style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-card)", maxHeight: 240, overflowY: "auto" }}
+        >
+          {FONT_LIST.map(font => (
+            <button
+              key={font}
+              type="button"
+              onClick={() => { onChange(font); setOpen(false); }}
+              className="flex h-9 w-full items-center px-3 text-sm transition"
+              style={{
+                fontFamily: `${font}, sans-serif`,
+                background: value === font ? "rgba(37,99,235,0.12)" : "transparent",
+                color: value === font ? "#3b82f6" : "var(--dn-t1)",
+                fontWeight: value === font ? 700 : 400,
+                textAlign: "left",
+              }}
+              onMouseOver={e => { if (value !== font) e.currentTarget.style.background = "var(--dn-bg-subtle)"; }}
+              onMouseOut={e => { if (value !== font) e.currentTarget.style.background = "transparent"; }}
+            >
+              {font}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EditorStyleButton({ children, active, onClick, title }: { children: React.ReactNode; active: boolean; onClick: () => void; title: string }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="grid h-9 w-9 place-items-center rounded-md transition"
+      style={{
+        background: active ? "rgba(37,99,235,0.14)" : "var(--dn-bg-subtle)",
+        border: active ? "1px solid rgba(59,130,246,0.4)" : "1px solid var(--dn-border)",
+        color: active ? "#3b82f6" : "var(--dn-t2)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EditorDeleteRow({ onDelete }: { onDelete?: () => void }) {
+  return (
+    <section className="p-5" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+      <button
+        type="button"
+        onClick={onDelete}
+        className="flex h-10 w-full items-center justify-center gap-2 rounded-md text-sm font-semibold transition"
+        style={{ border: "1px solid rgba(239,68,68,0.32)", background: "rgba(239,68,68,0.06)", color: "#ef4444" }}
+        onMouseOver={e => { e.currentTarget.style.background = "rgba(239,68,68,0.14)"; e.currentTarget.style.borderColor = "#ef4444"; }}
+        onMouseOut={e => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.32)"; }}
+      >
+        <Trash2 size={15} />
+        Delete selected element
+      </button>
+    </section>
+  );
+}
+
+function EditorToolbarButton({ children, label, onClick, disabled }: { children: React.ReactNode; label: string; onClick?: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="grid h-9 w-9 place-items-center rounded-md transition disabled:cursor-not-allowed disabled:opacity-40"
+      style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}
+      onMouseOver={e => { if (!disabled) { e.currentTarget.style.background = "var(--dn-bg-card)"; e.currentTarget.style.color = "var(--dn-t1)"; } }}
+      onMouseOut={e => { if (!disabled) { e.currentTarget.style.background = "var(--dn-bg-subtle)"; e.currentTarget.style.color = "var(--dn-t2)"; } }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function editorToolFromToolId(toolId: string): EditorToolKey {
+  const map: Record<string, EditorToolKey> = {
+    "edit-pdf": "edit",
+    "annotate-pdf": "annotate",
+    "add-text": "add-text",
+    "add-image-to-pdf": "add-image",
+    "highlight-text": "highlight",
+    "draw-on-pdf": "draw",
+    "crop-pdf": "crop",
+    "redact-pdf": "redact",
+    "add-watermark": "watermark",
+    "add-page-numbers": "page-numbers",
+  };
+  return map[toolId] || "edit";
+}
+
+function editorPanelTitle(activeTool: EditorToolKey) {
+  return {
+    edit: "Edit Text",
+    annotate: "Annotate PDF",
+    "add-text": "Add Text",
+    "add-image": "Add Image",
+    highlight: "Highlight",
+    draw: "Draw",
+    crop: "Crop PDF",
+    redact: "Redact PDF",
+    watermark: "Watermark",
+    "page-numbers": "Page Numbers",
+  }[activeTool];
+}
+
+function editorPanelDescription(activeTool: EditorToolKey) {
+  return {
+    edit: "Modify existing text and formatting",
+    annotate: "Add comments, notes, and markups",
+    "add-text": "Place new text anywhere",
+    "add-image": "Insert images, logos, or signatures",
+    highlight: "Mark important text or areas",
+    draw: "Draw freehand on the page",
+    crop: "Adjust the visible page area",
+    redact: "Remove sensitive content",
+    watermark: "Add text or image watermark",
+    "page-numbers": "Add numbering to pages",
+  }[activeTool];
+}
+
+function editorPrimaryAction(activeTool: EditorToolKey) {
+  return {
+    edit: "Apply Text Changes",
+    annotate: "Apply Annotation",
+    "add-text": "Add Text",
+    "add-image": "Insert Image",
+    highlight: "Apply Highlight",
+    draw: "Apply Drawing",
+    crop: "Apply Crop",
+    redact: "Apply Redaction",
+    watermark: "Apply Watermark",
+    "page-numbers": "Apply Page Numbers",
+  }[activeTool];
+}
+
+function ConversionToolButton({ icon, label, compact, onClick }: { icon: React.ReactNode; label: string; compact?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className={`dn-glassmorphism-button flex h-10 items-center whitespace-nowrap rounded-[4px] border text-sm font-bold transition-colors hover:text-white ${compact ? "w-10 justify-center px-0" : "gap-2 px-3"}`}
+      style={{ color: "rgba(255,255,255,0.85)" }}
+    >
+      {icon}
+      {!compact && <span>{label}</span>}
+    </button>
+  );
+}
+
+function ConversionPanelSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border-b p-5" style={{ borderColor: "var(--dn-border)" }}>
+      <h3 className="mb-4 text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function ConversionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="mb-2 mt-4 text-sm" style={{ color: "var(--dn-t3)" }}>{children}</p>;
+}
+
+function ConversionSelect({ value }: { value: string }) {
+  return (
+    <button type="button" className="flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm font-semibold" style={{ background: "var(--dn-bg-subtle)", borderColor: "var(--dn-border)", color: "var(--dn-t1)" }}>
+      <span className="truncate">{value}</span>
+      <ChevronDown size={16} style={{ color: "var(--dn-t3)" }} />
+    </button>
+  );
+}
+
+function ConversionToggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <button type="button" onClick={() => onChange(!checked)} className="mt-5 flex w-full items-center justify-between gap-3 text-left text-sm" style={{ color: "var(--dn-t1)" }}>
+      <span>{label}</span>
+      <span className="relative h-6 w-10 rounded-full transition-colors" style={{ background: checked ? "#2563eb" : "var(--dn-border)" }}>
+        <span className="absolute top-1 h-4 w-4 rounded-full bg-white transition-all" style={{ left: checked ? 20 : 4 }} />
+      </span>
+    </button>
+  );
+}
+
+function ConversionRadio({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
+  return (
+    <button type="button" role="radio" aria-checked={checked} onClick={onClick} className="mb-3 flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors" style={{ background: checked ? "rgba(37,99,235,0.12)" : "var(--dn-bg-subtle)", borderColor: checked ? "#3b82f6" : "var(--dn-border)", color: checked ? "var(--dn-t1)" : "var(--dn-t2)" }}>
+      <span className="grid h-5 w-5 place-items-center rounded-full border" style={{ background: checked ? "#2563eb" : "transparent", borderColor: checked ? "#2563eb" : "var(--dn-border2)" }}>
+        {checked && <span className="h-2 w-2 rounded-full bg-white" />}
+      </span>
+      {label}
+    </button>
+  );
+}
+
+function ConversionDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mb-3 flex justify-between gap-4 text-sm">
+      <span style={{ color: "var(--dn-t3)" }}>{label}</span>
+      <span className="min-w-0 truncate font-semibold" style={{ color: "var(--dn-t1)" }}>{value}</span>
+    </div>
+  );
+}
+
+function conversionOutputMeta(tool: Tool) {
+  const map: Record<string, { formatLabel: string; cta: string }> = {
+    "pdf-to-word": { formatLabel: "Word (.docx)", cta: "Convert to Word" },
+    "word-to-pdf": { formatLabel: "PDF (.pdf)", cta: "Convert to PDF" },
+    "pdf-to-excel": { formatLabel: "Excel (.xlsx)", cta: "Convert to Excel" },
+    "excel-to-pdf": { formatLabel: "PDF (.pdf)", cta: "Convert to PDF" },
+    "pdf-to-powerpoint": { formatLabel: "PowerPoint (.pptx)", cta: "Convert to PowerPoint" },
+    "powerpoint-to-pdf": { formatLabel: "PDF (.pdf)", cta: "Convert to PDF" },
+    "pdf-to-jpg": { formatLabel: "JPG images (.zip)", cta: "Convert to JPG" },
+    "jpg-to-pdf": { formatLabel: "PDF (.pdf)", cta: "Convert to PDF" },
+    "png-to-pdf": { formatLabel: "PDF (.pdf)", cta: "Convert to PDF" },
+    "pdf-to-images": { formatLabel: "Images (.zip)", cta: "Convert to Images" },
+    "image-to-pdf": { formatLabel: "PDF (.pdf)", cta: "Convert to PDF" },
+  };
+  return map[tool.id] || { formatLabel: tool.outputFormat || "Output file", cta: tool.action };
 }
 
 export function OutputPreviewPanel({ tool, output, onDownload }: { tool: Tool; output: ProcessedOutput; onDownload: () => void }) {
@@ -1073,7 +4395,7 @@ export function OutputPreviewPanel({ tool, output, onDownload }: { tool: Tool; o
           <div style={{ color: "var(--dn-t1)", fontWeight: 850 }}>Final output preview</div>
           <div style={{ color: "var(--dn-t4)", fontSize: "0.78rem" }}>Preview generated. Download is now available.</div>
         </div>
-        <DownloadResultCard output={output} label={`Download ${tool.outputFormat || "Result"}`} onDownload={onDownload} />
+        <DownloadResultCard output={output} label={"Download " + (tool.outputFormat || "Result")} onDownload={onDownload} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: output.items.length > 1 ? "220px minmax(0,1fr)" : "1fr", gap: "1rem" }}>
@@ -1136,7 +4458,7 @@ function QueuePanel({
   onRemove: (id: string) => void;
 }) {
   return (
-    <section style={{ ...panelStyle, borderRadius: "4px", padding: "1rem" }}>
+    <section style={{ borderRadius: "4px", padding: "1rem", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "var(--dn-shadow)" }}>
       <div style={{ color: "var(--dn-t1)", fontWeight: 850, marginBottom: "0.75rem" }}>{title}</div>
       <div style={{ display: "grid", gap: "0.55rem" }}>
         {items.map((item, index) => (
@@ -1184,11 +4506,16 @@ function WorkflowSteps({ status, hasFiles, hasSelection, hasOutput }: { status: 
   );
 }
 
-function PreviewSurface({ item, rotation = 0 }: { item: PreviewItem; rotation?: number }) {
+function PreviewSurface({ item, rotation = 0, isThumbnail = false }: { item: PreviewItem; rotation?: number; isThumbnail?: boolean }) {
   if (item.thumbnail) {
+    if (isThumbnail) {
+      return (
+        <img src={item.thumbnail} alt={item.label} className="thumbnail-preview" style={{ transform: "rotate(" + rotation + "deg)", transition: "transform 0.2s ease", display: "block" }} />
+      );
+    }
     return (
-      <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "4px", background: "#fff", display: "grid", placeItems: "center", overflow: "hidden" }}>
-        <img src={item.thumbnail} alt={item.label} style={{ width: "100%", height: "100%", objectFit: "contain", transform: `rotate(${rotation}deg)`, transition: "transform 0.2s ease" }} />
+      <div style={{ width: "100%", borderRadius: "4px", background: "#fff", display: "grid", placeItems: "center", overflow: "hidden" }}>
+        <img src={item.thumbnail} alt={item.label} style={{ width: "100%", height: "auto", objectFit: "contain", transform: "rotate(" + rotation + "deg)", transition: "transform 0.2s ease", display: "block" }} />
       </div>
     );
   }
@@ -1273,7 +4600,7 @@ function PreviewModal({
           <IconButton label="Close preview" onClick={onClose}><X size={15} /></IconButton>
         </div>
         <div style={{ height: fullscreen ? "calc(100vh - 66px)" : "min(78vh, 740px)", overflow: "auto", background: "var(--dn-bg-subtle)", padding: "1rem", display: "grid", placeItems: "start center" }}>
-          <div style={{ width: `${Math.round(100 * zoom)}%`, maxWidth: item.thumbnail ? "none" : 760 }}>
+          <div style={{ width: Math.round(100 * zoom) + "%", maxWidth: item.thumbnail ? "none" : 760 }}>
             <PreviewSurface item={item} />
           </div>
         </div>
@@ -1404,7 +4731,7 @@ function SizeEstimate({ files, level }: { files: WorkflowFile[]; level: string }
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: "0.55rem" }}>
       <Stat label="Original" value={formatBytes(source)} />
       <Stat label="Estimated" value={formatBytes(source * ratio)} />
-      <Stat label="Reduced" value={`${Math.max(0, Math.round((1 - ratio) * 100))}%`} />
+      <Stat label="Reduced" value={Math.max(0, Math.round((1 - ratio) * 100)) + "%"} />
     </div>
   );
 }
@@ -1446,6 +4773,7 @@ async function buildPreviewItems(source: WorkflowFile, tool: Tool): Promise<Prev
       label: `Page ${image.page}`,
       kind: "pdf",
       thumbnail: `data:image/jpeg;base64,${image.image}`,
+      rotation: 0,
     }));
   }
 
@@ -1458,6 +4786,7 @@ async function buildPreviewItems(source: WorkflowFile, tool: Tool): Promise<Prev
       label: "Image 1",
       kind: "image",
       thumbnail: source.objectUrl,
+      rotation: 0,
     }];
   }
 
@@ -1480,6 +4809,7 @@ async function buildPreviewItems(source: WorkflowFile, tool: Tool): Promise<Prev
       thumbnail: item.thumbnail ? `data:image/jpeg;base64,${item.thumbnail}` : undefined,
       text: item.text,
       rows: item.rows,
+      rotation: 0,
     }));
   } catch {
     return fallbackPreviewItems(source, tool);
@@ -1497,8 +4827,8 @@ async function processTool(
   if (!firstFile) throw new Error("Upload a file first.");
 
   const selectedRange = pageRangeFromItems(selectedItems);
-  const allRange = pageRangeFromItems(files.flatMap(file => file.items));
-  const rangeForTool = settings.conversionMode === "all" ? allRange : selectedRange;
+  const rangeForTool = settings.conversionMode === "range" ? settings.pageRange.trim() : settings.conversionMode === "selected" ? selectedRange : "";
+  const displayRange = rangeForTool || "All";
 
   setProcessingLabel("Sending file to backend");
 
@@ -1520,10 +4850,13 @@ async function processTool(
       };
     }
     case "rotate-pdf": {
+      const normalizedRotation = ((parseInt(settings.rotation || "0", 10) % 360) + 360) % 360;
       const pageRange = settings.rotationScope === "all" ? "" : selectedRange;
-      const blob = await pdfApi.rotatePDF(firstFile, settings.rotation, pageRange);
+      const blob = normalizedRotation
+        ? await pdfApi.rotatePDF(firstFile, String(normalizedRotation), pageRange)
+        : firstFile.slice(0, firstFile.size, "application/pdf");
       return makeSingleOutput(blob, `${stripExtension(firstFile.name)}-rotated.pdf`, "pdf", [
-        { label: "Rotation", value: `${settings.rotation} deg` },
+        { label: "Rotation", value: `${normalizedRotation} deg` },
         { label: "Pages", value: pageRange || "All" },
       ]);
     }
@@ -1541,6 +4874,7 @@ async function processTool(
         fileName: item.fileName,
         pageIndex: item.index,
         pageNumber: item.index + 1,
+        rotation: item.rotation || 0,
         order: index + 1,
       })));
       return makeSingleOutput(blob, `${stripExtension(firstFile.name)}-selected-pages.pdf`, "pdf", [
@@ -1558,7 +4892,7 @@ async function processTool(
     case "pdf-to-word": {
       const blob = await pdfApi.pdfToWord(firstFile, rangeForTool, settings.preserveLayout);
       return makeSingleOutput(blob, `${stripExtension(firstFile.name)}.docx`, "document", [
-        { label: "Pages", value: rangeForTool || "All" },
+        { label: "Pages", value: displayRange },
         { label: "Mode", value: settings.preserveLayout ? "Preserve layout" : "Text only" },
       ]);
     }
@@ -1570,9 +4904,9 @@ async function processTool(
       ]);
     }
     case "pdf-to-excel": {
-      const blob = await pdfApi.pdfToExcel(firstFile, selectedRange, settings.extractMode);
+      const blob = await pdfApi.pdfToExcel(firstFile, rangeForTool, settings.extractMode);
       return makeSingleOutput(blob, `${stripExtension(firstFile.name)}.xlsx`, "spreadsheet", [
-        { label: "Pages", value: selectedRange || "All" },
+        { label: "Pages", value: displayRange },
         { label: "Mode", value: settings.extractMode },
       ]);
     }
@@ -1584,21 +4918,21 @@ async function processTool(
       ]);
     }
     case "pdf-to-powerpoint": {
-      const blob = await pdfApi.pdfToPowerPoint(firstFile, selectedRange);
+      const blob = await pdfApi.pdfToPowerPoint(firstFile, rangeForTool);
       return makeSingleOutput(blob, `${stripExtension(firstFile.name)}.pptx`, "presentation", [
-        { label: "Slides", value: String(selectedItems.length || files[0].items.length) },
+        { label: "Slides", value: displayRange },
       ]);
     }
     case "powerpoint-to-pdf": {
-      const blob = await pdfApi.powerPointToPDF(firstFile, pageRangeFromItems(selectedItems));
+      const blob = await pdfApi.powerPointToPDF(firstFile, rangeForTool);
       return makeSingleOutput(blob, `${stripExtension(firstFile.name)}.pdf`, "pdf", [
-        { label: "Slides", value: String(selectedItems.length || files[0].items.length) },
+        { label: "Slides", value: displayRange },
       ]);
     }
     case "pdf-to-jpg":
     case "pdf-to-images": {
       const result = await pdfApi.pdfToJpg(firstFile, {
-        pageRange: selectedRange,
+        pageRange: rangeForTool,
         format: settings.imageFormat,
         quality: String(settings.imageQuality),
       });
@@ -1665,9 +4999,11 @@ async function processTool(
     case "redact-pdf":
     case "add-watermark":
     case "add-page-numbers": {
-      const blob = new Blob([await firstFile.arrayBuffer()], { type: "application/pdf" });
+      const editorLayers = parseEditorLayers(settings.editorLayers);
+      const blob = await pdfApi.applyEditorEdits(firstFile, editorLayers, tool.id);
       return makeSingleOutput(blob, `${stripExtension(firstFile.name)}-${tool.id}.pdf`, "pdf", [
         { label: "Previewed edit", value: settings.editTool || tool.label },
+        { label: "Editor objects", value: String(editorLayers.length) },
         { label: "Pages", value: selectedItems.length ? String(selectedItems.length) : "All" },
       ]);
     }
@@ -1701,6 +5037,7 @@ function hydrateCachedItems(items: PreviewItem[], source: WorkflowFile) {
     id: `${source.id}-${index + 1}`,
     fileId: source.id,
     fileName: source.name,
+    rotation: item.rotation || 0,
   }));
 }
 
@@ -1732,6 +5069,7 @@ function fallbackPreviewItems(source: WorkflowFile, tool: Tool): PreviewItem[] {
     label: defaultItemLabel(source.kind, index),
     kind: source.kind,
     text: `${tool.label} preview placeholder for ${source.name}`,
+    rotation: 0,
   }));
 }
 
@@ -1810,6 +5148,43 @@ function reductionText(original: number, next: number) {
 
 function stripExtension(filename: string) {
   return filename.replace(/\.[^/.]+$/, "");
+}
+
+function extensionOf(filename: string) {
+  const match = filename.match(/(\.[^/.]+)$/);
+  return match ? match[1] : "";
+}
+
+function buildOutputFileName(inputName: string, fallbackName: string) {
+  const fallbackExtension = extensionOf(fallbackName);
+  const sanitized = inputName.trim().replace(/[\\/:*?"<>|]/g, "-");
+  if (!sanitized) return fallbackName;
+  return extensionOf(sanitized) ? sanitized : `${sanitized}${fallbackExtension}`;
+}
+
+function defaultOutputBaseName(tool: Tool, files: WorkflowFile[]) {
+  const firstBase = stripExtension(files[0]?.name || "docnova");
+  const suffixes: Record<string, string> = {
+    "split-pdf": `${firstBase}-split`,
+    "rotate-pdf": `${firstBase}-rotated`,
+    "delete-pages": `${firstBase}-pages-deleted`,
+    "extract-pages": `${firstBase}-selected-pages`,
+    "compress-pdf": `${firstBase}-compressed`,
+    "merge-pdf": "docnova-merged-selected",
+    "reorder-pages": `${firstBase}-reorder-pages`,
+    "insert-pages": `${firstBase}-insert-pages`,
+    "resize-pdf": `${firstBase}-resize-pdf`,
+  };
+  return suffixes[tool.id] || `${firstBase}-${tool.id}`;
+}
+
+function parseEditorLayers(value: string): EditorLayer[] {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 function makeFileId(file: File) {

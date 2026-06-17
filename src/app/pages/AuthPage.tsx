@@ -462,8 +462,8 @@ export default function AuthPage() {
 
         {/* Footer Links */}
         <div className="mt-8 flex gap-6 text-[12px]">
-          <a href="#" className="dn-auth-link">Help Center</a>
-          <a href="#" className="dn-auth-link">System Status</a>
+          <Link to="/contact" className="dn-auth-link">Help Center</Link>
+          <button type="button" disabled title="Coming soon" className="dn-auth-link bg-transparent border-none p-0 opacity-60 cursor-not-allowed">System Status</button>
         </div>
       </div>
     </div>
