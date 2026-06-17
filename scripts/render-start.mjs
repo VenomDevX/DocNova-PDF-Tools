@@ -23,7 +23,7 @@ if (!existsSync(requirementsPath)) {
   process.exit(1);
 }
 
-run("python", ["-m", "pip", "install", "-r", requirementsPath]);
+run("python", ["-m", "pip", "install", "--break-system-packages", "-r", requirementsPath]);
 
 const gunicorn = spawn(
   "python",
