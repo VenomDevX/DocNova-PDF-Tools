@@ -6,6 +6,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
+    "start": "node scripts/render-start.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },
