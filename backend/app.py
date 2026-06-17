@@ -576,7 +576,7 @@ def health():
 
 # ==================== RESULT JOBS ====================
 @app.route('/api/result/create', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("60 per minute")
 def create_result_job():
     """Persist a processed output so the frontend can open a clean result page."""
     try:
@@ -734,8 +734,9 @@ def merge_pdf():
         if not files or len(files) < 2:
             return jsonify({'error': 'At least 2 PDFs required for merging'}), 400
         
-        merger = PdfMerger()
-        
+        writer = PdfWriter()
+        base_page = None
+
         # Save uploaded files and add to merger
         for file in files:
             if file and file.filename and allowed_file(file, ALLOWED_PDF):
@@ -743,17 +744,23 @@ def merge_pdf():
                 temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_{filename}")
                 file.save(temp_path)
                 temp_paths.append(temp_path)
-                merger.append(temp_path)
-        
+
+                reader = PdfReader(temp_path)
+                for page in reader.pages:
+                    if base_page is None:
+                        base_page = page
+                        writer.add_page(base_page)
+                    else:
+                        base_page.merge_page(page)
+
         if len(temp_paths) < 2:
             return jsonify({'error': 'At least 2 valid PDF files required'}), 400
-        
+
         # Write merged PDF to temporary file
         output_path = os.path.join(UPLOAD_FOLDER, f"merged_{datetime.now().timestamp()}.pdf")
         with open(output_path, 'wb') as output_file:
-            merger.write(output_file)
-            merger.close()
-        
+            writer.write(output_file)
+
         # Read and send the merged PDF
         return send_file(
             output_path,
@@ -761,10 +768,10 @@ def merge_pdf():
             as_attachment=True,
             download_name='merged_document.pdf'
         )
-    
+
     except Exception as e:
         return jsonify({'error': 'Merge failed.'}), 500
-    
+
     finally:
         # Cleanup input temp files
         for path in temp_paths:
@@ -812,7 +819,15 @@ def merge_selected_pdf():
                 return jsonify({'error': 'Missing source PDF.', 'details': f'Missing source PDF for {file_id}'}), 400
             if page_index < 0 or page_index >= len(reader.pages):
                 return jsonify({'error': 'Invalid page selected.', 'details': f'Invalid page selected from {selected.get("fileName", "PDF")}'}), 400
-            writer.add_page(reader.pages[page_index])
+
+            page = reader.pages[page_index]
+
+            # Apply rotation if present
+            rotation = int(selected.get('rotation', 0))
+            if rotation:
+                page.rotate(rotation)
+
+            writer.add_page(page)
 
         return send_writer_pdf(writer, 'merged-selected.pdf')
 
@@ -1561,6 +1576,129 @@ def rotate_pdf():
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
+@app.route('/api/pdf/apply-editor-edits', methods=['POST'])
+@limiter.limit("60 per minute")
+def apply_editor_edits():
+    """Flatten PDF editor layers into a PDF output."""
+    temp_path = None
+    output_path = None
+
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+
+        file = request.files['file']
+        if not file or not allowed_file(file, ALLOWED_PDF):
+            return jsonify({'error': 'Invalid PDF file'}), 400
+
+        pymupdf = get_pymupdf()
+        if pymupdf is None:
+            return jsonify({'error': 'PDF editor export requires PyMuPDF'}), 503
+
+        layers = json.loads(request.form.get('layers', '[]') or '[]')
+        if not isinstance(layers, list):
+            layers = []
+
+        temp_path = save_uploaded_file(file, '.pdf')
+        doc = pymupdf.open(temp_path)
+
+        for layer in layers:
+            if not isinstance(layer, dict):
+                continue
+            if layer.get('temporary') and not layer.get('applied'):
+                continue
+            page_index = int(layer.get('pageIndex') or 0)
+            if page_index < 0 or page_index >= len(doc):
+                continue
+
+            page = doc[page_index]
+            page_rect = page.rect
+            x_scale = page_rect.width / 680
+            y_scale = page_rect.height / 900
+            layer_type = str(layer.get('type') or '')
+            text = str(layer.get('text') or '')
+            rect = editor_layer_rect(pymupdf, layer, x_scale, y_scale)
+            color = editor_hex_color(layer.get('color') or '#0f172a')
+            opacity = max(0.05, min(float(layer.get('opacity') or 1), 1))
+
+            try:
+                if layer_type == 'crop':
+                    crop_rect = rect & page_rect
+                    if not crop_rect.is_empty:
+                        page.set_cropbox(crop_rect)
+                elif layer_type == 'redact':
+                    page.add_redact_annot(rect, fill=(0, 0, 0))
+                    page.apply_redactions()
+                elif layer_type == 'highlight':
+                    page.draw_rect(rect, color=None, fill=(1, 0.86, 0.12), overlay=True)
+                elif layer_type == 'draw':
+                    draw_paths = json.loads(text or '[]')
+                    if isinstance(draw_paths, list):
+                        for path in draw_paths:
+                            points = []
+                            if isinstance(path, list):
+                                for point in path:
+                                    if isinstance(point, dict):
+                                        points.append(pymupdf.Point(float(point.get('x', 0)) * x_scale, float(point.get('y', 0)) * y_scale))
+                            for start, end in zip(points, points[1:]):
+                                page.draw_line(start, end, color=color, width=2.4, overlay=True)
+                elif layer_type == 'add-image' and text.startswith('data:image/'):
+                    image_bytes = base64.b64decode(text.split(',', 1)[1])
+                    page.insert_image(rect, stream=image_bytes, keep_proportion=True, overlay=True)
+                elif layer_type in {'edit', 'add-text', 'annotate', 'watermark', 'page-numbers'}:
+                    font_size = float(layer.get('fontSize') or 0)
+                    if font_size <= 0:
+                        font_size = 11
+                        if layer_type in {'edit', 'add-text', 'annotate'}:
+                            font_size = max(8, min(28, rect.height * 0.32))
+                        elif layer_type == 'watermark':
+                            font_size = max(18, min(54, rect.height * 0.52))
+                    font_size = max(6, min(font_size, 96))
+                    align_map = {'left': 0, 'center': 1, 'right': 2, 'justify': 3}
+                    align = align_map.get(str(layer.get('align') or 'center'), 1)
+                    page.insert_textbox(
+                        rect,
+                        text,
+                        fontsize=font_size,
+                        fontname='helv',
+                        color=color,
+                        align=align,
+                        overlay=True,
+                    )
+            except Exception as layer_error:
+                print(f"Skipping editor layer {layer_type}: {layer_error}")
+
+        output_path = os.path.join(UPLOAD_FOLDER, f"edited_{datetime.now().timestamp()}.pdf")
+        doc.save(output_path, garbage=4, deflate=True)
+        doc.close()
+
+        return send_file(output_path, mimetype='application/pdf', as_attachment=True, download_name='edited.pdf')
+
+    except Exception as e:
+        return jsonify({'error': 'Unknown Error'}), 500
+
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+def editor_layer_rect(pymupdf, layer, x_scale, y_scale):
+    x = float(layer.get('x') or 0) * x_scale
+    y = float(layer.get('y') or 0) * y_scale
+    width = max(1, float(layer.get('width') or 1)) * x_scale
+    height = max(1, float(layer.get('height') or 1)) * y_scale
+    return pymupdf.Rect(x, y, x + width, y + height)
+
+def editor_hex_color(value):
+    raw = str(value or '#0f172a').strip()
+    if raw.startswith('#'):
+        raw = raw[1:]
+    if len(raw) == 3:
+        raw = ''.join(ch * 2 for ch in raw)
+    try:
+        return tuple(int(raw[index:index + 2], 16) / 255 for index in (0, 2, 4))
+    except Exception:
+        return (0.06, 0.09, 0.16)
+
 @app.route('/api/lock-pdf', methods=['POST'])
 @app.route('/api/protect-pdf', methods=['POST'])
 @app.route('/api/encrypt-pdf', methods=['POST'])
@@ -1653,7 +1791,7 @@ def ai_process():
         file_base64 = data.get('fileBase64')
         tool_id = data.get('toolId')
         model = data.get('model', 'gemini-3.5-flash')
-        allowed_models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-flash-latest', 'gemini-flash-lite-latest']
+        allowed_models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-flash-latest', 'gemini-flash-lite-latest']
         if model not in allowed_models:
             model = 'gemini-3.5-flash'
         
@@ -1699,6 +1837,23 @@ def ai_process():
         elif tool_id == 'pdf-chat':
             system_instruction = "You are DocNova AI, an expert document assistant. Answer the user's questions based ONLY on the provided document text. If the answer is not in the text, say so."
             additional_prompt = "Please summarize the document briefly and suggest 3 questions the user could ask about it to start the chat."
+        elif tool_id == 'email-writer':
+            tone = data.get('tone', 'Professional')
+            system_instruction = (
+                "You are DocNova AI, an expert email copywriter. Using ONLY the provided document as context, "
+                "draft a clear, well-structured email. Do not invent facts that are not supported by the document. "
+                "Format the output in clean Markdown with a **Subject:** line first, then the email body with a greeting, "
+                "concise paragraphs, and a professional sign-off. Keep it natural and ready to send."
+            )
+            additional_prompt = f"Write the email in a {tone} tone. If a recipient or purpose is implied by the document, address it directly."
+        elif tool_id == 'smart-rewriter':
+            tone = data.get('tone', 'Professional')
+            system_instruction = (
+                "You are DocNova AI, an expert editor and rewriter. Rewrite the provided document text to improve clarity, "
+                "flow, grammar, and readability while strictly preserving the original meaning and context. Do not add new "
+                "information. Return the rewritten text in clean Markdown, preserving headings, lists, and structure where present."
+            )
+            additional_prompt = f"Rewrite in a {tone} tone. Keep the same language as the source unless a different output language is requested."
         else:
             is_json_output = True
             system_instruction = "You are DocNova AI, an expert PDF summarization assistant. Summarize only from the provided document text. Do not invent information. Create a structured summary based on the user's settings. You MUST format the output as a RAW JSON object with this exact structure: {\"overview\": \"string summary\", \"keyPoints\": [{\"title\": \"string\", \"desc\": \"string\"}], \"importantDates\": [{\"date\": \"string like MMM DD, YYYY\", \"title\": \"string\"}], \"actionItems\": [{\"text\": \"string\", \"priority\": \"High|Medium|Low\"}], \"conclusion\": \"string\"}."
@@ -1781,8 +1936,10 @@ def ai_process():
 
     except Exception as e:
         error_str = str(e)
+        import traceback
         print('Gemini Unexpected error:', e)
-        return jsonify({'error': 'Failed to process document'}), 500
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to process document: {error_str}'}), 500
 
 @app.route('/api/ai/chat', methods=['POST'])
 @validate_request(AIChatSchema)
@@ -1816,7 +1973,7 @@ def ai_chat():
         if not messages:
             return jsonify({'error': 'No messages provided'}), 400
             
-        allowed_models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest']
+        allowed_models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest']
         if model not in allowed_models:
             model = 'gemini-3.5-flash'
             
