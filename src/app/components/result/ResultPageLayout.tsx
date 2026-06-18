@@ -28,7 +28,7 @@ import {
   RotateCw,
   FileOutput
 } from "lucide-react";
-import { pdfApi, type ResultJobResponse, type ResultPreviewResponse } from "../../../services/pdfApi";
+import { pdfApi, type ResultJobResponse, type ResultJobItem, type ResultPreviewResponse } from "../../../services/pdfApi";
 import { hardNavigate } from "../../../lib/navigateClean";
 import { resetDocNovaState } from "../../../lib/resetDocNovaState";
 

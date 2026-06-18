@@ -66,6 +66,7 @@ import { categoryMeta, ocrLanguages, type Tool } from "../../data/tools";
 import { pdfApi } from "../../../services/pdfApi";
 import { ProcessingOverlay } from "./ProcessingOverlay";
 import { resetDocNovaState } from "../../../lib/resetDocNovaState";
+import { renderDocxToThumbnails } from "../../../lib/docxPreview";
 import { getFriendlyErrorMessage } from "../../../utils/errorHandler";
 import {
   CheckBox as OrganizeCheckBox,
@@ -265,11 +266,18 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [draggingQueueId, setDraggingQueueId] = useState<string | null>(null);
   const [organizerViewMode, setOrganizerViewMode] = useState<"grid" | "list">("grid");
+  // List-mode (preview-style) state: which page is shown large + its zoom.
+  const [organizeActiveId, setOrganizeActiveId] = useState<string | null>(null);
+  const [organizeZoom, setOrganizeZoom] = useState(100);
+  // When true, the upload/options screen is shown again even though files exist,
+  // so "Back" can return there without discarding the file or chosen settings.
+  const [showUploadView, setShowUploadView] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const catMeta = categoryMeta[tool.category];
   const acceptsMultiple = tool.multipleFiles || tool.id === "image-to-pdf" || tool.id === "insert-pages";
   const allItems = useMemo(() => files.flatMap(file => file.items), [files]);
+  const organizeActiveItem = allItems.find(item => item.id === organizeActiveId) || allItems[0];
   const selectedIds = useMemo(() => new Set(selectionOrder), [selectionOrder]);
   const selectedItems = useMemo(
     () => selectionOrder.map(id => allItems.find(item => item.id === id)).filter(Boolean) as PreviewItem[],
@@ -345,11 +353,15 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
       setFiles(prev => prev.map(file => file.id === source.id ? { ...file, items, loading: false, previewStatus: "Preview ready" } : file));
       if (shouldAutoSelect(tool.id)) addSelectionItems(items, setSelectionOrder);
     } catch (error) {
+      // Word preview errors carry actionable messages (e.g. legacy .doc); keep them verbatim.
+      const message = source.kind === "document" && error instanceof Error && error.message
+        ? error.message
+        : getFriendlyErrorMessage(error, 'conversion');
       setFiles(prev => prev.map(file => file.id === source.id ? {
         ...file,
         loading: false,
         previewStatus: undefined,
-        error: getFriendlyErrorMessage(error, 'conversion'),
+        error: message,
       } : file));
     }
   }, [tool]);
@@ -377,6 +389,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     resetOutput(output);
     setOutput(null);
     setStatus("idle");
+    setShowUploadView(false);
     setReplaceTargetId(null);
     setSelectionOrder(prev => prev.filter(id => !replacedItemIds.has(id)));
     const outputNameFiles = replaceId ? [nextFiles[0]] : acceptsMultiple ? [...files, ...nextFiles] : nextFiles;
@@ -524,6 +537,19 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     setOutput(null);
   }, [selectionOrder, selectedItems, output, tool.id]);
 
+  // Rotate a single page by id (used by the list-preview floating toolbar).
+  const rotateItemById = useCallback((id: string, degrees: string) => {
+    const add = parseInt(degrees, 10);
+    if (!Number.isFinite(add)) return;
+    const normalizeRotation = (value: number) => ((value % 360) + 360) % 360;
+    setFiles(prev => prev.map(file => ({
+      ...file,
+      items: file.items.map(item => item.id === id ? { ...item, rotation: normalizeRotation((item.rotation || 0) + add) } : item),
+    })));
+    resetOutput(output);
+    setOutput(null);
+  }, [output]);
+
   const removeQueueItem = (id: string) => setSelectionOrder(prev => prev.filter(itemId => itemId !== id));
 
   const dropOnQueueItem = (targetId: string) => {
@@ -551,6 +577,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     setProgress(0);
     setErrorMsg("");
     setOutput(null);
+    setShowUploadView(false);
   };
 
   const handleProcess = async (settingsOverride?: Partial<ToolSettings> | React.MouseEvent) => {
@@ -640,11 +667,13 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
     pdfApi.downloadBlob(output.downloadBlob, output.downloadName);
   };
 
-  const isOrganizerWorkspace = files.length > 0 && tool.category === "organize";
-  const isSingleFileConversionWorkspace = files.length === 1 && singleFileConversionTools.has(tool.id);
-  const isPdfEditorWorkspace = files.length > 0 && pdfEditorWorkspaceTools.has(tool.id);
-  const isSecureWorkspace = files.length === 1 && secureWorkspaceTools.has(tool.id);
-  const isOcrWorkspace = files.length === 1 && ocrWorkspaceTools.has(tool.id);
+  const isOrganizerWorkspace = !showUploadView && files.length > 0 && tool.category === "organize";
+  const isSingleFileConversionWorkspace = !showUploadView && files.length === 1 && singleFileConversionTools.has(tool.id);
+  const isPdfEditorWorkspace = !showUploadView && files.length > 0 && pdfEditorWorkspaceTools.has(tool.id);
+  const isSecureWorkspace = !showUploadView && files.length === 1 && secureWorkspaceTools.has(tool.id);
+  const isOcrWorkspace = !showUploadView && files.length === 1 && ocrWorkspaceTools.has(tool.id);
+  const goBackToUpload = useCallback(() => setShowUploadView(true), []);
+  const continueToReview = useCallback(() => setShowUploadView(false), []);
   const isViewportLockedWorkspace = isSingleFileConversionWorkspace || isPdfEditorWorkspace || isSecureWorkspace || isOcrWorkspace;
   const isLoadedWorkspace = isOrganizerWorkspace || isSingleFileConversionWorkspace || isPdfEditorWorkspace || isSecureWorkspace || isOcrWorkspace;
   const updateOrganizerSettings = useCallback((patch: Partial<ToolSettings>) => {
@@ -885,8 +914,8 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
           html:not([data-theme="dark"]) .dn-dark-blobs { display: none; }
 
           .thumbnail-item {
-              width: fit-content;
-              margin: 0 auto;
+              width: 100%;
+              margin: 0;
           }
           .thumbnail-preview {
               width: 100%;
@@ -898,11 +927,12 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
             position: relative;
             isolation: isolate;
             overflow: hidden;
-            border-color: rgba(255,255,255,0.12) !important;
-            background: rgba(9,14,28,0.54) !important;
+            color: var(--dn-toolbar-text) !important;
+            border-color: var(--dn-toolbar-border) !important;
+            background: var(--dn-toolbar-bg) !important;
             backdrop-filter: blur(16px) saturate(180%);
             -webkit-backdrop-filter: blur(16px) saturate(180%);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 30px rgba(0,0,0,0.22);
+            box-shadow: var(--dn-toolbar-shadow);
           }
           .dn-glassmorphism-button::before {
             content: "";
@@ -915,16 +945,19 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
             pointer-events: none;
           }
           .dn-glassmorphism-button:hover {
-            border-color: rgba(255,255,255,0.18) !important;
-            background: rgba(12,18,34,0.68) !important;
+            border-color: var(--dn-selected-border) !important;
+            background: var(--dn-hover-bg) !important;
+            color: var(--dn-t1) !important;
           }
           [data-theme="light"] .dn-glassmorphism-button {
-            border-color: rgba(148,163,184,0.24) !important;
-            background: rgba(255,255,255,0.58) !important;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.82), 0 10px 24px rgba(15,23,42,0.12);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), var(--dn-toolbar-shadow);
+          }
+          [data-theme="light"] .dn-glassmorphism-button:hover {
+            background: #ffffff !important;
           }
           .active-thumbnail {
-              box-shadow: 0 0 0 2px #2563eb;
+              box-shadow: 0 0 0 2px var(--dn-selected-border) !important;
+              border-color: var(--dn-selected-border) !important;
           }
           @keyframes drift1 {
             0% { transform: translate(0, 0) scale(1); }
@@ -951,6 +984,21 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
             event.target.value = "";
           }}
         />
+
+        {showUploadView && files.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.25rem", padding: "0.85rem 1rem", borderRadius: "8px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "var(--dn-shadow)" }}>
+            <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: "8px", display: "grid", placeItems: "center", background: "var(--dn-icon-bg)", color: tool.color }}>
+              <FileKindIcon kind={files[0].kind} />
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ color: "var(--dn-t1)", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{files.length > 1 ? `${files.length} files ready` : files[0].name}</div>
+              <div style={{ color: "var(--dn-t4)", fontSize: "0.78rem" }}>Your file and settings are kept. Continue where you left off.</div>
+            </div>
+            <button type="button" onClick={continueToReview} className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700">
+              Continue to review <ArrowRight size={16} />
+            </button>
+          </div>
+        )}
 
         {!isOrganizerWorkspace && (
           <>
@@ -1031,6 +1079,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                   status={status}
                   onSave={handleProcess}
                   onClear={handleReset}
+                  onBack={goBackToUpload}
                   onSettingsChange={updateOrganizerSettings}
                 />
               ) : isSecureWorkspace ? (
@@ -1043,6 +1092,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                   onSettingsChange={updateOrganizerSettings}
                   onProcess={handleProcess}
                   onClear={handleReset}
+                  onBack={goBackToUpload}
                 />
               ) : isOcrWorkspace ? (
                 <OcrWorkspace
@@ -1054,6 +1104,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                   onSettingsChange={updateOrganizerSettings}
                   onProcess={handleProcess}
                   onClear={handleReset}
+                  onBack={goBackToUpload}
                 />
               ) : isSingleFileConversionWorkspace ? (
                 <SingleFileConversionPreview
@@ -1064,6 +1115,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                   status={status}
                   onSettingsChange={updateOrganizerSettings}
                   onConvert={handleProcess}
+                  onBack={goBackToUpload}
                 />
               ) : (
                 <section style={{ ...panelStyle, borderRadius: "4px", padding: "1rem", display: "grid", gap: "1rem" }}>
@@ -1116,8 +1168,9 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
             <section className="flex min-w-0 flex-1 flex-col bg-transparent">
               {/* Header */}
               <div className="flex h-16 flex-shrink-0 items-center gap-4 px-6">
-                <div className="flex h-9 w-9 items-center justify-center rounded border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>
-                  <tool.icon size={20} />
+                <WorkspaceBackButton onBack={goBackToUpload} />
+                <div className="flex h-9 w-9 items-center justify-center rounded-md shadow-sm text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
+                  <tool.icon size={18} color="#fff" />
                 </div>
                 <div className="flex min-w-0 items-baseline gap-3">
                   <h1 className="truncate text-lg font-semibold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
@@ -1168,19 +1221,19 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                 </div>
               </div>
 
-              {/* Pages Grid */}
-              <div className="custom-scrollbar flex-1 overflow-y-auto p-6 md:p-8">
-                {files.map((file, fileIndex) => (
-                  <div key={file.id} className="mb-8">
-                    <div className="mb-5 flex items-start gap-2">
-                      <CornerDownRight size={18} color="#2563eb" className="mt-1 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <h2 className="truncate text-sm font-medium" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
-                        <p className="mt-0.5 text-xs font-medium text-blue-500">{file.loading ? "Generating preview..." : file.items.length + " pages"}</p>
+              {/* Pages Grid — unchanged grid view */}
+              {organizerViewMode === "grid" ? (
+                <div className="custom-scrollbar flex-1 overflow-y-auto p-6 md:p-8">
+                  {files.map((file, fileIndex) => (
+                    <div key={file.id} className="mb-8">
+                      <div className="mb-5 flex items-start gap-2">
+                        <CornerDownRight size={18} color="#2563eb" className="mt-1 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <h2 className="truncate text-sm font-medium" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
+                          <p className="mt-0.5 text-xs font-medium text-blue-500">{file.loading ? "Generating preview..." : file.items.length + " pages"}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    {organizerViewMode === "grid" ? (
                       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                         {file.items.map((item, itemIdx) => (
                           <OrganizePageCard
@@ -1207,59 +1260,23 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                           />
                         )}
                       </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {file.items.map((item, itemIdx) => {
-                          const selected = selectedIds.has(item.id);
-                          return (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => toggleItem(item)}
-                              className="group flex min-h-20 w-full items-center gap-4 rounded-md px-3 py-2 text-left transition-colors"
-                              style={{
-                                border: selected ? "1px solid #2563eb" : "1px solid var(--dn-border)",
-                                background: selected ? "rgba(37,99,235,0.14)" : "rgba(255,255,255,0.02)",
-                                color: "var(--dn-t1)",
-                              }}
-                            >
-                              <OrganizeCheckBox checked={selected} />
-                              <div className="grid h-16 w-12 flex-shrink-0 place-items-center overflow-hidden rounded-[4px]" style={{ background: item.thumbnail ? "#fff" : "var(--dn-bg-subtle)" }}>
-                                {item.thumbnail ? (
-                                  <img
-                                    src={item.thumbnail}
-                                    alt=""
-                                    className="block max-h-full max-w-full object-contain"
-                                    style={{ transform: `rotate(${item.rotation || 0}deg)` }}
-                                  />
-                                ) : (
-                                  <FileKindIcon kind={item.kind} compact />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="truncate text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>{item.label}</div>
-                                <div className="truncate text-xs" style={{ color: "var(--dn-t4)" }}>{file.name}</div>
-                              </div>
-                              <span className="w-12 flex-shrink-0 text-right text-xs font-semibold" style={{ color: "var(--dn-t4)" }}>{itemIdx + 1}</span>
-                            </button>
-                          );
-                        })}
-                        {fileIndex === files.length - 1 && (
-                          <button
-                            type="button"
-                            onClick={() => inputRef.current?.click()}
-                            className="flex min-h-16 w-full items-center justify-center gap-3 rounded-md border border-dashed text-sm font-semibold transition hover:border-blue-500 hover:text-blue-500"
-                            style={{ borderColor: "var(--dn-border)", background: "rgba(255,255,255,0.02)", color: "var(--dn-t3)" }}
-                          >
-                            <Plus size={18} />
-                            Add more files
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* List view — preview-style layout (thumbnails + large canvas) */
+                <OrganizeListPreview
+                  items={allItems}
+                  activeItem={organizeActiveItem}
+                  selectedIds={selectedIds}
+                  zoom={organizeZoom}
+                  onZoom={setOrganizeZoom}
+                  onSetActive={setOrganizeActiveId}
+                  onToggleSelect={toggleItem}
+                  onRotateActive={degrees => organizeActiveItem && rotateItemById(organizeActiveItem.id, degrees)}
+                  onAddFiles={() => inputRef.current?.click()}
+                />
+              )}
             </section>
 
             {/* Right Sidebar */}
@@ -1342,6 +1359,7 @@ function SecurePdfWorkspace({
   onSettingsChange,
   onProcess,
   onClear,
+  onBack,
 }: {
   tool: Tool;
   file: WorkflowFile;
@@ -1351,6 +1369,7 @@ function SecurePdfWorkspace({
   onSettingsChange: (patch: Partial<ToolSettings>) => void;
   onProcess: () => void;
   onClear: () => void;
+  onBack?: () => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(100);
@@ -1418,7 +1437,9 @@ function SecurePdfWorkspace({
         <div className="mb-3 flex shrink-0 items-center gap-4">
           <button
             type="button"
-            onClick={onClear}
+            onClick={onBack ?? onClear}
+            title="Back to upload"
+            aria-label="Back to upload"
             className="grid h-8 w-8 place-items-center rounded-md transition"
             style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t3)" }}
             onMouseOver={e => { e.currentTarget.style.color = "var(--dn-t1)"; e.currentTarget.style.borderColor = "#3b82f6"; }}
@@ -1433,7 +1454,7 @@ function SecurePdfWorkspace({
         {/* File bar */}
         <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
           <div className="flex min-w-0 items-center gap-4">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.color }}>
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
               <tool.icon size={20} />
             </div>
             <div className="min-w-0">
@@ -1460,7 +1481,7 @@ function SecurePdfWorkspace({
                 {file.loading ? "..." : pageCount}
               </span>
             </div>
-            <div className="thumbnail-scroll grid min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
+            <div className="thumbnail-scroll grid auto-rows-max content-start min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
               {previewItems.map((item, index) => {
                 const active = index === activeIndex;
                 return (
@@ -1474,7 +1495,7 @@ function SecurePdfWorkspace({
                     className="thumbnail-item transition-colors"
                     style={{ color: active ? "#3b82f6" : "var(--dn-t2)" }}
                   >
-                    <div className={active ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>
+                    <div className={active ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", border: "1px solid var(--dn-border)", boxShadow: "var(--dn-shadow)" }}>
                       <PreviewSurface item={item} isThumbnail />
                     </div>
                     <p className="mt-2 truncate text-xs font-semibold">{item.label}</p>
@@ -1489,16 +1510,16 @@ function SecurePdfWorkspace({
             <div
               ref={viewerRef}
               className="document-viewer flex min-h-0 flex-1 items-start justify-center overflow-auto p-8"
-              style={{ background: "transparent" }}
+              style={{ background: "var(--dn-preview-bg)" }}
             >
-              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", transition: "width 0.2s ease" }}>
+              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", alignContent: "start", transition: "width 0.2s ease" }}>
                 {previewItems.length
                   ? previewItems.map((item, index) => (
                       <div
                         key={item.id}
                         data-preview-index={index}
                         ref={el => { if (el) pageRefs.current.set(index, el); else pageRefs.current.delete(index); }}
-                        style={{ width: "100%", boxShadow: "0 24px 70px rgba(15,23,42,0.18)", scrollMarginTop: 16 }}
+                        style={{ width: "100%", boxShadow: "var(--dn-page-shadow)", scrollMarginTop: 16 }}
                       >
                         <PreviewSurface item={item} />
                       </div>
@@ -1930,6 +1951,7 @@ function OcrWorkspace({
   onSettingsChange,
   onProcess,
   onClear,
+  onBack,
 }: {
   tool: Tool;
   file: WorkflowFile;
@@ -1939,6 +1961,7 @@ function OcrWorkspace({
   onSettingsChange: (patch: Partial<ToolSettings>) => void;
   onProcess: () => void;
   onClear: () => void;
+  onBack?: () => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(100);
@@ -1991,7 +2014,9 @@ function OcrWorkspace({
         <div className="mb-3 flex shrink-0 items-center gap-4">
           <button
             type="button"
-            onClick={onClear}
+            onClick={onBack ?? onClear}
+            title="Back to upload"
+            aria-label="Back to upload"
             className="grid h-8 w-8 place-items-center rounded-md transition"
             style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t3)" }}
             onMouseOver={e => { e.currentTarget.style.color = "var(--dn-t1)"; e.currentTarget.style.borderColor = "#3b82f6"; }}
@@ -2006,7 +2031,7 @@ function OcrWorkspace({
         {/* File bar */}
         <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
           <div className="flex min-w-0 items-center gap-4">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.color }}>
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
               <tool.icon size={20} />
             </div>
             <div className="min-w-0">
@@ -2033,7 +2058,7 @@ function OcrWorkspace({
                 {file.loading ? "..." : pageCount}
               </span>
             </div>
-            <div className="thumbnail-scroll grid min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
+            <div className="thumbnail-scroll grid auto-rows-max content-start min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
               {previewItems.map((item, index) => {
                 const active = index === activeIndex;
                 return (
@@ -2047,7 +2072,7 @@ function OcrWorkspace({
                     className="thumbnail-item transition-colors"
                     style={{ color: active ? "#3b82f6" : "var(--dn-t2)" }}
                   >
-                    <div className={active ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>
+                    <div className={active ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", border: "1px solid var(--dn-border)", boxShadow: "var(--dn-shadow)" }}>
                       <PreviewSurface item={item} isThumbnail />
                     </div>
                     <p className="mt-2 truncate text-xs font-semibold">{item.label}</p>
@@ -2062,16 +2087,16 @@ function OcrWorkspace({
             <div
               ref={viewerRef}
               className="document-viewer flex min-h-0 flex-1 items-start justify-center overflow-auto p-8"
-              style={{ background: "transparent" }}
+              style={{ background: "var(--dn-preview-bg)" }}
             >
-              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", transition: "width 0.2s ease" }}>
+              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", alignContent: "start", transition: "width 0.2s ease" }}>
                 {previewItems.length
                   ? previewItems.map((item, index) => (
                       <div
                         key={item.id}
                         data-preview-index={index}
                         ref={el => { if (el) pageRefs.current.set(index, el); else pageRefs.current.delete(index); }}
-                        style={{ width: "100%", boxShadow: "0 24px 70px rgba(15,23,42,0.18)", scrollMarginTop: 16 }}
+                        style={{ width: "100%", boxShadow: "var(--dn-page-shadow)", scrollMarginTop: 16 }}
                       >
                         <PreviewSurface item={item} />
                       </div>
@@ -2275,6 +2300,7 @@ function SingleFileConversionPreview({
   status,
   onSettingsChange,
   onConvert,
+  onBack,
 }: {
   tool: Tool;
   file: WorkflowFile;
@@ -2283,6 +2309,7 @@ function SingleFileConversionPreview({
   status: WorkflowStatus;
   onSettingsChange: (patch: Partial<ToolSettings>) => void;
   onConvert: () => void;
+  onBack?: () => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(100);
@@ -2290,8 +2317,9 @@ function SingleFileConversionPreview({
   const [outputName, setOutputName] = useState(stripExtension(file.name));
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  const previewItems = items.length ? items : fallbackPreviewItems(file, tool);
-  const pageCount = Math.max(previewItems.length, file.loading ? 0 : 1);
+  const hasError = Boolean(file.error);
+  const previewItems = items.length ? items : (hasError || file.loading ? [] : fallbackPreviewItems(file, tool));
+  const pageCount = Math.max(previewItems.length, file.loading || hasError ? 0 : 1);
   const output = conversionOutputMeta(tool);
   const estimatedRatio = tool.id.includes("jpg") || tool.id.includes("image") ? 1.18 : tool.id.includes("pdf") ? 0.72 : 0.86;
 
@@ -2327,14 +2355,15 @@ function SingleFileConversionPreview({
     <div className="convert-page grid h-[calc(100vh-60px)] w-full grid-cols-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_320px]" style={{ color: "var(--dn-t1)" }}>
       <main className="preview-workspace flex h-[calc(100vh-60px)] min-w-0 flex-col overflow-hidden px-5 py-4">
         <div className="mb-3 flex shrink-0 items-center gap-4">
+          <WorkspaceBackButton onBack={onBack} />
           <h1 className="text-2xl font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
           <span className="text-sm font-semibold text-blue-500">Convert single file</span>
         </div>
 
         <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
           <div className="flex min-w-0 items-center gap-4">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.color }}>
-              <FileKindIcon kind={file.kind} />
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
+              <tool.icon size={20} color="#fff" />
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-base font-semibold" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
@@ -2353,7 +2382,7 @@ function SingleFileConversionPreview({
               <h3 className="text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Pages</h3>
               <span className="text-sm font-semibold" style={{ color: "var(--dn-t3)" }}>{file.loading ? "..." : pageCount}</span>
             </div>
-            <div className="thumbnail-scroll grid min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
+            <div className="thumbnail-scroll grid auto-rows-max content-start min-h-0 flex-1 gap-4 overflow-y-auto pr-2">
               {previewItems.map((item, index) => {
                 const selected = index === activeIndex;
                 return (
@@ -2369,7 +2398,7 @@ function SingleFileConversionPreview({
                       color: selected ? "#3b82f6" : "var(--dn-t2)",
                     }}
                   >
-                    <div className={selected ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", boxShadow: "0 6px 18px rgba(15,23,42,0.06)" }}>
+                    <div className={selected ? "active-thumbnail" : ""} style={{ borderRadius: "8px", overflow: "hidden", background: "#fff", border: "1px solid var(--dn-border)", boxShadow: "var(--dn-shadow)" }}>
                       <PreviewSurface item={item} isThumbnail={true} />
                     </div>
                     <p className="mt-2 truncate text-xs font-semibold">{item.label}</p>
@@ -2380,9 +2409,13 @@ function SingleFileConversionPreview({
           </aside>
 
           <section className="relative flex min-h-0 min-w-0 flex-col">
-            <div ref={viewerRef} className="document-viewer flex min-h-0 flex-1 items-start justify-center overflow-auto p-8" style={{ background: "transparent" }}>
-              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", transition: "width 0.2s ease" }}>
-                {previewItems.length ? previewItems.map((item, index) => (
+            <div ref={viewerRef} className="document-viewer flex min-h-0 flex-1 items-start justify-center overflow-auto p-8" style={{ background: "var(--dn-preview-bg)" }}>
+              <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", gap: "2rem", justifyItems: "center", alignContent: "start", transition: "width 0.2s ease" }}>
+                {hasError ? (
+                  <PreviewErrorPanel message={file.error || "Preview could not be generated."} />
+                ) : file.loading ? (
+                  <PreviewLoadingPanel name={file.name} status={file.previewStatus} />
+                ) : previewItems.length ? previewItems.map((item, index) => (
                   <div
                     key={item.id}
                     data-preview-index={index}
@@ -2390,7 +2423,7 @@ function SingleFileConversionPreview({
                       if (element) pageRefs.current.set(index, element);
                       else pageRefs.current.delete(index);
                     }}
-                    style={{ width: "100%", transform: "rotate(" + rotation + "deg)", transition: "transform 0.2s ease", boxShadow: "0 24px 70px rgba(15,23,42,0.18)", scrollMarginTop: 16 }}
+                    style={{ width: "100%", transform: "rotate(" + rotation + "deg)", transition: "transform 0.2s ease", boxShadow: "var(--dn-page-shadow)", scrollMarginTop: 16 }}
                   >
                     <PreviewSurface item={item} />
                   </div>
@@ -2403,7 +2436,7 @@ function SingleFileConversionPreview({
               style={{ background: "transparent", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }}
             >
               <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => setZoom(prev => Math.max(50, prev - 10))} />
-              <button type="button" className="dn-glassmorphism-button h-10 min-w-[60px] whitespace-nowrap rounded-[4px] border px-4 text-sm font-extrabold transition-colors" style={{ color: "rgba(255,255,255,0.95)" }}>{zoom}%</button>
+              <button type="button" className="dn-glassmorphism-button h-10 min-w-[60px] whitespace-nowrap rounded-[4px] border px-4 text-sm font-extrabold transition-colors">{zoom}%</button>
               <ConversionToolButton label="Zoom in" icon={<ZoomIn size={16} />} compact onClick={() => setZoom(prev => Math.min(180, prev + 10))} />
               <ConversionToolButton label="Rotate left" icon={<RotateCcw size={17} />} onClick={() => setRotation(prev => prev - 90)} />
               <ConversionToolButton label="Rotate right" icon={<RotateCw size={17} />} onClick={() => setRotation(prev => prev + 90)} />
@@ -2514,6 +2547,7 @@ function PdfEditorPreviewWorkspace({
   status,
   onSave,
   onClear,
+  onBack,
   onSettingsChange,
 }: {
   tool: Tool;
@@ -2522,6 +2556,7 @@ function PdfEditorPreviewWorkspace({
   status: WorkflowStatus;
   onSave: (settingsOverride?: Partial<ToolSettings>) => void;
   onClear: () => void;
+  onBack?: () => void;
   onSettingsChange: (patch: Partial<ToolSettings>) => void;
 }) {
   const [activeTool, setActiveTool] = useState<EditorToolKey>(() => editorToolFromToolId(tool.id));
@@ -2821,7 +2856,7 @@ function PdfEditorPreviewWorkspace({
           cursor: pointer;
         }
         .ped-tool-tab-active {
-          background: rgba(37,99,235,0.14);
+          background: var(--dn-selected-bg);
           color: #3b82f6;
           box-shadow: inset 0 0 0 1px rgba(59,130,246,0.22);
         }
@@ -2886,15 +2921,16 @@ function PdfEditorPreviewWorkspace({
         {/* Left: back + tool identity */}
         <button
           type="button"
-          onClick={onClear}
+          onClick={onBack ?? onClear}
+          title="Back to upload"
           aria-label="Back to upload"
           className="ped-icon-btn shrink-0"
         >
           <ArrowLeft size={18} />
         </button>
 
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>
-          <tool.icon size={20} />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md shadow-sm text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
+          <tool.icon size={18} color="#fff" />
         </div>
 
         <div className="flex min-w-0 items-baseline gap-3">
@@ -3061,7 +3097,7 @@ function PdfEditorPreviewWorkspace({
         </aside>
 
         {/* Center: canvas — transparent so ambient blobs show through */}
-        <main className="pdf-editor-scroll relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto" style={{ background: "transparent" }}>
+        <main className="pdf-editor-scroll relative flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-auto p-8" style={{ background: "var(--dn-preview-bg)" }}>
           <EditorCanvasV2
             item={activeItem}
             activeTool={activeTool}
@@ -3090,7 +3126,7 @@ function PdfEditorPreviewWorkspace({
           <div className="flex shrink-0 items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
             <div
               className="grid h-9 w-9 shrink-0 place-items-center rounded-md"
-              style={{ background: "rgba(37,99,235,0.12)", color: "#3b82f6" }}
+              style={{ background: "var(--dn-selected-bg)", color: "#3b82f6" }}
             >
               {editorToolTabs.find(t => t.id === activeTool)?.icon}
             </div>
@@ -3474,7 +3510,7 @@ function EditorCanvasV2({
       <div
         ref={pageRef}
         className="relative h-[900px] w-[680px] origin-top-left overflow-hidden bg-white"
-        style={{ transform: `scale(${scale})`, boxShadow: "0 24px 70px rgba(15,23,42,0.28)", outline: "1px solid rgba(15,23,42,0.10)", cursor: activeTool === "draw" ? "crosshair" : "default" }}
+        style={{ transform: `scale(${scale})`, boxShadow: "var(--dn-page-shadow)", outline: "1px solid var(--dn-border)", cursor: activeTool === "draw" ? "crosshair" : "default" }}
         onPointerDown={event => {
           if (activeTool === "draw") beginDraw(event);
           else onSelectLayer(null);
@@ -3567,7 +3603,7 @@ function EditorCanvas({ item, activeTool, zoom }: { item?: PreviewItem; activeTo
   const scale = zoom / 100;
   return (
     <div className="mx-auto origin-top" style={{ width: 680 * scale, transform: "scale(" + scale + ")", transformOrigin: "top center" }}>
-      <div className="relative min-h-[900px] w-[680px] overflow-hidden bg-white" style={{ boxShadow: "0 24px 70px rgba(15,23,42,0.28)", outline: "1px solid rgba(15,23,42,0.10)" }}>
+      <div className="relative min-h-[900px] w-[680px] overflow-hidden bg-white" style={{ boxShadow: "var(--dn-page-shadow)", outline: "1px solid var(--dn-border)" }}>
         {item?.thumbnail ? (
           <img src={item.thumbnail} alt={item.label} className="absolute inset-0 h-full w-full object-contain" />
         ) : (
@@ -3634,7 +3670,7 @@ function EditorSettingsPanel({
   return (
     <aside className="flex min-h-0 flex-col" style={{ borderLeft: "1px solid var(--dn-border)", background: "var(--dn-bg-card)" }}>
       <div className="flex shrink-0 items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
-        <div className="grid h-11 w-11 place-items-center rounded-lg" style={{ background: "rgba(37,99,235,0.12)", color: "#3b82f6" }}>{active.icon}</div>
+        <div className="grid h-11 w-11 place-items-center rounded-lg" style={{ background: "var(--dn-selected-bg)", color: "#3b82f6" }}>{active.icon}</div>
         <div className="min-w-0">
           <h3 className="truncate text-sm font-bold" style={{ color: "var(--dn-t1)" }}>{editorPanelTitle(activeTool)}</h3>
           <p className="mt-0.5 text-xs" style={{ color: "var(--dn-t3)" }}>{editorPanelDescription(activeTool)}</p>
@@ -4166,7 +4202,7 @@ function EditorFontSelect({ value, onChange }: { value: string; onChange: (v: st
               className="flex h-9 w-full items-center px-3 text-sm transition"
               style={{
                 fontFamily: `${font}, sans-serif`,
-                background: value === font ? "rgba(37,99,235,0.12)" : "transparent",
+                background: value === font ? "var(--dn-selected-bg)" : "transparent",
                 color: value === font ? "#3b82f6" : "var(--dn-t1)",
                 fontWeight: value === font ? 700 : 400,
                 textAlign: "left",
@@ -4191,7 +4227,7 @@ function EditorStyleButton({ children, active, onClick, title }: { children: Rea
       onClick={onClick}
       className="grid h-9 w-9 place-items-center rounded-md transition"
       style={{
-        background: active ? "rgba(37,99,235,0.14)" : "var(--dn-bg-subtle)",
+        background: active ? "var(--dn-selected-bg)" : "var(--dn-bg-subtle)",
         border: active ? "1px solid rgba(59,130,246,0.4)" : "1px solid var(--dn-border)",
         color: active ? "#3b82f6" : "var(--dn-t2)",
       }}
@@ -4305,8 +4341,7 @@ function ConversionToolButton({ icon, label, compact, onClick }: { icon: React.R
       title={label}
       aria-label={label}
       onClick={onClick}
-      className={`dn-glassmorphism-button flex h-10 items-center whitespace-nowrap rounded-[4px] border text-sm font-bold transition-colors hover:text-white ${compact ? "w-10 justify-center px-0" : "gap-2 px-3"}`}
-      style={{ color: "rgba(255,255,255,0.85)" }}
+      className={`dn-glassmorphism-button flex h-10 items-center whitespace-nowrap rounded-[4px] border text-sm font-bold transition-colors ${compact ? "w-10 justify-center px-0" : "gap-2 px-3"}`}
     >
       {icon}
       {!compact && <span>{label}</span>}
@@ -4349,7 +4384,7 @@ function ConversionToggle({ label, checked, onChange }: { label: string; checked
 
 function ConversionRadio({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
   return (
-    <button type="button" role="radio" aria-checked={checked} onClick={onClick} className="mb-3 flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors" style={{ background: checked ? "rgba(37,99,235,0.12)" : "var(--dn-bg-subtle)", borderColor: checked ? "#3b82f6" : "var(--dn-border)", color: checked ? "var(--dn-t1)" : "var(--dn-t2)" }}>
+    <button type="button" role="radio" aria-checked={checked} onClick={onClick} className="mb-3 flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors" style={{ background: checked ? "var(--dn-selected-bg)" : "var(--dn-bg-subtle)", borderColor: checked ? "#3b82f6" : "var(--dn-border)", color: checked ? "var(--dn-t1)" : "var(--dn-t2)" }}>
       <span className="grid h-5 w-5 place-items-center rounded-full border" style={{ background: checked ? "#2563eb" : "transparent", borderColor: checked ? "#2563eb" : "var(--dn-border2)" }}>
         {checked && <span className="h-2 w-2 rounded-full bg-white" />}
       </span>
@@ -4403,7 +4438,7 @@ export function OutputPreviewPanel({ tool, output, onDownload }: { tool: Tool; o
           <div style={{ display: "grid", gap: "0.55rem", maxHeight: 520, overflow: "auto" }}>
             {output.items.map(item => (
               <button key={item.id} type="button" onClick={() => setActiveItem(item)}
-                style={{ display: "flex", alignItems: "center", gap: "0.6rem", textAlign: "left", borderRadius: "4px", border: activeItem?.id === item.id ? "1px solid #60a5fa" : "1px solid var(--dn-border)", background: activeItem?.id === item.id ? "rgba(37,99,235,0.12)" : "var(--dn-bg-subtle)", color: "var(--dn-t2)", padding: "0.55rem", cursor: "pointer" }}>
+                style={{ display: "flex", alignItems: "center", gap: "0.6rem", textAlign: "left", borderRadius: "4px", border: activeItem?.id === item.id ? "1px solid #60a5fa" : "1px solid var(--dn-border)", background: activeItem?.id === item.id ? "var(--dn-selected-bg)" : "var(--dn-bg-subtle)", color: "var(--dn-t2)", padding: "0.55rem", cursor: "pointer" }}>
                 <FileKindIcon kind={item.kind === "archive" ? "generic" : item.kind} compact />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: "0.78rem", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
@@ -4506,6 +4541,93 @@ function WorkflowSteps({ status, hasFiles, hasSelection, hasOutput }: { status: 
   );
 }
 
+function OrganizeListPreview({
+  items,
+  activeItem,
+  selectedIds,
+  zoom,
+  onZoom,
+  onSetActive,
+  onToggleSelect,
+  onRotateActive,
+  onAddFiles,
+}: {
+  items: PreviewItem[];
+  activeItem?: PreviewItem;
+  selectedIds: Set<string>;
+  zoom: number;
+  onZoom: (updater: (z: number) => number) => void;
+  onSetActive: (id: string) => void;
+  onToggleSelect: (item: PreviewItem) => void;
+  onRotateActive: (degrees: string) => void;
+  onAddFiles: () => void;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 overflow-hidden">
+      {/* Left: page thumbnails (top-aligned, like the conversion preview page) */}
+      <aside className="flex w-[172px] flex-shrink-0 flex-col border-r" style={{ borderColor: "var(--dn-border)" }}>
+        <div className="flex shrink-0 items-center justify-between px-3 py-3">
+          <h3 className="text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Pages</h3>
+          <span className="text-sm font-semibold" style={{ color: "var(--dn-t3)" }}>{items.length}</span>
+        </div>
+        <div className="thumbnail-scroll grid auto-rows-max content-start min-h-0 flex-1 gap-4 overflow-y-auto p-3">
+          {items.map(item => {
+            const active = activeItem?.id === item.id;
+            const selected = selectedIds.has(item.id);
+            return (
+              <div key={item.id} className="thumbnail-item" style={{ position: "relative" }}>
+                <button type="button" onClick={() => onSetActive(item.id)} className="block w-full text-left" style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
+                  <div className={active ? "active-thumbnail" : ""} style={{ borderRadius: 8, overflow: "hidden", background: "#fff", border: "1px solid var(--dn-border)", boxShadow: "var(--dn-shadow)" }}>
+                    <PreviewSurface item={item} isThumbnail rotation={item.rotation || 0} />
+                  </div>
+                  <p className="mt-2 truncate text-center text-xs font-semibold" style={{ color: active ? "#3b82f6" : "var(--dn-t3)" }}>{item.label}</p>
+                </button>
+                <span
+                  role="checkbox"
+                  aria-checked={selected}
+                  tabIndex={0}
+                  aria-label={selected ? "Deselect page" : "Select page"}
+                  onClick={event => { event.stopPropagation(); onToggleSelect(item); }}
+                  onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); onToggleSelect(item); } }}
+                  style={{ position: "absolute", top: 6, left: 6, zIndex: 2, cursor: "pointer", borderRadius: 4, background: "var(--dn-bg-card)", boxShadow: "var(--dn-shadow)" }}
+                >
+                  <OrganizeCheckBox checked={selected} />
+                </span>
+              </div>
+            );
+          })}
+          <button type="button" onClick={onAddFiles} className="flex min-h-16 w-full items-center justify-center gap-2 rounded-md border border-dashed text-xs font-semibold transition hover:border-blue-500 hover:text-blue-500" style={{ borderColor: "var(--dn-border)", background: "var(--dn-surface-2)", color: "var(--dn-t3)" }}>
+            <Plus size={16} /> Add files
+          </button>
+        </div>
+      </aside>
+
+      {/* Center: large preview of the selected page */}
+      <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="document-viewer flex min-h-0 flex-1 items-start justify-center overflow-auto p-8" style={{ background: "var(--dn-preview-bg)" }}>
+          <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", justifyItems: "center", alignContent: "start", transition: "width 0.2s ease" }}>
+            {activeItem ? (
+              <div style={{ width: "100%", boxShadow: "var(--dn-page-shadow)" }}>
+                <PreviewSurface item={activeItem} rotation={activeItem.rotation || 0} />
+              </div>
+            ) : <EmptyPanel text="Select a page to preview." />}
+          </div>
+        </div>
+
+        {activeItem && (
+          <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap" style={{ background: "transparent", boxShadow: "none" }}>
+            <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => onZoom(z => Math.max(50, z - 10))} />
+            <button type="button" className="dn-glassmorphism-button h-10 min-w-[60px] whitespace-nowrap rounded-[4px] border px-4 text-sm font-extrabold transition-colors">{zoom}%</button>
+            <ConversionToolButton label="Zoom in" icon={<ZoomIn size={16} />} compact onClick={() => onZoom(z => Math.min(180, z + 10))} />
+            <ConversionToolButton label="Rotate left" icon={<RotateCcw size={17} />} onClick={() => onRotateActive("-90")} />
+            <ConversionToolButton label="Rotate right" icon={<RotateCw size={17} />} onClick={() => onRotateActive("90")} />
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function PreviewSurface({ item, rotation = 0, isThumbnail = false }: { item: PreviewItem; rotation?: number; isThumbnail?: boolean }) {
   if (item.thumbnail) {
     if (isThumbnail) {
@@ -4522,18 +4644,76 @@ function PreviewSurface({ item, rotation = 0, isThumbnail = false }: { item: Pre
 
   if (item.kind === "pdf") {
     return (
-      <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "4px", background: "linear-gradient(90deg,#ffffff,#f1f5f9,#ffffff)", border: "1px solid rgba(148,163,184,0.24)", display: "grid", placeItems: "center", color: "#94a3b8", fontWeight: 850, fontSize: "0.74rem" }}>
+      <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "4px", background: "linear-gradient(90deg,#ffffff,#f1f5f9,#ffffff)", border: "1px solid var(--dn-border)", display: "grid", placeItems: "center", color: "#94a3b8", fontWeight: 850, fontSize: "0.74rem" }}>
         Generating...
       </div>
     );
   }
 
+  // Spreadsheet fallback (no rendered image): show the real cell grid as a table.
+  if (item.kind === "spreadsheet" && item.rows && item.rows.length) {
+    return <SpreadsheetSurface rows={item.rows} isThumbnail={isThumbnail} />;
+  }
+
+  // Presentation fallback: show the slide's real text outline as a slide card.
+  if (item.kind === "presentation") {
+    return <SlideTextSurface label={item.label} text={item.text} isThumbnail={isThumbnail} />;
+  }
+
   return (
-    <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "4px", background: "linear-gradient(180deg,rgba(15,23,42,0.94),rgba(30,41,59,0.88))", border: "1px solid rgba(148,163,184,0.18)", display: "grid", placeItems: "center", padding: "0.8rem", textAlign: "center" }}>
+    <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "4px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "var(--dn-page-shadow)", display: "grid", placeItems: "center", padding: "0.8rem", textAlign: "center" }}>
       <div>
         <FileKindIcon kind={item.kind} />
         <div style={{ color: "var(--dn-t2)", fontWeight: 850, fontSize: "0.78rem", marginTop: "0.6rem" }}>{item.label}</div>
         {item.text && <div style={{ color: "var(--dn-t4)", fontSize: "0.68rem", marginTop: "0.35rem", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.text}</div>}
+      </div>
+    </div>
+  );
+}
+
+function SpreadsheetSurface({ rows, isThumbnail }: { rows: string[][]; isThumbnail?: boolean }) {
+  const maxCols = rows.reduce((max, row) => Math.max(max, row.length), 0);
+  const fontSize = isThumbnail ? "0.4rem" : "0.78rem";
+  const cellPad = isThumbnail ? "1px 2px" : "5px 8px";
+  return (
+    <div style={{ width: "100%", borderRadius: "4px", overflow: "auto", background: "#fff", border: "1px solid var(--dn-border)", boxShadow: isThumbnail ? "none" : "var(--dn-page-shadow)" }}>
+      <table style={{ borderCollapse: "collapse", width: "100%", fontSize, color: "#0f172a", fontFamily: "Inter, system-ui, sans-serif" }}>
+        <tbody>
+          {rows.map((row, r) => (
+            <tr key={r} style={{ background: r === 0 ? "#eef2fb" : r % 2 ? "#f8fafc" : "#ffffff" }}>
+              {Array.from({ length: maxCols }).map((_, c) => {
+                const value = row[c] ?? "";
+                return (
+                  <td
+                    key={c}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      padding: cellPad,
+                      fontWeight: r === 0 ? 800 : 400,
+                      whiteSpace: "nowrap",
+                      maxWidth: isThumbnail ? 60 : 220,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {value}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SlideTextSurface({ label, text, isThumbnail }: { label: string; text?: string; isThumbnail?: boolean }) {
+  return (
+    <div style={{ width: "100%", aspectRatio: "1.6", borderRadius: "4px", background: "#fff", border: "1px solid var(--dn-border)", boxShadow: isThumbnail ? "none" : "var(--dn-page-shadow)", padding: isThumbnail ? "0.4rem" : "1.4rem", overflow: "hidden", color: "#0f172a", display: "flex", flexDirection: "column" }}>
+      <div style={{ fontWeight: 850, fontSize: isThumbnail ? "0.5rem" : "1rem", marginBottom: isThumbnail ? "0.2rem" : "0.6rem", color: "#1d4ed8" }}>{label}</div>
+      <div style={{ fontSize: isThumbnail ? "0.36rem" : "0.82rem", lineHeight: 1.5, whiteSpace: "pre-wrap", overflow: "hidden", flex: 1 }}>
+        {text && text.trim() ? text : "No text on this slide."}
       </div>
     </div>
   );
@@ -4668,7 +4848,7 @@ function FileKindIcon({ kind, compact }: { kind: PreviewKind; compact?: boolean 
 
 function ToolbarButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return (
-    <button type="button" onClick={event => { event.stopPropagation(); onClick(); }} style={{ border: "1px solid var(--dn-badge-bd)", background: "var(--dn-badge-bg)", color: "var(--dn-badge-text)", borderRadius: 999, padding: "0.42rem 0.72rem", fontSize: "0.74rem", fontWeight: 750, cursor: "pointer", fontFamily: "'Inter', sans-serif", boxShadow: "0 0 18px rgba(37,99,235,0.12)" }}>
+    <button type="button" onClick={event => { event.stopPropagation(); onClick(); }} style={{ border: "1px solid var(--dn-badge-bd)", background: "var(--dn-badge-bg)", color: "var(--dn-badge-text)", borderRadius: 999, padding: "0.42rem 0.72rem", fontSize: "0.74rem", fontWeight: 750, cursor: "pointer", fontFamily: "'Inter', sans-serif", boxShadow: "0 0 18px var(--dn-selected-bg)" }}>
       {children}
     </button>
   );
@@ -4676,7 +4856,7 @@ function ToolbarButton({ children, onClick }: { children: React.ReactNode; onCli
 
 function IconButton({ children, label, onClick, danger }: { children: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button type="button" aria-label={label} title={label} onClick={event => { event.stopPropagation(); onClick(); }} style={{ width: 30, height: 30, border: "none", borderRadius: "4px", display: "grid", placeItems: "center", background: danger ? "rgba(239,68,68,0.12)" : "rgba(148,163,184,0.12)", color: danger ? "#f87171" : "var(--dn-t3)", cursor: "pointer" }}>
+    <button type="button" aria-label={label} title={label} onClick={event => { event.stopPropagation(); onClick(); }} style={{ width: 30, height: 30, border: "none", borderRadius: "4px", display: "grid", placeItems: "center", background: danger ? "rgba(239,68,68,0.12)" : "var(--dn-icon-bg)", color: danger ? "#f87171" : "var(--dn-t3)", cursor: "pointer" }}>
       {children}
     </button>
   );
@@ -4749,6 +4929,46 @@ function EmptyPanel({ text }: { text: string }) {
   return <div style={{ height: "100%", display: "grid", placeItems: "center", color: "var(--dn-t4)", textAlign: "center", padding: "1rem" }}>{text}</div>;
 }
 
+function WorkspaceBackButton({ onBack }: { onBack?: () => void }) {
+  if (!onBack) return null;
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      title="Back to upload"
+      aria-label="Back to upload"
+      className="flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-sm font-semibold transition-colors"
+      style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)", color: "var(--dn-t2)" }}
+    >
+      <ArrowLeft size={16} /> Back
+    </button>
+  );
+}
+
+function PreviewLoadingPanel({ name, status }: { name: string; status?: string }) {
+  return (
+    <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "8px", background: "#fff", border: "1px solid var(--dn-border)", display: "grid", placeItems: "center", padding: "1.5rem", textAlign: "center", boxShadow: "var(--dn-page-shadow)" }}>
+      <div style={{ display: "grid", gap: "0.75rem", justifyItems: "center" }}>
+        <Loader2 size={28} className="animate-spin" style={{ color: "#3b82f6" }} />
+        <div style={{ color: "var(--dn-t2)", fontWeight: 800, fontSize: "0.9rem" }}>{status || "Generating document preview…"}</div>
+        <div style={{ color: "var(--dn-t4)", fontSize: "0.74rem", maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewErrorPanel({ message }: { message: string }) {
+  return (
+    <div style={{ width: "100%", aspectRatio: "0.72", borderRadius: "8px", background: "var(--dn-bg-card)", border: "1px solid rgba(239,68,68,0.4)", display: "grid", placeItems: "center", padding: "1.5rem", textAlign: "center" }}>
+      <div style={{ display: "grid", gap: "0.75rem", justifyItems: "center", maxWidth: 320 }}>
+        <AlertCircle size={30} style={{ color: "#ef4444" }} />
+        <div style={{ color: "var(--dn-t1)", fontWeight: 850, fontSize: "0.95rem" }}>Preview unavailable</div>
+        <div style={{ color: "var(--dn-t3)", fontSize: "0.8rem", lineHeight: 1.5 }}>{message}</div>
+      </div>
+    </div>
+  );
+}
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
   boxSizing: "border-box",
@@ -4790,10 +5010,25 @@ async function buildPreviewItems(source: WorkflowFile, tool: Tool): Promise<Prev
     }];
   }
 
+  if (source.kind === "document") {
+    // Render the real Word document to per-page images in the browser so the
+    // user sees actual content (not a placeholder). Failures (e.g. legacy .doc
+    // or corrupted files) propagate to the caller's error state.
+    const { thumbnails } = await renderDocxToThumbnails(source.file);
+    return thumbnails.map((thumbnail, index) => ({
+      id: `${source.id}-${index}`,
+      fileId: source.id,
+      fileName: source.name,
+      index,
+      label: `Page ${index + 1}`,
+      kind: "document" as PreviewKind,
+      thumbnail,
+      rotation: 0,
+    }));
+  }
+
   try {
-    const response = source.kind === "document"
-      ? await pdfApi.previewDocument(source.file)
-      : source.kind === "spreadsheet"
+    const response = source.kind === "spreadsheet"
         ? await pdfApi.previewSpreadsheet(source.file)
         : source.kind === "presentation"
           ? await pdfApi.previewPresentation(source.file)
@@ -4811,8 +5046,11 @@ async function buildPreviewItems(source: WorkflowFile, tool: Tool): Promise<Prev
       rows: item.rows,
       rotation: 0,
     }));
-  } catch {
-    return fallbackPreviewItems(source, tool);
+  } catch (error) {
+    // Spreadsheets/presentations surface a real error state instead of a
+    // misleading placeholder card; the backend already returns graceful
+    // text/row fallbacks inside successful responses.
+    throw error;
   }
 }
 
@@ -5054,7 +5292,7 @@ function kindForFile(file: File): PreviewKind {
   if (ext === ".pdf") return "pdf";
   if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) return "image";
   if ([".doc", ".docx"].includes(ext)) return "document";
-  if ([".xls", ".xlsx"].includes(ext)) return "spreadsheet";
+  if ([".xls", ".xlsx", ".csv"].includes(ext)) return "spreadsheet";
   if ([".ppt", ".pptx"].includes(ext)) return "presentation";
   return "generic";
 }
