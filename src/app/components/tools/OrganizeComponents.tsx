@@ -129,7 +129,7 @@ export function AddMoreFilesTile({ onClick, referenceThumbnail, className = "" }
         type="button"
         onClick={onClick}
         className="group flex w-full flex-col items-center justify-center rounded-[4px] border border-dashed p-3 text-center transition hover:border-blue-500 hover:bg-blue-500/10"
-        style={{ borderColor: "var(--dn-border2)", background: "rgba(255,255,255,0.02)", aspectRatio }}
+        style={{ borderColor: "var(--dn-border2)", background: "var(--dn-surface-2)", aspectRatio }}
       >
         <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full border transition group-hover:border-blue-500 group-hover:text-blue-500" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)", color: "var(--dn-t3)" }}>
           <Plus size={20} />
@@ -185,8 +185,8 @@ export function RadioRow({ text, label, children, active, checked, onClick, disa
       }}
       className="mt-2 flex min-h-11 w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm font-medium transition-colors"
       style={{
-        background: isActive ? "rgba(37,99,235,0.14)" : "var(--dn-bg-subtle)",
-        borderColor: isActive ? "#3b82f6" : "var(--dn-border)",
+        background: isActive ? "var(--dn-selected-bg)" : "var(--dn-bg-subtle)",
+        borderColor: isActive ? "var(--dn-selected-border)" : "var(--dn-border)",
         color: isActive ? "var(--dn-t1)" : "var(--dn-t2)",
         boxShadow: isActive ? "inset 0 0 0 1px rgba(59,130,246,0.18), 0 8px 22px rgba(37,99,235,0.12)" : "none",
         cursor: disabled ? "not-allowed" : "pointer",

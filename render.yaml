@@ -1,8 +1,14 @@
 services:
   - type: web
     name: docnova-pdf-tools
-    env: python
+    runtime: docker
     plan: free
-    buildCommand: pip install --break-system-packages -r backend/requirements.txt
-    startCommand: cd backend && gunicorn --workers 4 --worker-class sync --bind 0.0.0.0:$PORT --timeout 120 app:app
+    # Build context is backend/ so the Dockerfile's COPY steps resolve correctly.
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     healthCheckPath: /health
+    envVars:
+      # gunicorn (start.sh) binds to $PORT; keep it aligned with the
+      # Dockerfile's EXPOSE/HEALTHCHECK port.
+      - key: PORT
+        value: 5000

@@ -21,6 +21,12 @@ from pdf2image import convert_from_path
 from reportlab.lib.pagesizes import A4, landscape, letter
 from reportlab.pdfgen import canvas
 import tempfile
+import shutil
+import subprocess
+import time
+import signal
+import glob
+from pathlib import Path
 
 try:
     import fitz
@@ -79,7 +85,7 @@ def add_security_headers(response):
 ALLOWED_PDF = {'pdf'}
 ALLOWED_IMAGES = {'jpg', 'jpeg', 'png', 'webp'}
 ALLOWED_DOCS = {'docx', 'doc'}
-ALLOWED_SPREADSHEETS = {'xlsx', 'xls'}
+ALLOWED_SPREADSHEETS = {'xlsx', 'xls', 'csv'}
 ALLOWED_PRESENTATIONS = {'pptx', 'ppt'}
 
 try:
@@ -90,18 +96,35 @@ except ImportError:
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
 MAX_DOC_SIZE = 25 * 1024 * 1024
 
+# --- Free-tier memory safety knobs (overridable via env) ---
+# Documents larger than this skip LibreOffice (which is RAM-heavy) and use the
+# lightweight text fallback instead, to avoid OOM on small instances.
+LIBREOFFICE_MAX_BYTES = int(os.environ.get('LIBREOFFICE_MAX_BYTES', 8 * 1024 * 1024))
+# Hard timeout (seconds) for a single LibreOffice conversion before it is killed.
+LIBREOFFICE_TIMEOUT = int(os.environ.get('LIBREOFFICE_TIMEOUT', 60))
+# How long an incoming request will wait for the single conversion slot before
+# giving up with a "server busy" response (keeps requests from piling up).
+LIBREOFFICE_WAIT_SECONDS = int(os.environ.get('LIBREOFFICE_WAIT_SECONDS', 8))
+# Cross-process lock so only ONE LibreOffice conversion runs at a time, even
+# across multiple gunicorn workers.
+LIBREOFFICE_LOCK_PATH = os.path.join(UPLOAD_FOLDER, 'libreoffice.lock')
+
 MIME_TYPE_MAP = {
     'pdf': ['application/pdf'],
     'jpg': ['image/jpeg'],
     'jpeg': ['image/jpeg'],
     'png': ['image/png'],
     'webp': ['image/webp'],
-    'docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'],
-    'doc': ['application/msword'],
-    'xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'],
-    'xls': ['application/vnd.ms-excel'],
-    'pptx': ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint'],
-    'ppt': ['application/vnd.ms-powerpoint'],
+    # OOXML formats (.docx/.xlsx/.pptx) are ZIP containers; libmagic often
+    # reports them as application/zip (or octet-stream for sparse files), so
+    # those are accepted alongside the canonical Office MIME types.
+    'docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'application/zip', 'application/octet-stream'],
+    'doc': ['application/msword', 'application/x-ole-storage', 'application/octet-stream'],
+    'xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'application/zip', 'application/octet-stream'],
+    'xls': ['application/vnd.ms-excel', 'application/x-ole-storage', 'application/octet-stream'],
+    'pptx': ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint', 'application/zip', 'application/octet-stream'],
+    'ppt': ['application/vnd.ms-powerpoint', 'application/x-ole-storage', 'application/octet-stream'],
+    'csv': ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel', 'application/octet-stream'],
 }
 
 def scan_for_malware(filepath):
@@ -150,8 +173,205 @@ def save_uploaded_file(file, suffix):
     
     file.save(temp_path)
     os.chmod(temp_path, 0o600)
-    
+
     return temp_path
+
+
+class ConversionBusyError(Exception):
+    """Raised when the single LibreOffice conversion slot is occupied."""
+
+
+# Cache the resolved LibreOffice binary path (None = checked and not found).
+_SOFFICE_PATH = False
+
+
+def find_soffice():
+    """Locate the LibreOffice/soffice binary, if installed."""
+    global _SOFFICE_PATH
+    if _SOFFICE_PATH is not False:
+        return _SOFFICE_PATH
+
+    candidates = [os.environ.get('SOFFICE_PATH'), 'soffice', 'libreoffice']
+    resolved = None
+    for candidate in candidates:
+        if not candidate:
+            continue
+        resolved = shutil.which(candidate) or (candidate if os.path.exists(candidate) else None)
+        if resolved:
+            break
+
+    if not resolved:
+        for path in (
+            r'C:\Program Files\LibreOffice\program\soffice.exe',
+            r'C:\Program Files (x86)\LibreOffice\program\soffice.exe',
+            '/usr/bin/soffice',
+            '/usr/bin/libreoffice',
+            '/opt/libreoffice/program/soffice',
+        ):
+            if os.path.exists(path):
+                resolved = path
+                break
+
+    _SOFFICE_PATH = resolved
+    return resolved
+
+
+def _kill_process_tree(proc):
+    """Forcefully terminate a LibreOffice process and any children it spawned."""
+    if proc is None or proc.poll() is not None:
+        return
+    try:
+        if os.name == 'posix':
+            # soffice forks a soffice.bin child; kill the whole process group.
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        else:
+            subprocess.run(['taskkill', '/F', '/T', '/PID', str(proc.pid)],
+                           capture_output=True, check=False)
+    except Exception:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+
+def _sweep_stale_temp_dirs(max_age_seconds=900):
+    """Best-effort removal of leftover LibreOffice temp dirs from crashed jobs,
+    so the small disk/RAM footprint of the free tier doesn't accumulate."""
+    try:
+        now = time.time()
+        for path in glob.glob(os.path.join(UPLOAD_FOLDER, 'lo_*')):
+            try:
+                if now - os.path.getmtime(path) > max_age_seconds:
+                    shutil.rmtree(path, ignore_errors=True)
+            except OSError:
+                pass
+    except Exception:
+        pass
+
+
+def acquire_conversion_slot(wait_seconds=LIBREOFFICE_WAIT_SECONDS):
+    """Cross-process lock ensuring only one LibreOffice conversion runs at a
+    time. Returns True if the slot was acquired, False if the server is busy."""
+    deadline = time.time() + max(wait_seconds, 0)
+    while True:
+        try:
+            fd = os.open(LIBREOFFICE_LOCK_PATH, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, str(os.getpid()).encode())
+            os.close(fd)
+            return True
+        except FileExistsError:
+            # Reclaim a stale lock left by a crashed/killed worker.
+            try:
+                age = time.time() - os.path.getmtime(LIBREOFFICE_LOCK_PATH)
+                if age > LIBREOFFICE_TIMEOUT + 30:
+                    os.remove(LIBREOFFICE_LOCK_PATH)
+                    continue
+            except OSError:
+                pass
+            if time.time() >= deadline:
+                return False
+            time.sleep(0.4)
+        except OSError:
+            return False
+
+
+def release_conversion_slot():
+    try:
+        os.remove(LIBREOFFICE_LOCK_PATH)
+    except OSError:
+        pass
+
+
+def libreoffice_convert_to_pdf(src_path):
+    """Convert a document to PDF with LibreOffice on demand.
+
+    Memory-safe for free hosting: LibreOffice is launched only for this single
+    job (never kept resident), runs under a hard timeout, is force-killed (with
+    its children) on timeout/error, and all temp files are removed afterwards.
+
+    Returns PDF bytes, or None if LibreOffice is unavailable, busy, times out,
+    or otherwise fails (callers then use the lightweight text fallback)."""
+    soffice = find_soffice()
+    if not soffice:
+        return None
+
+    # Serialize conversions across all workers so the box never runs two
+    # memory-heavy LibreOffice processes at once.
+    if not acquire_conversion_slot():
+        raise ConversionBusyError()
+
+    _sweep_stale_temp_dirs()
+    out_dir = tempfile.mkdtemp(prefix='lo_', dir=UPLOAD_FOLDER)
+    proc = None
+    try:
+        # Isolated, throwaway user profile so nothing persists between jobs.
+        profile_uri = Path(out_dir, 'profile').as_uri()
+        cmd = [
+            soffice, '--headless', '--norestore', '--nolockcheck', '--nodefault',
+            f'-env:UserInstallation={profile_uri}',
+            '--convert-to', 'pdf', '--outdir', out_dir, src_path,
+        ]
+        popen_kwargs = {'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}
+        if os.name == 'posix':
+            popen_kwargs['start_new_session'] = True  # own process group for clean kill
+
+        proc = subprocess.Popen(cmd, **popen_kwargs)
+        try:
+            proc.communicate(timeout=LIBREOFFICE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            _kill_process_tree(proc)
+            proc.wait()
+            return None
+
+        base = os.path.splitext(os.path.basename(src_path))[0]
+        pdf_path = os.path.join(out_dir, base + '.pdf')
+        if os.path.exists(pdf_path):
+            with open(pdf_path, 'rb') as handle:
+                return handle.read()
+        return None
+    except ConversionBusyError:
+        raise
+    except Exception:
+        return None
+    finally:
+        # Guarantee the process is gone and temp files are cleaned, always.
+        _kill_process_tree(proc)
+        shutil.rmtree(out_dir, ignore_errors=True)
+        release_conversion_slot()
+
+
+def office_to_pdf_thumbnails(temp_path, max_pages=40, label_prefix='Page'):
+    """Render an office file (ppt/pptx/xls/xlsx/csv/doc/docx) into per-page
+    JPEG thumbnails by converting to PDF with LibreOffice and rasterizing each
+    page with PyMuPDF. Returns a list of {label, thumbnail} preview items, or
+    None when LibreOffice/PyMuPDF is unavailable, busy, or conversion fails
+    (callers then fall back to lightweight text/row extraction)."""
+    if fitz is None:
+        return None
+    try:
+        pdf_bytes = libreoffice_convert_to_pdf(temp_path)
+    except ConversionBusyError:
+        return None
+    if not pdf_bytes:
+        return None
+
+    items = []
+    doc = fitz.open(stream=pdf_bytes, filetype='pdf')
+    try:
+        matrix = fitz.Matrix(1.6, 1.6)  # ~150 DPI thumbnails
+        for index, page in enumerate(doc):
+            if index >= max_pages:
+                break
+            pix = page.get_pixmap(matrix=matrix, alpha=False)
+            image = Image.frombytes('RGB', (pix.width, pix.height), pix.samples)
+            items.append({
+                'label': f'{label_prefix} {index + 1}',
+                'thumbnail': image_to_base64(image, 'JPEG', 82),
+            })
+    finally:
+        doc.close()
+    return items or None
+
 
 def result_meta_path(job_id):
     return os.path.join(RESULTS_FOLDER, f'{secure_filename(job_id)}.json')
@@ -1052,17 +1272,28 @@ def preview_spreadsheet():
         file = request.files.get('file')
         if not file or not allowed_file(file, ALLOWED_SPREADSHEETS):
             return jsonify({'error': 'Invalid spreadsheet'}), 400
-        if not file.filename.lower().endswith('.xlsx'):
+
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'xlsx'
+        temp_path = save_uploaded_file(file, '.' + ext)
+        try:
+            # Preferred: render real worksheets (formatting, merged cells) via
+            # LibreOffice. Supports xls/xlsx/csv.
+            rendered = office_to_pdf_thumbnails(temp_path, max_pages=40, label_prefix='Sheet')
+            if rendered:
+                return jsonify({'kind': 'spreadsheet', 'total': len(rendered), 'items': rendered, 'metadata': {'name': file.filename}})
+
+            # Fallback: extract real cell rows (xlsx only) so we still show data,
+            # not a placeholder.
+            if ext == 'xlsx':
+                items = spreadsheet_preview_items(temp_path)
+                return jsonify({'kind': 'spreadsheet', 'total': len(items), 'items': items, 'metadata': {'name': file.filename}})
+
             return jsonify({
                 'kind': 'spreadsheet',
                 'total': 1,
-                'items': [{'label': 'Workbook preview', 'rows': [['XLS preview requires LibreOffice']], 'text': 'XLS preview requires LibreOffice.'}],
+                'items': [{'label': 'Workbook preview', 'rows': [['Full preview for this format needs LibreOffice on the server.']], 'text': 'Full preview for this format needs LibreOffice on the server.'}],
                 'metadata': {'name': file.filename}
             })
-        temp_path = save_uploaded_file(file, '.xlsx')
-        try:
-            items = spreadsheet_preview_items(temp_path)
-            return jsonify({'kind': 'spreadsheet', 'total': len(items), 'items': items, 'metadata': {'name': file.filename}})
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -1076,17 +1307,26 @@ def preview_presentation():
         file = request.files.get('file')
         if not file or not allowed_file(file, ALLOWED_PRESENTATIONS):
             return jsonify({'error': 'Invalid presentation'}), 400
-        if not file.filename.lower().endswith('.pptx'):
+
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'pptx'
+        temp_path = save_uploaded_file(file, '.' + ext)
+        try:
+            # Preferred: render real slide images via LibreOffice. Supports ppt/pptx.
+            rendered = office_to_pdf_thumbnails(temp_path, max_pages=80, label_prefix='Slide')
+            if rendered:
+                return jsonify({'kind': 'presentation', 'total': len(rendered), 'items': rendered, 'metadata': {'name': file.filename}})
+
+            # Fallback: extract slide text outline (pptx only).
+            if ext == 'pptx':
+                items = presentation_preview_items(temp_path)
+                return jsonify({'kind': 'presentation', 'total': len(items), 'items': items, 'metadata': {'name': file.filename}})
+
             return jsonify({
                 'kind': 'presentation',
                 'total': 1,
-                'items': [{'label': 'Slide preview', 'text': 'PPT preview requires LibreOffice. Processing will use a safe placeholder.'}],
+                'items': [{'label': 'Slide preview', 'text': 'Full slide rendering for this format needs LibreOffice on the server.'}],
                 'metadata': {'name': file.filename}
             })
-        temp_path = save_uploaded_file(file, '.pptx')
-        try:
-            items = presentation_preview_items(temp_path)
-            return jsonify({'kind': 'presentation', 'total': len(items), 'items': items, 'metadata': {'name': file.filename}})
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -1176,21 +1416,56 @@ def jpg_to_pdf():
 @app.route('/api/word-to-pdf', methods=['POST'])
 @limiter.limit("5 per minute")
 def word_to_pdf():
-    """Convert DOCX to a basic text-based PDF"""
+    """Convert a Word document to PDF.
+
+    Uses LibreOffice for a high-fidelity, layout-accurate conversion that
+    matches the on-screen preview. Falls back to a basic text-based PDF
+    (DOCX only) when LibreOffice is unavailable, busy, or the file is too
+    large to convert safely on a low-memory instance."""
+    temp_path = None
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
-        
+
         file = request.files['file']
         if not file or not allowed_file(file, ALLOWED_DOCS):
             return jsonify({'error': 'Invalid Word document'}), 400
 
-        if not file.filename.lower().endswith('.docx'):
-            return jsonify({'error': 'Only DOCX files are supported without LibreOffice'}), 400
-        
-        temp_path = save_uploaded_file(file, '.docx')
-        
+        is_docx = file.filename.lower().endswith('.docx')
+        suffix = '.docx' if is_docx else '.doc'
+
+        # Size guard: save_uploaded_file enforces MAX_DOC_SIZE and raises
+        # ValueError, which we surface as a clear 413 instead of crashing.
         try:
+            temp_path = save_uploaded_file(file, suffix)
+        except ValueError as size_error:
+            return jsonify({'error': str(size_error)}), 413
+
+        try:
+            # Skip the RAM-heavy LibreOffice path for large DOCX files; the
+            # lightweight text fallback handles them without risking OOM.
+            file_size = os.path.getsize(temp_path)
+            use_libreoffice = file_size <= LIBREOFFICE_MAX_BYTES
+
+            if use_libreoffice:
+                try:
+                    pdf_bytes = libreoffice_convert_to_pdf(temp_path)
+                except ConversionBusyError:
+                    return jsonify({'error': 'The server is busy converting another document. Please try again in a few seconds.'}), 503
+                if pdf_bytes:
+                    return send_file(
+                        io.BytesIO(pdf_bytes),
+                        mimetype='application/pdf',
+                        as_attachment=True,
+                        download_name='converted.pdf'
+                    )
+
+            # Fallback: basic text extraction (DOCX only).
+            if not is_docx:
+                if file_size > LIBREOFFICE_MAX_BYTES:
+                    return jsonify({'error': 'This .doc file is too large to convert on the current plan. Please upload a smaller file or convert it to .docx.'}), 413
+                return jsonify({'error': 'Legacy .doc conversion requires LibreOffice, which is not available on this server. Please upload a .docx file.'}), 400
+
             document = Document(temp_path)
             output = io.BytesIO()
             pdf = canvas.Canvas(output, pagesize=letter)

@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { ToolbarButton, PageCard, AddMoreFilesTile, Label, Select, ToggleRow, DetailRow, CheckBox } from "./OrganizeComponents";
-import { ArrowRight, ChevronDown, Copy, CornerDownRight, FileText, Grid2X2, List, Loader2, Lock, Plus, RotateCcw, RotateCw, Trash2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, Copy, CornerDownRight, FileText, Grid2X2, List, Loader2, Lock, Plus, RotateCcw, RotateCw, Trash2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useState } from "react";
 
 export interface PreviewPage {
@@ -50,6 +50,7 @@ interface FilePreviewPanelProps {
   onDuplicatePage?: (pageId: string) => void;
   outputFileName?: string;
   onOutputFileNameChange?: (value: string) => void;
+  onBack?: () => void;
 }
 
 
@@ -77,10 +78,16 @@ export function FilePreviewPanel({
   onDuplicatePage,
   outputFileName = "docnova-merged-selected",
   onOutputFileNameChange,
+  onBack,
 }: FilePreviewPanelProps) {
   const [previewPage, setPreviewPage] = useState<PreviewPage | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  // List-mode (preview-style) state: which page is shown large + its zoom.
+  const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(100);
   const totalPages = files.reduce((sum, file) => sum + file.pages.length, 0);
+  const allPages = files.flatMap(file => file.pages);
+  const activePage = allPages.find(page => page.id === activePageId) || allPages[0];
   const selectedQueuePages = queue.filter(page => selectedPageIds.has(page.id));
   const hasSelectedPages = selectedQueuePages.length > 0;
   const addFiles = () => onInsertFile?.(queue.length);
@@ -101,6 +108,18 @@ export function FilePreviewPanel({
       <section className="flex min-w-0 flex-1 flex-col bg-transparent">
         {/* Header */}
         <div className="flex h-16 flex-shrink-0 items-center gap-4 px-6">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              title="Back to upload"
+              aria-label="Back to upload"
+              className="flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-sm font-semibold transition-colors"
+              style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)", color: "var(--dn-t2)" }}
+            >
+              <ArrowLeft size={16} /> Back
+            </button>
+          )}
           <div className="flex h-9 w-9 items-center justify-center rounded border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>
             <FileText size={20} />
           </div>
@@ -153,24 +172,24 @@ export function FilePreviewPanel({
           </div>
         </div>
 
-        {/* Pages Grid */}
-        <div className="custom-scrollbar flex-1 overflow-y-auto p-6 md:p-8">
-          {files.map((file, fileIndex) => (
-            <div key={file.id} className="mb-8">
-              <div className="mb-5 flex items-start gap-2">
-                <CornerDownRight size={18} className="mt-1 flex-shrink-0 text-blue-500" />
-                <div className="min-w-0">
-                  <h2 className="truncate text-sm font-medium" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
-                  <p className="mt-0.5 text-xs font-medium text-blue-500">
-                    {file.loading ? "Generating preview..." : `${file.pages.length} pages`}
-                  </p>
-                  {file.previewStatus && (
-                    <p className="mt-0.5 text-xs font-medium" style={{ color: "var(--dn-t3)" }}>{file.previewStatus}</p>
-                  )}
+        {/* Pages — grid view (unchanged) */}
+        {viewMode === "grid" ? (
+          <div className="custom-scrollbar flex-1 overflow-y-auto p-6 md:p-8">
+            {files.map((file, fileIndex) => (
+              <div key={file.id} className="mb-8">
+                <div className="mb-5 flex items-start gap-2">
+                  <CornerDownRight size={18} className="mt-1 flex-shrink-0 text-blue-500" />
+                  <div className="min-w-0">
+                    <h2 className="truncate text-sm font-medium" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
+                    <p className="mt-0.5 text-xs font-medium text-blue-500">
+                      {file.loading ? "Generating preview..." : `${file.pages.length} pages`}
+                    </p>
+                    {file.previewStatus && (
+                      <p className="mt-0.5 text-xs font-medium" style={{ color: "var(--dn-t3)" }}>{file.previewStatus}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {viewMode === "grid" ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {file.pages.map((page, index) => (
                     <motion.div key={page.id} layout>
@@ -204,75 +223,97 @@ export function FilePreviewPanel({
                     />
                   )}
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {file.pages.map((page, index) => {
-                    const selected = selectedPageIds.has(page.id);
-                    return (
-                      <motion.div key={page.id} layout>
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          draggable
-                          onClick={() => onTogglePage(page)}
-                          onDoubleClick={() => setPreviewPage(page)}
-                          onKeyDown={event => {
-                            if (event.key === "Enter" || event.key === " ") onTogglePage(page);
-                          }}
-                          onDragStart={() => onDragStart(page.id)}
-                          onDragOver={event => event.preventDefault()}
-                          onDrop={() => onDropOnQueuePage(page.id)}
-                          className="group flex min-h-20 w-full items-center gap-4 rounded-md px-3 py-2 text-left transition-colors"
-                          style={{
-                            border: selected ? "1px solid #2563eb" : "1px solid var(--dn-border)",
-                            background: selected ? "rgba(37,99,235,0.14)" : "rgba(255,255,255,0.02)",
-                            color: "var(--dn-t1)",
-                            cursor: "grab",
-                          }}
-                        >
-                          <span
-                            className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-sm text-white"
-                            style={{ background: selected ? "#2563eb" : "rgba(148,163,184,0.18)" }}
-                          >
-                            {selected && <CheckBox checked />}
-                          </span>
-                          <div className="grid h-16 w-12 flex-shrink-0 place-items-center overflow-hidden rounded-[4px]" style={{ background: "#fff" }}>
-                            {page.thumbnail ? (
-                              <img src={page.thumbnail} alt="" className="block max-h-full max-w-full object-contain" style={{ transform: `rotate(${page.rotation || 0}deg)` }} />
-                            ) : (
-                              <span className="text-[10px] font-semibold" style={{ color: "var(--dn-t4)" }}>Generating</span>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Page {page.pageNumber}</div>
-                            <div className="truncate text-xs" style={{ color: "var(--dn-t4)" }}>{page.fileName}</div>
-                          </div>
-                          <div className="flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <IconButton label="Rotate left" onClick={() => onRotatePage?.(page.id, -90)}><RotateCcw size={15} /></IconButton>
-                            <IconButton label="Duplicate" onClick={() => onDuplicatePage?.(page.id)}><Copy size={15} /></IconButton>
-                            <IconButton label="Delete" danger onClick={() => onRemoveQueuePage(page.id)}><Trash2 size={15} /></IconButton>
-                          </div>
-                          <span className="w-10 text-right text-xs font-semibold" style={{ color: "var(--dn-t4)" }}>{index + 1}</span>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                  {fileIndex === files.length - 1 && (
-                    <button
-                      type="button"
-                      onClick={() => onInsertFile?.(queue.length)}
-                      className="flex min-h-16 w-full items-center justify-center gap-3 rounded-md border border-dashed text-sm font-semibold transition hover:border-blue-500 hover:text-blue-500"
-                      style={{ borderColor: "var(--dn-border)", background: "rgba(255,255,255,0.02)", color: "var(--dn-t3)" }}
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* List view — preview-style workspace (thumbnails + large canvas) */
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            {/* Left: page thumbnails, top-aligned */}
+            <aside className="flex w-[172px] flex-shrink-0 flex-col border-r" style={{ borderColor: "var(--dn-border)" }}>
+              <div className="flex shrink-0 items-center justify-between px-3 py-3">
+                <h3 className="text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Pages</h3>
+                <span className="text-sm font-semibold" style={{ color: "var(--dn-t3)" }}>{totalPages}</span>
+              </div>
+              <div className="custom-scrollbar grid auto-rows-max content-start min-h-0 flex-1 gap-4 overflow-y-auto p-3">
+                {allPages.map(page => {
+                  const active = activePage?.id === page.id;
+                  const selected = selectedPageIds.has(page.id);
+                  return (
+                    <div
+                      key={page.id}
+                      style={{ position: "relative", width: "100%" }}
+                      draggable
+                      onDragStart={() => onDragStart(page.id)}
+                      onDragOver={event => event.preventDefault()}
+                      onDrop={() => onDropOnQueuePage(page.id)}
                     >
-                      <Plus size={18} />
-                      Add more files
-                    </button>
+                      <button type="button" onClick={() => setActivePageId(page.id)} className="block w-full text-left" style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
+                        <div style={{ borderRadius: 8, overflow: "hidden", background: "#fff", border: active ? "1px solid var(--dn-selected-border)" : "1px solid var(--dn-border)", boxShadow: active ? "0 0 0 2px var(--dn-selected-border)" : "var(--dn-shadow)" }}>
+                          {page.thumbnail ? (
+                            <img src={page.thumbnail} alt="" style={{ display: "block", width: "100%", height: "auto", transform: `rotate(${page.rotation || 0}deg)` }} />
+                          ) : (
+                            <div style={{ aspectRatio: "0.72", display: "grid", placeItems: "center", color: "var(--dn-t4)", fontSize: "0.7rem", fontWeight: 700 }}>Generating</div>
+                          )}
+                        </div>
+                        <p className="mt-2 truncate text-center text-xs font-semibold" style={{ color: active ? "#3b82f6" : "var(--dn-t3)" }}>Page {page.pageNumber}</p>
+                      </button>
+                      <span
+                        role="checkbox"
+                        aria-checked={selected}
+                        tabIndex={0}
+                        aria-label={selected ? "Deselect page" : "Select page"}
+                        onClick={event => { event.stopPropagation(); onTogglePage(page); }}
+                        onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); onTogglePage(page); } }}
+                        className="grid h-5 w-5 place-items-center rounded-sm text-white"
+                        style={{ position: "absolute", top: 6, left: 6, zIndex: 2, cursor: "pointer", background: selected ? "#2563eb" : "var(--dn-icon-bg)", boxShadow: "var(--dn-shadow)" }}
+                      >
+                        {selected && <CheckBox checked />}
+                      </span>
+                    </div>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => onInsertFile?.(queue.length)}
+                  className="flex min-h-16 w-full items-center justify-center gap-2 rounded-md border border-dashed text-xs font-semibold transition hover:border-blue-500 hover:text-blue-500"
+                  style={{ borderColor: "var(--dn-border)", background: "var(--dn-surface-2)", color: "var(--dn-t3)" }}
+                >
+                  <Plus size={16} /> Add files
+                </button>
+              </div>
+            </aside>
+
+            {/* Center: large preview of the selected page */}
+            <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+              <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto p-8" style={{ background: "var(--dn-preview-bg)" }}>
+                <div style={{ width: Math.max(360, zoom * 7), flexShrink: 0, display: "grid", justifyItems: "center", alignContent: "start", transition: "width 0.2s ease" }}>
+                  {activePage ? (
+                    <div style={{ width: "100%", borderRadius: 4, overflow: "hidden", background: "#fff", boxShadow: "var(--dn-page-shadow)" }}>
+                      {activePage.thumbnail ? (
+                        <img src={activePage.thumbnail} alt={`Page ${activePage.pageNumber}`} style={{ display: "block", width: "100%", height: "auto", transform: `rotate(${activePage.rotation || 0}deg)` }} />
+                      ) : (
+                        <div style={{ aspectRatio: "0.72", display: "grid", placeItems: "center", color: "var(--dn-t4)", fontWeight: 700 }}>Generating preview…</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ color: "var(--dn-t4)", fontWeight: 700, padding: "2rem" }}>Select a page to preview.</div>
                   )}
                 </div>
+              </div>
+
+              {activePage && (
+                <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
+                  <FloatingToolButton label="Zoom out" onClick={() => setZoom(z => Math.max(50, z - 10))}><ZoomOut size={16} /></FloatingToolButton>
+                  <span className="flex h-10 min-w-[60px] items-center justify-center rounded-[4px] border px-4 text-sm font-extrabold" style={{ background: "var(--dn-toolbar-bg)", borderColor: "var(--dn-toolbar-border)", color: "var(--dn-toolbar-text)", boxShadow: "var(--dn-toolbar-shadow)" }}>{zoom}%</span>
+                  <FloatingToolButton label="Zoom in" onClick={() => setZoom(z => Math.min(180, z + 10))}><ZoomIn size={16} /></FloatingToolButton>
+                  <FloatingToolButton label="Rotate left" onClick={() => onRotatePage?.(activePage.id, -90)}><RotateCcw size={17} /></FloatingToolButton>
+                  <FloatingToolButton label="Rotate right" onClick={() => onRotatePage?.(activePage.id, 90)}><RotateCw size={17} /></FloatingToolButton>
+                </div>
               )}
-            </div>
-          ))}
-        </div>
+            </section>
+          </div>
+        )}
       </section>
 
       {/* Right Sidebar */}
@@ -363,7 +404,7 @@ export function FilePreviewPanel({
               <button
                 type="button"
                 onClick={() => setPreviewPage(null)}
-                style={{ marginLeft: "auto", width: 34, height: 34, border: "none", borderRadius: 10, background: "rgba(148,163,184,0.12)", color: "var(--dn-t2)", display: "grid", placeItems: "center", cursor: "pointer" }}
+                style={{ marginLeft: "auto", width: 34, height: 34, border: "none", borderRadius: 10, background: "var(--dn-icon-bg)", color: "var(--dn-t2)", display: "grid", placeItems: "center", cursor: "pointer" }}
               >
                 <X size={16} />
               </button>
@@ -404,6 +445,21 @@ function IconButton({ children, label, onClick, danger }: { children: React.Reac
         cursor: "pointer",
       }}
       className="hover:bg-blue-500/10 transition-all duration-200"
+    >
+      {children}
+    </button>
+  );
+}
+
+function FloatingToolButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className="flex h-10 w-10 items-center justify-center rounded-[4px] border transition-colors"
+      style={{ background: "var(--dn-toolbar-bg)", borderColor: "var(--dn-toolbar-border)", color: "var(--dn-toolbar-text)", boxShadow: "var(--dn-toolbar-shadow)", backdropFilter: "blur(16px)" }}
     >
       {children}
     </button>

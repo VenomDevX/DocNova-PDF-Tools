@@ -31,6 +31,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [output, setOutput] = useState<OutputFile | null>(null);
   const [outputFileName, setOutputFileName] = useState("docnova-merged-selected");
+  const [showUploadView, setShowUploadView] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedPageIds = useMemo(() => new Set(queue.map(page => page.id)), [queue]);
@@ -61,6 +62,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
 
     setErrorMsg("");
     setOutput(null);
+    setShowUploadView(false);
     if (files.length === 0 && !outputFileName.trim()) {
       setOutputFileName("docnova-merged-selected");
     }
@@ -315,6 +317,8 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
     }
   };
 
+  const reviewActive = files.length > 0 && !showUploadView;
+
   return (
     <div style={{ color: "var(--dn-t1)", paddingTop: files.length > 0 ? "0" : "48px", minHeight: files.length > 0 ? "calc(100vh - 60px)" : "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif", position: "relative" }}>
       {/* Background Blobs (Dark Mode Only) */}
@@ -343,8 +347,8 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
             100% { transform: translate(0, 0) scale(1); }
         }
       `}</style>
-      <div style={files.length > 0 ? { padding: "0", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", position: "relative", zIndex: 10 } : { maxWidth: "1440px", margin: "0 auto", padding: "2rem 1.5rem 6rem", position: "relative", zIndex: 10 }}>
-        {files.length === 0 && (
+      <div style={reviewActive ? { padding: "0", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", position: "relative", zIndex: 10 } : { maxWidth: "1440px", margin: "0 auto", padding: "2rem 1.5rem 6rem", position: "relative", zIndex: 10 }}>
+        {!reviewActive && (
           <Link to={`/${tool.category}`} style={{ textDecoration: "none" }}>
             <motion.div whileHover={{ x: -3 }} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.875rem", marginBottom: "2rem", cursor: "pointer" }}>
               <ArrowLeft size={15} /> {catMeta.label}
@@ -352,8 +356,19 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
           </Link>
         )}
 
-        {files.length === 0 && (
+        {reviewActive ? null : (
           <>
+            {showUploadView && files.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.5rem", padding: "0.85rem 1rem", borderRadius: "8px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border)", boxShadow: "var(--dn-shadow)" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ color: "var(--dn-t1)", fontWeight: 800 }}>{files.length} file(s) ready</div>
+                  <div style={{ color: "var(--dn-t4)", fontSize: "0.78rem" }}>Your files and selection are kept. Continue where you left off.</div>
+                </div>
+                <button type="button" onClick={() => setShowUploadView(false)} className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700">
+                  Continue to review
+                </button>
+              </div>
+            )}
             <header style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1.5rem" }}>
               <div style={{ width: 60, height: 60, borderRadius: "4px", background: tool.iconGrad, display: "grid", placeItems: "center", boxShadow: `0 8px 28px ${tool.color}42` }}>
                 <FileStack size={28} color="#fff" />
@@ -417,8 +432,9 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
           )}
         </AnimatePresence>
 
-        {files.length > 0 && (
+        {reviewActive && (
           <FilePreviewPanel
+            onBack={() => setShowUploadView(true)}
             files={files}
             queue={queue}
             selectedPageIds={selectedPageIds}

@@ -125,7 +125,7 @@ export const toolsList: Tool[] = [
     iconGrad: "linear-gradient(135deg,#047857,#10b981)",
     cardTint: "rgba(4,120,87,0.15)",
     category: "convert",
-    accepts: ".xls,.xlsx",
+    accepts: ".xls,.xlsx,.csv",
     action: "Convert to PDF",
     outputFormat: "PDF",
     backendLib: "LibreOffice headless",
