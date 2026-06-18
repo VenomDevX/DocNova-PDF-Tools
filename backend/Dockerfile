@@ -29,7 +29,7 @@ COPY . .
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Expose the Railway public domain target port.
+# Expose the port the app binds to (Render injects $PORT, defaulting to 5000).
 EXPOSE 5000
 
 # Health check
