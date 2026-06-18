@@ -1,13 +1,16 @@
 FROM python:3.11-slim
 
 # Install system dependencies
-# libreoffice-writer + fonts enable layout-accurate Word/Doc -> PDF conversion
+# LibreOffice Writer/Calc/Impress + fonts enable layout-accurate
+# Word/Excel/PowerPoint -> PDF conversion and slide/sheet preview rendering.
 RUN apt-get update && apt-get install -y \
     poppler-utils \
     libmagic1 \
     curl \
     gcc \
     libreoffice-writer \
+    libreoffice-calc \
+    libreoffice-impress \
     fonts-liberation \
     fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
