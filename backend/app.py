@@ -346,7 +346,8 @@ def office_to_pdf_thumbnails(temp_path, max_pages=40, label_prefix='Page'):
     page with PyMuPDF. Returns a list of {label, thumbnail} preview items, or
     None when LibreOffice/PyMuPDF is unavailable, busy, or conversion fails
     (callers then fall back to lightweight text/row extraction)."""
-    if fitz is None:
+    pymupdf = get_pymupdf()
+    if pymupdf is None:
         return None
     try:
         pdf_bytes = libreoffice_convert_to_pdf(temp_path)
@@ -356,9 +357,9 @@ def office_to_pdf_thumbnails(temp_path, max_pages=40, label_prefix='Page'):
         return None
 
     items = []
-    doc = fitz.open(stream=pdf_bytes, filetype='pdf')
+    doc = pymupdf.open(stream=pdf_bytes, filetype='pdf')
     try:
-        matrix = fitz.Matrix(1.6, 1.6)  # ~150 DPI thumbnails
+        matrix = pymupdf.Matrix(1.6, 1.6)  # ~150 DPI thumbnails
         for index, page in enumerate(doc):
             if index >= max_pages:
                 break
