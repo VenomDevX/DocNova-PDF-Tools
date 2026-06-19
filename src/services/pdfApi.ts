@@ -332,11 +332,13 @@ class PDFApiService {
     return this.postFileWithParams('/api/powerpoint-to-pdf', file, { pageRange }, 'Failed to convert PowerPoint to PDF');
   }
 
-  async applyEditorEdits(file: File, layers: unknown[], toolId: string): Promise<Blob | null> {
+  async applyEditorEdits(file: File, layers: unknown[], toolId: string, canvasWidth = 680, canvasHeight = 900): Promise<Blob | null> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('layers', JSON.stringify(layers || []));
     formData.append('toolId', toolId);
+    formData.append('canvasWidth', String(canvasWidth));
+    formData.append('canvasHeight', String(canvasHeight));
 
     const response = await fetch(`${this.baseURL}/api/pdf/apply-editor-edits`, {
       method: 'POST',

@@ -91,7 +91,14 @@ const VARS: Record<Theme, Record<string, string>> = {
     "--dn-trust-icon":      "#22c55e",
     /* workspace / review pages */
     "--dn-surface-2":       "rgba(23,37,84,0.22)",
-    "--dn-preview-bg":      "#04070f",
+    /* transparent so the shared premium gradient (.dn-dark-blobs) shows through
+       review/preview canvases — keeps one continuous background from upload on */
+    "--dn-preview-bg":      "transparent",
+    /* Same base as the AI tool pages: the page background (#000) with the
+       shared .dn-dark-blobs drifting glow on top. Painted on the page main
+       wrapper (full height, behind the transparent navbar) so upload /
+       pre-conversion / result pages match the AI pages exactly. */
+    "--dn-workspace-bg":    "var(--dn-bg)",
     "--dn-page-shadow":     "0 24px 70px rgba(0,0,0,0.5)",
     "--dn-toolbar-bg":      "rgba(9,14,28,0.72)",
     "--dn-toolbar-border":  "rgba(255,255,255,0.12)",
@@ -187,7 +194,12 @@ const VARS: Record<Theme, Record<string, string>> = {
     "--dn-trust-icon":      "#16a34a",
     /* workspace / review pages */
     "--dn-surface-2":       "#f4f6fb",
-    "--dn-preview-bg":      "#e6e9f1",
+    /* transparent so the review/preview canvas matches the upload page bg
+       (--dn-bg) exactly — no light-mode color switch between steps */
+    "--dn-preview-bg":      "transparent",
+    /* Light mode: keep the workspace background identical to the page bg so
+       upload → review stays continuous (no gradient in light). */
+    "--dn-workspace-bg":    "var(--dn-bg)",
     "--dn-page-shadow":     "0 6px 24px rgba(15,23,42,0.13),0 1px 3px rgba(15,23,42,0.08)",
     "--dn-toolbar-bg":      "rgba(255,255,255,0.94)",
     "--dn-toolbar-border":  "#cbd2e0",

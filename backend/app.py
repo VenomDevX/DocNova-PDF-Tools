@@ -1875,6 +1875,18 @@ def apply_editor_edits():
         if not isinstance(layers, list):
             layers = []
 
+        # The editor authors coordinates in a normalized canvas whose width is
+        # fixed (680) and whose height matches the page's real aspect ratio.
+        # Receiving those dimensions keeps crop/text/draw placement accurate.
+        try:
+            canvas_w = float(request.form.get('canvasWidth') or 680) or 680
+        except (TypeError, ValueError):
+            canvas_w = 680
+        try:
+            canvas_h = float(request.form.get('canvasHeight') or 900) or 900
+        except (TypeError, ValueError):
+            canvas_h = 900
+
         temp_path = save_uploaded_file(file, '.pdf')
         doc = pymupdf.open(temp_path)
 
@@ -1889,8 +1901,8 @@ def apply_editor_edits():
 
             page = doc[page_index]
             page_rect = page.rect
-            x_scale = page_rect.width / 680
-            y_scale = page_rect.height / 900
+            x_scale = page_rect.width / canvas_w
+            y_scale = page_rect.height / canvas_h
             layer_type = str(layer.get('type') or '')
             text = str(layer.get('text') or '')
             rect = editor_layer_rect(pymupdf, layer, x_scale, y_scale)
@@ -1909,6 +1921,9 @@ def apply_editor_edits():
                     page.draw_rect(rect, color=None, fill=(1, 0.86, 0.12), overlay=True)
                 elif layer_type == 'draw':
                     draw_paths = json.loads(text or '[]')
+                    # Brush size is authored in the 680px-wide editor space; scale
+                    # it to page points so the exported stroke matches the preview.
+                    stroke_width = max(0.5, float(layer.get('brushSize') or 5) * x_scale)
                     if isinstance(draw_paths, list):
                         for path in draw_paths:
                             points = []
@@ -1917,7 +1932,7 @@ def apply_editor_edits():
                                     if isinstance(point, dict):
                                         points.append(pymupdf.Point(float(point.get('x', 0)) * x_scale, float(point.get('y', 0)) * y_scale))
                             for start, end in zip(points, points[1:]):
-                                page.draw_line(start, end, color=color, width=2.4, overlay=True)
+                                page.draw_line(start, end, color=color, width=stroke_width, overlay=True)
                 elif layer_type == 'add-image' and text.startswith('data:image/'):
                     image_bytes = base64.b64decode(text.split(',', 1)[1])
                     page.insert_image(rect, stream=image_bytes, keep_proportion=True, overlay=True)

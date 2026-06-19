@@ -191,6 +191,7 @@ type ToolSettings = {
   ocrTextDetectionMode: string;
   editTool: string;
   editorLayers: string;
+  editorCanvasHeight: number;
   watermarkText: string;
   password: string;
   confirmPassword: string;
@@ -230,6 +231,7 @@ const defaultSettings: ToolSettings = {
   ocrTextDetectionMode: "auto",
   editTool: "text",
   editorLayers: "[]",
+  editorCanvasHeight: 900,
   watermarkText: "DocNova",
   password: "",
   confirmPassword: "",
@@ -803,11 +805,13 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
 
   const workflowShellStyle: React.CSSProperties = {
     color: "var(--dn-t1)",
-    paddingTop: isLoadedWorkspace ? "0" : "48px",
+    paddingTop: isLoadedWorkspace ? "0" : "8px",
     minHeight: isViewportLockedWorkspace ? "calc(100vh - 60px)" : isLoadedWorkspace ? "calc(100vh - 60px)" : "100vh",
     height: isViewportLockedWorkspace ? "calc(100vh - 60px)" : undefined,
     overflow: isViewportLockedWorkspace ? "hidden" : undefined,
-    background: "var(--dn-bg)",
+    // Transparent: the gradient is painted by the page's main wrapper so it is
+    // one continuous background that also sits behind the transparent navbar.
+    background: "transparent",
     transition: "var(--dn-transition)",
     fontFamily: "'Inter', sans-serif",
     position: "relative",
@@ -836,8 +840,10 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
 
       <div style={workflowContentStyle}>
         <style>{`
+          ${(isViewportLockedWorkspace || isOrganizerWorkspace) ? `
           ::-webkit-scrollbar { display: none !important; }
           * { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+          ` : ""}
           ${isViewportLockedWorkspace ? `
           .dn-main-wrap {
             height: 100vh !important;
@@ -1166,16 +1172,15 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
           <div className="flex flex-1 w-full overflow-hidden bg-transparent" style={{ color: "var(--dn-t1)" }}>
             {/* Main Center */}
             <section className="flex min-w-0 flex-1 flex-col bg-transparent">
-              {/* Header */}
-              <div className="flex h-16 flex-shrink-0 items-center gap-4 px-6">
-                <WorkspaceBackButton onBack={goBackToUpload} />
-                <div className="flex h-9 w-9 items-center justify-center rounded-md shadow-sm text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
-                  <tool.icon size={18} color="#fff" />
-                </div>
-                <div className="flex min-w-0 items-baseline gap-3">
-                  <h1 className="truncate text-lg font-semibold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
-                  <span className="text-sm font-medium text-blue-500">{files.length} files selected</span>
-                </div>
+              {/* Header — shared standard layout (single tool icon, no file icon) */}
+              <div className="px-6 pt-2">
+                <ToolWorkspaceHeader
+                  tool={tool}
+                  onBack={goBackToUpload}
+                  countLabel={`${files.length} ${files.length === 1 ? "file" : "files"} selected`}
+                  fileName={files.length === 1 ? files[0].name : undefined}
+                  fileSize={files.length === 1 ? files[0].size : undefined}
+                />
               </div>
 
               {/* Toolbar */}
@@ -1433,42 +1438,14 @@ function SecurePdfWorkspace({
       {/* ── CENTER ── */}
       <main className="preview-workspace flex h-[calc(100vh-60px)] min-w-0 flex-col overflow-hidden px-5 py-4">
 
-        {/* Breadcrumb header */}
-        <div className="mb-3 flex shrink-0 items-center gap-4">
-          <button
-            type="button"
-            onClick={onBack ?? onClear}
-            title="Back to upload"
-            aria-label="Back to upload"
-            className="grid h-8 w-8 place-items-center rounded-md transition"
-            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t3)" }}
-            onMouseOver={e => { e.currentTarget.style.color = "var(--dn-t1)"; e.currentTarget.style.borderColor = "#3b82f6"; }}
-            onMouseOut={e => { e.currentTarget.style.color = "var(--dn-t3)"; e.currentTarget.style.borderColor = "var(--dn-border)"; }}
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
-          <span className="text-sm font-semibold text-blue-500">Secure PDF</span>
-        </div>
-
-        {/* File bar */}
-        <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
-              <tool.icon size={20} />
-            </div>
-            <div className="min-w-0">
-              <h2 className="truncate text-base font-semibold" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
-              <p className="mt-1 text-sm" style={{ color: "var(--dn-t3)" }}>
-                {file.loading ? "Preparing..." : `${pageCount} ${pageCount === 1 ? "page" : "pages"}`} · {formatBytes(file.size)}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" style={{ background: badgeBg, color: badgeColor }}>
-            <ShieldCheck size={15} />
-            {badgeText}
-          </div>
-        </section>
+        <ToolWorkspaceHeader
+          tool={tool}
+          onBack={onBack ?? onClear}
+          countLabel={file.loading ? "Preparing..." : `${pageCount} ${pageCount === 1 ? "page" : "pages"}`}
+          fileName={file.name}
+          fileSize={file.size}
+          badge={{ text: badgeText, color: badgeColor, bg: badgeBg, icon: <ShieldCheck size={13} /> }}
+        />
 
         {/* Two-column inner layout: thumbnails + preview */}
         <section className="grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-[160px_minmax(0,1fr)]">
@@ -2010,42 +1987,14 @@ function OcrWorkspace({
       {/* ── CENTER ── */}
       <main className="preview-workspace flex h-[calc(100vh-60px)] min-w-0 flex-col overflow-hidden px-5 py-4">
 
-        {/* Breadcrumb header */}
-        <div className="mb-3 flex shrink-0 items-center gap-4">
-          <button
-            type="button"
-            onClick={onBack ?? onClear}
-            title="Back to upload"
-            aria-label="Back to upload"
-            className="grid h-8 w-8 place-items-center rounded-md transition"
-            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t3)" }}
-            onMouseOver={e => { e.currentTarget.style.color = "var(--dn-t1)"; e.currentTarget.style.borderColor = "#3b82f6"; }}
-            onMouseOut={e => { e.currentTarget.style.color = "var(--dn-t3)"; e.currentTarget.style.borderColor = "var(--dn-border)"; }}
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
-          <span className="text-sm font-semibold text-blue-500">OCR</span>
-        </div>
-
-        {/* File bar */}
-        <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
-              <tool.icon size={20} />
-            </div>
-            <div className="min-w-0">
-              <h2 className="truncate text-base font-semibold" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
-              <p className="mt-1 text-sm" style={{ color: "var(--dn-t3)" }}>
-                {file.loading ? "Preparing..." : `${pageCount} ${unitLabel}`} · {formatBytes(file.size)}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" style={{ background: "rgba(6,182,212,0.12)", color: "#22d3ee" }}>
-            <ScanLine size={15} />
-            {badgeText}
-          </div>
-        </section>
+        <ToolWorkspaceHeader
+          tool={tool}
+          onBack={onBack ?? onClear}
+          countLabel={file.loading ? "Preparing..." : `${pageCount} ${unitLabel}`}
+          fileName={file.name}
+          fileSize={file.size}
+          badge={{ text: badgeText, color: "#22d3ee", bg: "rgba(6,182,212,0.12)", icon: <ScanLine size={13} /> }}
+        />
 
         {/* Two-column inner layout: thumbnails + preview */}
         <section className="grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-[160px_minmax(0,1fr)]">
@@ -2354,27 +2303,14 @@ function SingleFileConversionPreview({
   return (
     <div className="convert-page grid h-[calc(100vh-60px)] w-full grid-cols-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_320px]" style={{ color: "var(--dn-t1)" }}>
       <main className="preview-workspace flex h-[calc(100vh-60px)] min-w-0 flex-col overflow-hidden px-5 py-4">
-        <div className="mb-3 flex shrink-0 items-center gap-4">
-          <WorkspaceBackButton onBack={onBack} />
-          <h1 className="text-2xl font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
-          <span className="text-sm font-semibold text-blue-500">Convert single file</span>
-        </div>
-
-        <section className="mb-4 flex min-h-14 shrink-0 items-center justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--dn-border)" }}>
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-md text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
-              <tool.icon size={20} color="#fff" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="truncate text-base font-semibold" style={{ color: "var(--dn-t1)" }}>{file.name}</h2>
-              <p className="mt-1 text-sm" style={{ color: "var(--dn-t3)" }}>{pageLabel} - {formatBytes(file.size)}</p>
-            </div>
-          </div>
-          <div className="flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" style={{ background: "rgba(34,197,94,0.11)", color: "#22c55e" }}>
-            <CheckCircle2 size={16} />
-            Ready to convert
-          </div>
-        </section>
+        <ToolWorkspaceHeader
+          tool={tool}
+          onBack={onBack}
+          countLabel={pageLabel}
+          fileName={file.name}
+          fileSize={file.size}
+          badge={{ text: "Ready to convert", color: "#22c55e", bg: "rgba(34,197,94,0.11)", icon: <CheckCircle2 size={13} /> }}
+        />
 
         <section className="grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-[160px_minmax(0,1fr)]">
           <aside className="flex min-h-0 min-w-0 flex-col">
@@ -2562,6 +2498,12 @@ function PdfEditorPreviewWorkspace({
   const [activeTool, setActiveTool] = useState<EditorToolKey>(() => editorToolFromToolId(tool.id));
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(100);
+  // Draw sub-mode: "brush" paints new strokes, "eraser" removes nearby ink.
+  const [drawMode, setDrawMode] = useState<"brush" | "eraser">("brush");
+  // Editor canvas keeps a fixed normalized width (680) and a height that
+  // matches the real page aspect ratio, so the page is shown at its true
+  // proportions (no white border / no stretch) and edits map 1:1 to export.
+  const [pageHeight, setPageHeight] = useState(900);
   const [layers, setLayers] = useState<EditorLayer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [history, setHistory] = useState<EditorLayer[][]>([]);
@@ -2573,7 +2515,11 @@ function PdfEditorPreviewWorkspace({
   const pageCount = file.loading ? 0 : Math.max(pages.length, 1);
 
   const pushHistory = useCallback((snapshot: EditorLayer[]) => {
-    setHistory(prev => [...prev, snapshot].slice(-40));
+    setHistory(prev => {
+      const lastSnapshot = prev[prev.length - 1];
+      if (lastSnapshot && editorSnapshotsEqual(lastSnapshot, snapshot)) return prev;
+      return [...prev, snapshot].slice(-40);
+    });
     setFuture([]);
     setIsDirty(true);
   }, []);
@@ -2601,11 +2547,11 @@ function PdfEditorPreviewWorkspace({
         setSelectedLayerId(existing.id);
         return current;
       }
-      const nextLayer = createEditorLayer(toolKey, pageIndex, true);
+      const nextLayer = createEditorLayer(toolKey, pageIndex, true, pageHeight);
       setSelectedLayerId(nextLayer.id);
       return [...current, nextLayer];
     });
-  }, []);
+  }, [pageHeight]);
 
   const commitSelectedLayerForExport = useCallback((source: EditorLayer[]) => (
     source.map(layer => {
@@ -2628,21 +2574,25 @@ function PdfEditorPreviewWorkspace({
 
   useEffect(() => {
     const next = editorToolFromToolId(tool.id);
-    const nextLayer = createEditorLayer(next, 0, true);
+    // Start with NO layers so the preview shows only the original PDF page —
+    // no placeholder text block / dashed border layered on top. A layer is
+    // created lazily when the user actually engages a tool (see switchTool).
     setActiveTool(next);
     setActiveIndex(0);
     setZoom(100);
-    setLayers([nextLayer]);
-    setSelectedLayerId(nextLayer.id);
+    setLayers([]);
+    setSelectedLayerId(null);
     setHistory([]);
     setFuture([]);
     setIsDirty(false);
     onSettingsChange({ editTool: next });
   }, [file.id, tool.id]);
 
+  // Keep the export canvas height in sync with the measured page aspect ratio
+  // so the backend scales the Y axis (page_rect.height / canvasHeight) exactly.
   useEffect(() => {
-    ensureLayerForTool(activeTool, activeIndex);
-  }, [activeIndex, activeTool, ensureLayerForTool]);
+    onSettingsChange({ editorCanvasHeight: pageHeight });
+  }, [pageHeight]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -2652,11 +2602,22 @@ function PdfEditorPreviewWorkspace({
   }, [exportableLayers, layers, onSettingsChange]);
 
   const switchTool = (next: EditorToolKey) => {
-    setLayers(current => removeTemporaryLayers(current));
+    setDrawMode("brush");
     setActiveTool(next);
-    setSelectedLayerId(null);
     onSettingsChange({ editTool: next });
-    ensureLayerForTool(next, activeIndex);
+    setLayers(current => {
+      const cleaned = removeTemporaryLayers(current);
+      const existing = cleaned.find(layer => layer.pageIndex === activeIndex && layer.type === next && !(layer.type === "crop" && layer.applied));
+      if (existing) {
+        setSelectedLayerId(existing.id);
+        if (!editorSnapshotsEqual(current, cleaned)) pushHistory(current);
+        return cleaned;
+      }
+      const nextLayer = createEditorLayer(next, activeIndex, true, pageHeight);
+      setSelectedLayerId(nextLayer.id);
+      pushHistory(current);
+      return [...cleaned, nextLayer];
+    });
   };
 
   const undo = useCallback(() => {
@@ -2684,12 +2645,12 @@ function PdfEditorPreviewWorkspace({
   }, [layers]);
 
   const resetEditor = useCallback(() => {
-    const nextLayer = createEditorLayer(editorToolFromToolId(tool.id), activeIndex, true);
+    const nextLayer = createEditorLayer(editorToolFromToolId(tool.id), activeIndex, true, pageHeight);
     pushHistory(layers);
     setLayers([nextLayer]);
     setSelectedLayerId(nextLayer.id);
     setActiveTool(nextLayer.type);
-  }, [activeIndex, layers, pushHistory, tool.id]);
+  }, [activeIndex, layers, pushHistory, tool.id, pageHeight]);
 
   const patchLayer = useCallback((layerId: string, patch: Partial<EditorLayer>, record = true) => {
     const meaningfulPatch = Object.keys(patch).some(key => !["applied", "temporary"].includes(key));
@@ -2701,6 +2662,23 @@ function PdfEditorPreviewWorkspace({
       setIsDirty(true);
     }
   }, [commitLayers]);
+
+  // Sidebar controls patch the selected layer. If nothing is selected yet (e.g.
+  // right after opening the editor, or after deselecting), create a layer for
+  // the active tool on the current page and apply the change to it — so every
+  // control works immediately instead of being a dead no-op.
+  const patchActiveLayer = useCallback((patch: Partial<EditorLayer>) => {
+    setLayers(current => {
+      const existing = selectedLayerId ? current.find(layer => layer.id === selectedLayerId) : null;
+      pushHistory(current);
+      if (existing) {
+        return current.map(layer => layer.id === existing.id ? { ...layer, ...patch, temporary: false } : layer);
+      }
+      const created: EditorLayer = { ...createEditorLayer(activeTool, activeIndex, false, pageHeight), ...patch, temporary: false };
+      setSelectedLayerId(created.id);
+      return [...current, created];
+    });
+  }, [activeIndex, activeTool, pageHeight, pushHistory, selectedLayerId]);
 
   const duplicateLayer = useCallback((layerId = selectedLayerId) => {
     if (!layerId) return;
@@ -2728,13 +2706,21 @@ function PdfEditorPreviewWorkspace({
   }, [commitLayers, selectedLayerId]);
 
   const applyActiveTool = useCallback(() => {
-    if (!selectedLayerId) return;
-    commitLayers(current => current.map(layer => {
-      if (layer.id !== selectedLayerId) return layer;
-      return { ...layer, temporary: false, applied: layer.type === "crop" ? true : layer.applied };
-    }));
+    setLayers(current => {
+      const existing = selectedLayerId ? current.find(layer => layer.id === selectedLayerId) : null;
+      pushHistory(current);
+      const markApplied = (layer: EditorLayer): EditorLayer => ({ ...layer, temporary: false, applied: layer.type === "crop" ? true : layer.applied });
+      if (existing) {
+        return current.map(layer => layer.id === existing.id ? markApplied(layer) : layer);
+      }
+      // Nothing selected — create the active tool's layer and apply it so the
+      // Apply button is never a dead no-op.
+      const created = markApplied(createEditorLayer(activeTool, activeIndex, false, pageHeight));
+      setSelectedLayerId(created.id);
+      return [...current, created];
+    });
     if (activeTool === "crop") setSelectedLayerId(null);
-  }, [activeTool, commitLayers, selectedLayerId]);
+  }, [activeIndex, activeTool, pageHeight, pushHistory, selectedLayerId]);
 
   const cancelSelectedTemporary = useCallback(() => {
     if (!selectedLayerId) {
@@ -2767,7 +2753,10 @@ function PdfEditorPreviewWorkspace({
     const startSnapshot = layers;
     const startX = event.clientX;
     const startY = event.clientY;
-    const scale = zoom / 100;
+    // Overlay coordinates live in a 680-wide logical space rendered at
+    // displayWidth (the same zoom*7 width the conversion preview uses), so a
+    // screen-pixel delta converts to logical units by dividing by this factor.
+    const scale = editorDisplayWidth(zoom) / 680;
     let moved = false;
 
     const onMove = (moveEvent: PointerEvent) => {
@@ -2783,7 +2772,7 @@ function PdfEditorPreviewWorkspace({
           ...layer,
           temporary: false,
           x: clamp(snapToGrid(source.x + dx), 0, 680 - layer.width),
-          y: clamp(snapToGrid(source.y + dy), 0, 900 - layer.height),
+          y: clamp(snapToGrid(source.y + dy), 0, pageHeight - layer.height),
         };
       }));
     };
@@ -2797,7 +2786,7 @@ function PdfEditorPreviewWorkspace({
 
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
-  }, [isDirty, layers, pushHistory, zoom]);
+  }, [isDirty, layers, pushHistory, zoom, pageHeight]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -2832,7 +2821,7 @@ function PdfEditorPreviewWorkspace({
   const activeLayer = layers.find(layer => layer.id === selectedLayerId) || null;
 
   return (
-    <div className="pdf-editor-page flex h-[calc(100vh-60px)] w-full flex-col overflow-hidden" style={{ background: "var(--dn-bg)", color: "var(--dn-t1)" }}>
+    <div className="pdf-editor-page flex h-[calc(100vh-60px)] w-full flex-col overflow-hidden" style={{ background: "transparent", color: "var(--dn-t1)" }}>
       <style>{`
         .pdf-editor-layer {
           transition: box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
@@ -2844,7 +2833,7 @@ function PdfEditorPreviewWorkspace({
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          height: 36px;
+          height: 34px;
           padding: 0 12px;
           border-radius: 6px;
           font-size: 0.8125rem;
@@ -2867,6 +2856,18 @@ function PdfEditorPreviewWorkspace({
         .ped-tool-tab-inactive:hover {
           background: var(--dn-bg-subtle);
           color: var(--dn-t1);
+        }
+        .ped-tool-tab-bar {
+          max-width: calc(100% - 28px);
+          border: 1px solid var(--dn-toolbar-border);
+          border-radius: 6px;
+          background: var(--dn-toolbar-bg);
+          box-shadow: var(--dn-toolbar-shadow);
+          backdrop-filter: blur(16px) saturate(180%);
+          -webkit-backdrop-filter: blur(16px) saturate(180%);
+        }
+        [data-theme="light"] .ped-tool-tab-bar {
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), var(--dn-toolbar-shadow);
         }
         .ped-action-btn {
           display: inline-flex;
@@ -2913,144 +2914,159 @@ function PdfEditorPreviewWorkspace({
           opacity: 0.4;
           cursor: not-allowed;
         }
+        .ped-floating-toolbar {
+          --ped-floating-bg: rgba(86, 96, 111, 0.58);
+          --ped-floating-hover-bg: rgba(47, 55, 70, 0.76);
+          --ped-floating-border: rgba(255, 255, 255, 0.28);
+          --ped-floating-text: rgba(255, 255, 255, 0.96);
+          --ped-floating-hover-text: rgba(255, 255, 255, 0.96);
+          --ped-floating-surface: linear-gradient(145deg, rgba(255,255,255,0.30), rgba(255,255,255,0.10) 44%, rgba(255,255,255,0.16)), var(--ped-floating-bg);
+          --ped-floating-hover-surface: linear-gradient(145deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08) 44%, rgba(255,255,255,0.12)), var(--ped-floating-hover-bg);
+          --ped-floating-shadow: 0 16px 34px rgba(15, 23, 42, 0.34), inset 0 1px 0 rgba(255,255,255,0.38), inset 0 -10px 18px rgba(255,255,255,0.08);
+          pointer-events: none;
+        }
+        [data-theme="light"] .ped-floating-toolbar {
+          --ped-floating-bg: rgba(255, 255, 255, 0.64);
+          --ped-floating-hover-bg: rgba(255, 255, 255, 0.86);
+          --ped-floating-border: rgba(148, 163, 184, 0.36);
+          --ped-floating-text: #5f6b7a;
+          --ped-floating-hover-text: #111827;
+          --ped-floating-surface: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(255,255,255,0.54) 48%, rgba(226,232,240,0.34)), var(--ped-floating-bg);
+          --ped-floating-hover-surface: linear-gradient(145deg, rgba(255,255,255,1), rgba(255,255,255,0.74) 48%, rgba(226,232,240,0.48)), var(--ped-floating-hover-bg);
+          --ped-floating-shadow: 0 16px 34px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -10px 18px rgba(148,163,184,0.14);
+        }
+        .ped-floating-btn,
+        .ped-floating-value {
+          position: relative;
+          overflow: hidden;
+          height: 40px;
+          border-radius: 4px;
+          border: 1px solid var(--ped-floating-border);
+          background: var(--ped-floating-surface);
+          color: var(--ped-floating-text);
+          box-shadow: var(--ped-floating-shadow);
+          backdrop-filter: blur(24px) saturate(190%) contrast(112%);
+          -webkit-backdrop-filter: blur(24px) saturate(190%) contrast(112%);
+          pointer-events: auto;
+        }
+        .ped-floating-btn::before,
+        .ped-floating-value::before {
+          content: "";
+          position: absolute;
+          inset: 1px;
+          border-radius: 3px;
+          background: radial-gradient(110% 80% at 20% -20%, rgba(255,255,255,0.44), transparent 54%);
+          pointer-events: none;
+        }
+        .ped-floating-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          padding: 0 12px;
+          font-size: 0.86rem;
+          font-weight: 800;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+        }
+        .ped-floating-btn[aria-disabled="true"],
+        .ped-floating-btn[aria-disabled="true"]:hover {
+          cursor: pointer;
+          opacity: 1;
+          background: var(--ped-floating-surface);
+          border-color: var(--ped-floating-border);
+          color: var(--ped-floating-text);
+          transform: none;
+        }
+        .ped-floating-btn:hover:not(:disabled),
+        .ped-floating-history-btn:hover,
+        .ped-floating-history-btn[aria-disabled="true"]:hover {
+          border-color: var(--ped-floating-border);
+          background: var(--ped-floating-hover-surface);
+          color: var(--ped-floating-hover-text);
+          transform: none;
+        }
+        .ped-floating-btn:disabled {
+          cursor: not-allowed;
+          opacity: 1;
+          background: var(--ped-floating-surface);
+          border-color: var(--ped-floating-border);
+          color: rgba(255,255,255,0.46);
+          transform: none;
+        }
+        [data-theme="light"] .ped-floating-btn:disabled {
+          color: rgba(17,24,39,0.46);
+        }
+        .ped-floating-icon {
+          width: 40px;
+          padding: 0;
+        }
+        .ped-floating-value {
+          display: grid;
+          min-width: 64px;
+          place-items: center;
+          padding: 0 14px;
+          font-size: 0.9rem;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+        .ped-floating-page {
+          min-width: 72px;
+        }
+        .ped-floating-divider {
+          width: 1px;
+          height: 24px;
+          background: var(--ped-floating-border);
+          opacity: 0.75;
+        }
+        [data-theme="light"] .ped-floating-btn,
+        [data-theme="light"] .ped-floating-value {
+          box-shadow: var(--ped-floating-shadow);
+        }
+        .ped-floating-toolbar button.ped-floating-btn:hover {
+          border-color: var(--ped-floating-border) !important;
+          background: var(--ped-floating-hover-surface) !important;
+          background-color: var(--ped-floating-hover-bg) !important;
+          color: var(--ped-floating-hover-text) !important;
+          transform: none !important;
+        }
+        [data-theme="light"] .ped-floating-toolbar .ped-floating-btn:hover {
+          border-color: var(--ped-floating-border) !important;
+          background: var(--ped-floating-hover-surface) !important;
+          background-color: var(--ped-floating-hover-bg) !important;
+          color: var(--ped-floating-hover-text) !important;
+          transform: none !important;
+        }
       `}</style>
 
-      {/* ── Header: same height/rhythm as Merge PDF ── */}
-      <div className="flex h-16 shrink-0 items-center gap-4 px-6" style={{ borderBottom: "1px solid var(--dn-border)" }}>
-
-        {/* Left: back + tool identity */}
-        <button
-          type="button"
-          onClick={onBack ?? onClear}
-          title="Back to upload"
-          aria-label="Back to upload"
-          className="ped-icon-btn shrink-0"
-        >
-          <ArrowLeft size={18} />
-        </button>
-
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md shadow-sm text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
-          <tool.icon size={18} color="#fff" />
-        </div>
-
-        <div className="flex min-w-0 items-baseline gap-3">
-          <h1 className="truncate text-lg font-semibold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
-          <span className="shrink-0 text-sm font-medium text-blue-500">
-            {file.loading ? "Preparing…" : `${pageCount} ${pageCount === 1 ? "page" : "pages"}`}
-          </span>
-        </div>
-
-        {/* File info pill */}
-        <div className="ml-2 hidden min-w-0 items-center gap-3 lg:flex">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded text-white" style={{ background: "#ef4444" }}>
-            <FileText size={16} />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold" style={{ color: "var(--dn-t1)", maxWidth: 240 }}>{file.name}</p>
-            <p className="text-xs" style={{ color: "var(--dn-t3)" }}>{formatBytes(file.size)}</p>
-          </div>
-        </div>
-
-        <div className="ml-2 hidden shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold md:flex" style={{ background: "rgba(34,197,94,0.11)", color: "#22c55e" }}>
-          <Check size={13} />
-          Ready to edit
-        </div>
-
-        {/* Right: action buttons */}
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={saveEditor}
-            disabled={status === "processing"}
-            aria-label="Export PDF"
-            className="ped-icon-btn"
-          >
-            <Download size={17} />
-          </button>
-          <button
-            type="button"
-            aria-label="More options"
-            className="ped-icon-btn"
-          >
-            <MoreVertical size={17} />
-          </button>
-          <button
-            type="button"
-            onClick={saveEditor}
-            disabled={status === "processing"}
-            className="flex h-9 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {status === "processing" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-            Save Changes
-          </button>
-        </div>
-      </div>
-
-      {/* ── Combined toolbar: tool tabs + undo/redo + zoom + page counter ── */}
-      <div
-        className="pdf-editor-scroll flex h-auto min-h-[56px] shrink-0 items-center justify-between gap-4 overflow-x-auto px-6 py-2"
-        style={{ borderBottom: "1px solid var(--dn-border)" }}
-      >
-        {/* Tool tabs */}
-        <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
-          {editorToolTabs.map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => switchTool(tab.id)}
-              className={`ped-tool-tab ${activeTool === tab.id ? "ped-tool-tab-active" : "ped-tool-tab-inactive"}`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Toolbar controls */}
-        <div className="flex shrink-0 items-center gap-2">
-          <div className="mx-1 h-5 w-px shrink-0" style={{ background: "var(--dn-border)" }} />
-          <button type="button" disabled={history.length === 0} onClick={undo} className="ped-action-btn" title="Undo (Ctrl+Z)">
-            <Undo2 size={15} /> Undo
-          </button>
-          <button type="button" disabled={future.length === 0} onClick={redo} className="ped-action-btn" title="Redo (Ctrl+Y)">
-            <Redo2 size={15} /> Redo
-          </button>
-          <div className="mx-1 h-5 w-px shrink-0" style={{ background: "var(--dn-border)" }} />
-          <button type="button" onClick={() => setZoom(prev => Math.max(60, prev - 10))} className="ped-icon-btn" title="Zoom out">
-            <Minus size={15} />
-          </button>
-          <span
-            className="grid h-9 w-[58px] shrink-0 place-items-center rounded-md text-sm font-semibold"
-            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
-          >
-            {zoom}%
-          </span>
-          <button type="button" onClick={() => setZoom(prev => Math.min(160, prev + 10))} className="ped-icon-btn" title="Zoom in">
-            <Plus size={15} />
-          </button>
-          <button type="button" onClick={() => setZoom(100)} className="ped-icon-btn" title="Pan / reset zoom">
-            <Hand size={15} />
-          </button>
-          <div className="mx-1 h-5 w-px shrink-0" style={{ background: "var(--dn-border)" }} />
-          <span
-            className="grid h-9 w-[72px] shrink-0 place-items-center rounded-md text-sm font-semibold"
-            style={{ border: "1px solid var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t1)" }}
-          >
-            {activeIndex + 1} / {Math.max(pageCount, 1)}
-          </span>
-        </div>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      {/* ── Header: shared standard layout (single tool icon, no file icon) ── */}
+      <div className="px-6 pt-2">
+        <ToolWorkspaceHeader
+          tool={tool}
+          onBack={onBack ?? onClear}
+          countLabel={file.loading ? "Preparing…" : `${pageCount} ${pageCount === 1 ? "page" : "pages"}`}
+          fileName={file.name}
+          fileSize={file.size}
+          badge={{ text: "Ready to edit", color: "#22c55e", bg: "rgba(34,197,94,0.11)", icon: <Check size={13} /> }}
+          fullBleedDivider
+          compactSpacing
+        />
       </div>
 
       {/* ── Three-column workspace ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
 
-        {/* Left: page thumbnails — mirrors Merge PDF main section header + grid */}
+        {/* Left: page thumbnails — transparent so it merges with the main editor
+            workspace background (no separate dark block / vertical divider). */}
         <aside
           className="flex w-[176px] shrink-0 flex-col"
-          style={{ borderRight: "1px solid var(--dn-border)", background: "var(--dn-bg-card)" }}
+          style={{ background: "transparent" }}
         >
           {/* Section header */}
-          <div className="flex h-[52px] shrink-0 items-center justify-between px-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+          <div className="flex h-[52px] shrink-0 items-center justify-between px-4" style={{ background: "transparent" }}>
             <h2 className="text-sm font-semibold" style={{ color: "var(--dn-t1)" }}>Pages</h2>
             <span className="text-sm font-medium" style={{ color: "var(--dn-t3)" }}>
               {file.loading ? "…" : pageCount}
@@ -3097,33 +3113,85 @@ function PdfEditorPreviewWorkspace({
         </aside>
 
         {/* Center: canvas — transparent so ambient blobs show through */}
-        <main className="pdf-editor-scroll relative flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-auto p-8" style={{ background: "var(--dn-preview-bg)" }}>
-          <EditorCanvasV2
-            item={activeItem}
-            activeTool={activeTool}
-            zoom={zoom}
-            pageIndex={activeIndex}
-            layers={layers}
-            selectedLayerId={selectedLayerId}
-            onSelectLayer={setSelectedLayerId}
-            onPatchLayer={patchLayer}
-            onBeginDrag={beginLayerDrag}
-            onDuplicateLayer={duplicateLayer}
-            onDeleteLayer={deleteLayer}
-            onRotateLayer={rotateLayer}
-            onCommitSnapshot={pushHistory}
-            onTextFocus={beginTextEdit}
-            onTextBlur={endTextEdit}
-          />
+        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-hidden" style={{ background: "var(--dn-preview-bg)" }}>
+          <div className="ped-tool-tab-bar pdf-editor-scroll absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-1.5 overflow-x-auto px-2 py-1.5">
+            {editorToolTabs.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => switchTool(tab.id)}
+                className={`ped-tool-tab ${activeTool === tab.id ? "ped-tool-tab-active" : "ped-tool-tab-inactive"}`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="pdf-editor-scroll flex h-full min-h-0 w-full flex-col items-center overflow-auto px-8 pb-24 pt-20">
+            <EditorCanvasV2
+              item={activeItem}
+              activeTool={activeTool}
+              drawMode={drawMode}
+              zoom={zoom}
+              canvasHeight={pageHeight}
+              onMeasurePage={setPageHeight}
+              pageIndex={activeIndex}
+              layers={layers}
+              selectedLayerId={selectedLayerId}
+              onSelectLayer={setSelectedLayerId}
+              onPatchLayer={patchLayer}
+              onBeginDrag={beginLayerDrag}
+              onDuplicateLayer={duplicateLayer}
+              onDeleteLayer={deleteLayer}
+              onRotateLayer={rotateLayer}
+              onCommitSnapshot={pushHistory}
+              onTextFocus={beginTextEdit}
+              onTextBlur={endTextEdit}
+            />
+          </div>
+
+          {/* Floating controls — undo/redo + zoom + page counter, over the pages */}
+          <div className="ped-floating-toolbar absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+            <button type="button" aria-disabled={history.length === 0} onClick={undo} className="ped-floating-btn ped-floating-history-btn" title="Undo (Ctrl+Z)">
+              <Undo2 size={15} /> Undo
+            </button>
+            <button type="button" aria-disabled={future.length === 0} onClick={redo} className="ped-floating-btn ped-floating-history-btn" title="Redo (Ctrl+Y)">
+              <Redo2 size={15} /> Redo
+            </button>
+            <div className="ped-floating-divider shrink-0" />
+            <button type="button" onClick={() => setZoom(prev => Math.max(60, prev - 10))} className="ped-floating-btn ped-floating-icon" title="Zoom out">
+              <Minus size={15} />
+            </button>
+            <span
+              className="ped-floating-value shrink-0"
+            >
+              {zoom}%
+            </span>
+            <button type="button" onClick={() => setZoom(prev => Math.min(160, prev + 10))} className="ped-floating-btn ped-floating-icon" title="Zoom in">
+              <Plus size={15} />
+            </button>
+            <button type="button" onClick={() => setZoom(100)} className="ped-floating-btn ped-floating-icon" title="Pan / reset zoom">
+              <Hand size={15} />
+            </button>
+            <div className="ped-floating-divider shrink-0" />
+            <span
+              className="ped-floating-value ped-floating-page shrink-0"
+            >
+              {activeIndex + 1} / {Math.max(pageCount, 1)}
+            </span>
+          </div>
         </main>
+          </div>
+        </div>
 
         {/* Right: settings sidebar — mirrors Merge PDF right sidebar exactly */}
         <aside
-          className="relative z-20 flex w-[320px] shrink-0 flex-col"
+          className="relative z-20 flex h-full min-h-0 w-[320px] shrink-0 flex-col"
           style={{ background: "var(--dn-bg-card)", borderLeft: "1px solid var(--dn-border)" }}
         >
           {/* Active tool header — mirrors Merge PDF "Conversion Settings" section header */}
-          <div className="flex shrink-0 items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--dn-border)" }}>
+          <div className="flex h-[60.35px] shrink-0 items-center gap-3 px-5" style={{ borderBottom: "1px solid var(--dn-border)" }}>
             <div
               className="grid h-9 w-9 shrink-0 place-items-center rounded-md"
               style={{ background: "var(--dn-selected-bg)", color: "#3b82f6" }}
@@ -3143,7 +3211,10 @@ function PdfEditorPreviewWorkspace({
             <EditorSettingsSections
               activeTool={activeTool}
               selectedLayer={activeLayer}
-              onPatchSelected={patch => activeLayer && patchLayer(activeLayer.id, patch)}
+              drawMode={drawMode}
+              canvasHeight={pageHeight}
+              onDrawModeChange={setDrawMode}
+              onPatchSelected={patchActiveLayer}
               onDeleteSelected={() => activeLayer && deleteLayer(activeLayer.id)}
             />
 
@@ -3158,10 +3229,10 @@ function PdfEditorPreviewWorkspace({
                     onChange={value => patchLayer(activeLayer.id, { color: value })}
                   />
                   <div className="grid grid-cols-2 gap-3">
-                    <EditorNumberField label="X" value={activeLayer.x} onChange={value => patchLayer(activeLayer.id, { x: value })} />
-                    <EditorNumberField label="Y" value={activeLayer.y} onChange={value => patchLayer(activeLayer.id, { y: value })} />
-                    <EditorNumberField label="Width" value={activeLayer.width} onChange={value => patchLayer(activeLayer.id, { width: Math.max(44, value) })} />
-                    <EditorNumberField label="Height" value={activeLayer.height} onChange={value => patchLayer(activeLayer.id, { height: Math.max(28, value) })} />
+                    <EditorNumberField label="X" value={activeLayer.x} onChange={value => patchLayer(activeLayer.id, { x: clamp(value, 0, Math.max(0, 680 - activeLayer.width)) })} />
+                    <EditorNumberField label="Y" value={activeLayer.y} onChange={value => patchLayer(activeLayer.id, { y: clamp(value, 0, Math.max(0, pageHeight - activeLayer.height)) })} />
+                    <EditorNumberField label="Width" value={activeLayer.width} onChange={value => patchLayer(activeLayer.id, { width: clamp(value, 44, 680) })} />
+                    <EditorNumberField label="Height" value={activeLayer.height} onChange={value => patchLayer(activeLayer.id, { height: clamp(value, 28, pageHeight) })} />
                     <EditorNumberField label="Rotate" value={activeLayer.rotation} onChange={value => patchLayer(activeLayer.id, { rotation: value })} />
                     <EditorNumberField label="Opacity %" value={Math.round(activeLayer.opacity * 100)} onChange={value => patchLayer(activeLayer.id, { opacity: clamp(value, 5, 100) / 100 })} />
                   </div>
@@ -3193,6 +3264,16 @@ function PdfEditorPreviewWorkspace({
               <ArrowRight size={18} />
             </button>
 
+            <button
+              type="button"
+              onClick={saveEditor}
+              disabled={status === "processing"}
+              className="mt-3 flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-blue-700 font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {status === "processing" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+              Save & Apply
+            </button>
+
             <p className="mt-3 flex items-center justify-center gap-2 text-xs font-medium" style={{ color: "var(--dn-t4)" }}>
               <Lock size={13} />
               Your files are secure and private
@@ -3201,57 +3282,6 @@ function PdfEditorPreviewWorkspace({
         </aside>
       </div>
 
-      {/* ── Sticky bottom bar — mirrors Merge PDF process area but in footer form ── */}
-      <div
-        className="sticky bottom-0 flex h-14 shrink-0 items-center justify-between px-6"
-        style={{ borderTop: "1px solid var(--dn-border)", background: "var(--dn-bg-card)", boxShadow: "0 -2px 12px rgba(15,23,42,0.06)" }}
-      >
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={undo}
-            disabled={history.length === 0}
-            className="ped-action-btn"
-          >
-            <Undo2 size={15} /> Undo
-          </button>
-          <button
-            type="button"
-            onClick={redo}
-            disabled={future.length === 0}
-            className="ped-action-btn"
-          >
-            <Redo2 size={15} /> Redo
-          </button>
-          <div className="mx-1 h-5 w-px" style={{ background: "var(--dn-border)" }} />
-          <button
-            type="button"
-            onClick={resetEditor}
-            className="ped-action-btn"
-          >
-            <RotateCcw size={15} /> Reset
-          </button>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--dn-t3)" }}>
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ background: isDirty ? "#f59e0b" : "#22c55e", flexShrink: 0 }}
-            />
-            {isDirty ? "Unsaved changes" : "All saved locally"}
-          </span>
-          <button
-            type="button"
-            onClick={saveEditor}
-            disabled={status === "processing"}
-            className="flex h-10 items-center gap-2 rounded-lg bg-blue-700 px-5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {status === "processing" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-            Save & Apply
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -3260,7 +3290,24 @@ function makeEditorLayerId(type: EditorToolKey) {
   return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function createEditorLayer(type: EditorToolKey, pageIndex: number, temporary = true): EditorLayer {
+function editorSnapshotsEqual(a: EditorLayer[], b: EditorLayer[]) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// The editor renders the PDF page with the SAME pipeline as the conversion
+// preview: a width-driven container (this exact formula) holding a natural
+// aspect-ratio <img>. Keeping the formula identical means the editor page is
+// pixel-for-pixel the same size as the conversion preview at any zoom.
+function editorDisplayWidth(zoom: number) {
+  return Math.max(360, zoom * 7);
+}
+
+// Editor coordinates are normalized to a fixed width (680) and a height that
+// matches the page's real aspect ratio (canvasH). Height-dependent defaults are
+// expressed as fractions of canvasH so every tool places correctly on portrait
+// AND landscape pages instead of being tuned to a hardcoded 900px box.
+function createEditorLayer(type: EditorToolKey, pageIndex: number, temporary = true, canvasH = 900): EditorLayer {
+  const vy = (fraction: number) => Math.round(canvasH * fraction);
   const base = {
     id: makeEditorLayerId(type),
     type,
@@ -3278,15 +3325,15 @@ function createEditorLayer(type: EditorToolKey, pageIndex: number, temporary = t
     temporary,
     applied: false,
   };
-  if (type === "highlight") return { ...base, x: 118, y: 344, width: 440, height: 36, color: "#facc15", opacity: 0.55, text: "" };
-  if (type === "draw") return { ...base, x: 0, y: 0, width: 680, height: 900, color: "#2563eb", text: "[]" };
-  if (type === "crop") return { ...base, x: 56, y: 64, width: 568, height: 772, text: "" };
-  if (type === "redact") return { ...base, x: 156, y: 420, width: 360, height: 40, text: "" };
-  if (type === "watermark") return { ...base, x: 92, y: 410, width: 500, height: 90, rotation: -24, color: "#2563eb", opacity: 0.22, fontSize: 52, text: "CONFIDENTIAL" };
-  if (type === "page-numbers") return { ...base, x: 300, y: 846, width: 92, height: 34, color: "#ffffff", fontSize: 14, text: "Page 1" };
-  if (type === "add-image") return { ...base, x: 180, y: 310, width: 320, height: 180, color: "#2563eb", text: "" };
-  if (type === "annotate") return { ...base, x: 138, y: 262, width: 360, height: 90, color: "#1d4ed8", opacity: 0.95, fontSize: 18, text: "Annotation note" };
-  return { ...base, x: 132, y: 244, width: 416, height: 72, color: "#0f172a", text: type === "add-text" ? "New text" : "Editable text area" };
+  if (type === "highlight") return { ...base, x: 118, y: vy(0.382), width: 440, height: 36, color: "#facc15", opacity: 0.55, text: "" };
+  if (type === "draw") return { ...base, x: 0, y: 0, width: 680, height: canvasH, color: "#2563eb", text: "[]" };
+  if (type === "crop") return { ...base, x: 56, y: 64, width: 568, height: Math.max(80, canvasH - 128), text: "" };
+  if (type === "redact") return { ...base, x: 156, y: vy(0.467), width: 360, height: 40, text: "" };
+  if (type === "watermark") return { ...base, x: 92, y: vy(0.456), width: 500, height: 90, rotation: -24, color: "#2563eb", opacity: 0.22, fontSize: 52, text: "CONFIDENTIAL" };
+  if (type === "page-numbers") return { ...base, x: 300, y: Math.max(0, canvasH - 54), width: 92, height: 34, color: "#ffffff", fontSize: 14, text: "Page 1" };
+  if (type === "add-image") return { ...base, x: 180, y: vy(0.344), width: 320, height: 180, color: "#2563eb", text: "" };
+  if (type === "annotate") return { ...base, x: 138, y: vy(0.291), width: 360, height: 90, color: "#1d4ed8", opacity: 0.95, fontSize: 18, text: "Annotation note" };
+  return { ...base, x: 132, y: vy(0.271), width: 416, height: 72, color: "#0f172a", text: type === "add-text" ? "New text" : "Editable text area" };
 }
 
 function editorLayerBackground(layer: EditorLayer) {
@@ -3303,9 +3350,9 @@ function renderEditorLayerContent(layer: EditorLayer, activeTool: EditorToolKey,
   if (layer.type === "draw") {
     const paths = parseDrawPaths(layer.text);
     return (
-      <svg className="h-full w-full" viewBox="0 0 680 900" fill="none" preserveAspectRatio="none">
+      <svg className="h-full w-full" viewBox={`0 0 ${layer.width || 680} ${layer.height || 900}`} fill="none" preserveAspectRatio="none">
         {paths.map((points, index) => (
-          <polyline key={index} points={points.map(point => `${point.x},${point.y}`).join(" ")} stroke={layer.color || "#2563eb"} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <polyline key={index} points={points.map(point => `${point.x},${point.y}`).join(" ")} stroke={layer.color || "#2563eb"} strokeWidth={layer.brushSize ?? 5} strokeOpacity={layer.opacity ?? 1} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         ))}
       </svg>
     );
@@ -3419,7 +3466,10 @@ function fitEditorImageToPage(naturalWidth: number, naturalHeight: number) {
 function EditorCanvasV2({
   item,
   activeTool,
+  drawMode = "brush",
   zoom,
+  canvasHeight,
+  onMeasurePage,
   pageIndex,
   layers,
   selectedLayerId,
@@ -3435,7 +3485,10 @@ function EditorCanvasV2({
 }: {
   item?: PreviewItem;
   activeTool: EditorToolKey;
+  drawMode?: "brush" | "eraser";
   zoom: number;
+  canvasHeight: number;
+  onMeasurePage: (height: number) => void;
   pageIndex: number;
   layers: EditorLayer[];
   selectedLayerId: string | null;
@@ -3449,11 +3502,33 @@ function EditorCanvasV2({
   onTextFocus: () => void;
   onTextBlur: () => void;
 }) {
-  const scale = zoom / 100;
+  // Page is laid out exactly like the conversion preview: container width is
+  // driven by zoom, the <img> keeps its natural aspect ratio. The overlay lives
+  // in a 680-wide logical space scaled to that display width.
+  const displayWidth = editorDisplayWidth(zoom);
+  const coordScale = displayWidth / 680;
   const pageLayers = layers.filter(layer => layer.pageIndex === pageIndex && !(layer.type === "crop" && layer.applied && layer.id !== selectedLayerId));
   const pageRef = useRef<HTMLDivElement | null>(null);
   const drawSnapshotRef = useRef<string | null>(null);
   const drawingPathsRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
+
+  // Measure the rendered page image's true aspect ratio (from the shared
+  // PreviewSurface <img>) so the overlay logical height and the backend export
+  // canvas height match the original PDF exactly.
+  useEffect(() => {
+    const img = pageRef.current?.querySelector("img");
+    if (!img) return;
+    const measure = () => {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      const measured = clamp(Math.round((680 * img.naturalHeight) / img.naturalWidth), 200, 1400);
+      onMeasurePage(measured);
+    };
+    if (img.complete) measure();
+    else {
+      img.addEventListener("load", measure, { once: true });
+      return () => img.removeEventListener("load", measure);
+    }
+  }, [item?.thumbnail, onMeasurePage]);
 
   const activeDrawLayer = activeTool === "draw" ? pageLayers.find(layer => layer.type === "draw") : null;
   const getPagePoint = (event: React.PointerEvent | PointerEvent) => {
@@ -3461,12 +3536,58 @@ function EditorCanvasV2({
     if (!rect) return { x: 0, y: 0 };
     return {
       x: clamp(((event.clientX - rect.left) / rect.width) * 680, 0, 680),
-      y: clamp(((event.clientY - rect.top) / rect.height) * 900, 0, 900),
+      y: clamp(((event.clientY - rect.top) / rect.height) * canvasHeight, 0, canvasHeight),
     };
+  };
+
+  // Vector erase: drop any drawn point within the eraser radius and split the
+  // remaining points back into separate paths. Works in preview and export
+  // because it just rewrites the draw layer's path data.
+  const eraseAt = (point: { x: number; y: number }) => {
+    if (!activeDrawLayer) return;
+    const radius = (activeDrawLayer.brushSize ?? 5) + 8;
+    const paths = parseDrawPaths(activeDrawLayer.text);
+    const next: Array<Array<{ x: number; y: number }>> = [];
+    let changed = false;
+    for (const path of paths) {
+      let current: Array<{ x: number; y: number }> = [];
+      for (const p of path) {
+        if (Math.hypot(p.x - point.x, p.y - point.y) <= radius) {
+          changed = true;
+          if (current.length > 1) next.push(current);
+          current = [];
+        } else {
+          current.push(p);
+        }
+      }
+      if (current.length > 1) next.push(current);
+      else if (current.length === 1 && path.length === 1) next.push(current);
+    }
+    if (changed) onPatchLayer(activeDrawLayer.id, { text: JSON.stringify(next) }, false);
+  };
+
+  const beginErase = (event: React.PointerEvent) => {
+    if (!activeDrawLayer || activeTool !== "draw") return;
+    const target = event.target as HTMLElement;
+    if (target.closest("button")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSelectLayer(activeDrawLayer.id);
+    const snapshot = layers;
+    eraseAt(getPagePoint(event));
+    const onMove = (moveEvent: PointerEvent) => eraseAt(getPagePoint(moveEvent));
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      onCommitSnapshot(snapshot);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   };
 
   const beginDraw = (event: React.PointerEvent) => {
     if (!activeDrawLayer || activeTool !== "draw") return;
+    if (drawMode === "eraser") { beginErase(event); return; }
     const target = event.target as HTMLElement;
     if (target.closest("button") || target.dataset.editorContent === "true") return;
     event.preventDefault();
@@ -3506,20 +3627,23 @@ function EditorCanvasV2({
   };
 
   return (
-    <div className="mx-auto" style={{ width: 680 * scale, height: 900 * scale }}>
+    <div className="mx-auto" style={{ width: displayWidth }}>
       <div
         ref={pageRef}
-        className="relative h-[900px] w-[680px] origin-top-left overflow-hidden bg-white"
-        style={{ transform: `scale(${scale})`, boxShadow: "var(--dn-page-shadow)", outline: "1px solid var(--dn-border)", cursor: activeTool === "draw" ? "crosshair" : "default" }}
+        className="relative origin-top-left bg-white"
+        style={{ width: displayWidth, boxShadow: "var(--dn-page-shadow)", outline: "1px solid var(--dn-border)", cursor: activeTool === "draw" ? (drawMode === "eraser" ? "cell" : "crosshair") : "default" }}
         onPointerDown={event => {
           if (activeTool === "draw") beginDraw(event);
           else onSelectLayer(null);
         }}
       >
-        {item?.thumbnail ? (
-          <img src={item.thumbnail} alt={item.label} className="absolute inset-0 h-full w-full object-contain" />
+        {item ? (
+          // Reuse the EXACT conversion-preview renderer: PreviewSurface paints the
+          // page <img> at width:100% / height:auto (natural aspect, no object-fill,
+          // no transform scale), so the page is pixel-identical to the convert page.
+          <PreviewSurface item={item} />
         ) : (
-          <div className="absolute inset-0 bg-white px-14 py-12 text-center">
+          <div className="bg-white px-14 py-12 text-center" style={{ aspectRatio: "0.72" }}>
             <div className="mb-12 flex items-start justify-between">
               <h2 className="text-3xl font-bold text-slate-950"><span className="text-blue-600">DocNova</span> PDF</h2>
               <div className="h-16 w-16 bg-slate-900" />
@@ -3530,6 +3654,11 @@ function EditorCanvasV2({
           </div>
         )}
 
+        {/* Editing overlay — absolutely positioned ON TOP of the same page image,
+            in a 680xcanvasHeight logical space scaled to the displayed width so
+            every tool's coordinates track the PDF page at the current zoom. */}
+        <div className="absolute inset-0 overflow-hidden" style={{ pointerEvents: "none" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, width: 680, height: canvasHeight, transformOrigin: "top left", transform: `scale(${coordScale})`, pointerEvents: "none" }}>
         {pageLayers.map(layer => {
           const selected = layer.id === selectedLayerId;
           const layerStyle: React.CSSProperties = {
@@ -3543,6 +3672,7 @@ function EditorCanvasV2({
             background: editorLayerBackground(layer),
             color: layer.color,
             cursor: selected && (layer.type === "edit" || layer.type === "add-text") ? "text" : "move",
+            pointerEvents: "auto",
           };
           return (
             <div
@@ -3594,6 +3724,8 @@ function EditorCanvasV2({
             </div>
           );
         })}
+        </div>
+        </div>
       </div>
     </div>
   );
@@ -3605,7 +3737,10 @@ function EditorCanvas({ item, activeTool, zoom }: { item?: PreviewItem; activeTo
     <div className="mx-auto origin-top" style={{ width: 680 * scale, transform: "scale(" + scale + ")", transformOrigin: "top center" }}>
       <div className="relative min-h-[900px] w-[680px] overflow-hidden bg-white" style={{ boxShadow: "var(--dn-page-shadow)", outline: "1px solid var(--dn-border)" }}>
         {item?.thumbnail ? (
-          <img src={item.thumbnail} alt={item.label} className="absolute inset-0 h-full w-full object-contain" />
+          // object-fill (not contain): the page must occupy the FULL 680x900
+          // editor space because the backend maps that whole box onto the full
+          // PDF page. Letterboxing here would offset crop/redact/text placement.
+          <img src={item.thumbnail} alt={item.label} className="absolute inset-0 h-full w-full object-fill" />
         ) : (
           <div className="absolute inset-0 bg-white px-14 py-12 text-center">
             <div className="mb-12 flex items-start justify-between">
@@ -3713,21 +3848,58 @@ const FONT_LIST = [
 function EditorSettingsSections({
   activeTool,
   selectedLayer,
+  drawMode = "brush",
+  canvasHeight = 900,
+  onDrawModeChange,
   onPatchSelected,
   onDeleteSelected,
 }: {
   activeTool: EditorToolKey;
   selectedLayer?: EditorLayer | null;
+  drawMode?: "brush" | "eraser";
+  canvasHeight?: number;
+  onDrawModeChange?: (mode: "brush" | "eraser") => void;
   onPatchSelected?: (patch: Partial<EditorLayer>) => void;
   onDeleteSelected?: () => void;
 }) {
   const patch = (p: Partial<EditorLayer>) => onPatchSelected?.(p);
 
+  // Keep objects inside the page: X within [0, pageWidth - objectWidth] and
+  // Y within [0, pageHeight - objectHeight]. Page width is the normalized 680
+  // editor space; page height tracks the real aspect ratio (canvasHeight).
+  const PAGE_W = 680;
+  const clampX = (value: number) => clamp(value, 0, Math.max(0, PAGE_W - (selectedLayer?.width ?? 0)));
+  const clampY = (value: number) => clamp(value, 0, Math.max(0, canvasHeight - (selectedLayer?.height ?? 0)));
+
   /* ── Draw ── */
   if (activeTool === "draw") {
     return (
       <>
-        <EditorPanelSection title="Brush">
+        <EditorPanelSection title="Mode">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onDrawModeChange?.("brush")}
+              className="flex h-9 flex-1 items-center justify-center gap-2 rounded-md border text-sm font-semibold transition"
+              style={drawMode === "brush"
+                ? { background: "var(--dn-selected-bg)", borderColor: "var(--dn-selected-border)", color: "#3b82f6" }
+                : { background: "var(--dn-bg-subtle)", borderColor: "var(--dn-border)", color: "var(--dn-t2)" }}
+            >
+              <PenLine size={15} /> Brush
+            </button>
+            <button
+              type="button"
+              onClick={() => onDrawModeChange?.("eraser")}
+              className="flex h-9 flex-1 items-center justify-center gap-2 rounded-md border text-sm font-semibold transition"
+              style={drawMode === "eraser"
+                ? { background: "var(--dn-selected-bg)", borderColor: "var(--dn-selected-border)", color: "#3b82f6" }
+                : { background: "var(--dn-bg-subtle)", borderColor: "var(--dn-border)", color: "var(--dn-t2)" }}
+            >
+              <Eraser size={15} /> Eraser
+            </button>
+          </div>
+        </EditorPanelSection>
+        <EditorPanelSection title={drawMode === "eraser" ? "Eraser" : "Brush"}>
           <EditorNumberField
             label="Brush size (px)"
             value={selectedLayer?.brushSize ?? 5}
@@ -3760,10 +3932,10 @@ function EditorSettingsSections({
       <>
         <EditorPanelSection title="Crop Area">
           <div className="grid grid-cols-2 gap-3">
-            <EditorNumberField label="X" value={selectedLayer?.x ?? 56} onChange={value => patch({ x: clamp(value, 0, 680) })} />
-            <EditorNumberField label="Y" value={selectedLayer?.y ?? 64} onChange={value => patch({ y: clamp(value, 0, 900) })} />
-            <EditorNumberField label="Width" value={selectedLayer?.width ?? 568} onChange={value => patch({ width: clamp(value, 44, 680) })} />
-            <EditorNumberField label="Height" value={selectedLayer?.height ?? 772} onChange={value => patch({ height: clamp(value, 44, 900) })} />
+            <EditorNumberField label="X" value={selectedLayer?.x ?? 56} onChange={value => patch({ x: clampX(value) })} />
+            <EditorNumberField label="Y" value={selectedLayer?.y ?? 64} onChange={value => patch({ y: clampY(value) })} />
+            <EditorNumberField label="Width" value={selectedLayer?.width ?? 568} onChange={value => patch({ width: clamp(value, 44, PAGE_W) })} />
+            <EditorNumberField label="Height" value={selectedLayer?.height ?? 772} onChange={value => patch({ height: clamp(value, 44, canvasHeight) })} />
           </div>
         </EditorPanelSection>
         {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
@@ -3827,8 +3999,8 @@ function EditorSettingsSections({
           <div className="grid grid-cols-2 gap-3">
             <EditorNumberField label="Opacity (%)" value={Math.round((selectedLayer?.opacity ?? 0.22) * 100)} onChange={value => patch({ opacity: clamp(value, 1, 100) / 100 })} />
             <EditorNumberField label="Rotate (°)" value={selectedLayer?.rotation ?? -24} onChange={value => patch({ rotation: value })} />
-            <EditorNumberField label="X" value={selectedLayer?.x ?? 92} onChange={value => patch({ x: clamp(value, 0, 680) })} />
-            <EditorNumberField label="Y" value={selectedLayer?.y ?? 410} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+            <EditorNumberField label="X" value={selectedLayer?.x ?? 92} onChange={value => patch({ x: clampX(value) })} />
+            <EditorNumberField label="Y" value={selectedLayer?.y ?? 410} onChange={value => patch({ y: clampY(value) })} />
           </div>
         </EditorPanelSection>
         {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
@@ -3868,8 +4040,8 @@ function EditorSettingsSections({
         </EditorPanelSection>
         <EditorPanelSection title="Position">
           <div className="grid grid-cols-2 gap-3">
-            <EditorNumberField label="X" value={selectedLayer?.x ?? 300} onChange={value => patch({ x: clamp(value, 0, 680) })} />
-            <EditorNumberField label="Y" value={selectedLayer?.y ?? 846} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+            <EditorNumberField label="X" value={selectedLayer?.x ?? 300} onChange={value => patch({ x: clampX(value) })} />
+            <EditorNumberField label="Y" value={selectedLayer?.y ?? 846} onChange={value => patch({ y: clampY(value) })} />
           </div>
         </EditorPanelSection>
         {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
@@ -3912,8 +4084,8 @@ function EditorSettingsSections({
             <EditorNumberField label="Height" value={selectedLayer?.height ?? 180} onChange={value => patch({ height: Math.max(32, value) })} />
             <EditorNumberField label="Opacity (%)" value={Math.round((selectedLayer?.opacity ?? 1) * 100)} onChange={value => patch({ opacity: clamp(value, 5, 100) / 100 })} />
             <EditorNumberField label="Rotate (°)" value={selectedLayer?.rotation ?? 0} onChange={value => patch({ rotation: value })} />
-            <EditorNumberField label="X" value={selectedLayer?.x ?? 180} onChange={value => patch({ x: clamp(value, 0, 680) })} />
-            <EditorNumberField label="Y" value={selectedLayer?.y ?? 310} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+            <EditorNumberField label="X" value={selectedLayer?.x ?? 180} onChange={value => patch({ x: clampX(value) })} />
+            <EditorNumberField label="Y" value={selectedLayer?.y ?? 310} onChange={value => patch({ y: clampY(value) })} />
           </div>
         </EditorPanelSection>
         {selectedLayer && <EditorDeleteRow onDelete={onDeleteSelected} />}
@@ -4066,8 +4238,8 @@ function EditorSettingsSections({
 
       <EditorPanelSection title="Position">
         <div className="grid grid-cols-2 gap-3">
-          <EditorNumberField label="X" value={selectedLayer?.x ?? 0} onChange={value => patch({ x: clamp(value, 0, 680) })} />
-          <EditorNumberField label="Y" value={selectedLayer?.y ?? 0} onChange={value => patch({ y: clamp(value, 0, 900) })} />
+          <EditorNumberField label="X" value={selectedLayer?.x ?? 0} onChange={value => patch({ x: clampX(value) })} />
+          <EditorNumberField label="Y" value={selectedLayer?.y ?? 0} onChange={value => patch({ y: clampY(value) })} />
           <EditorNumberField label="Width" value={selectedLayer?.width ?? 416} onChange={value => patch({ width: Math.max(44, value) })} />
           <EditorNumberField label="Height" value={selectedLayer?.height ?? 72} onChange={value => patch({ height: Math.max(20, value) })} />
           <EditorNumberField label="Rotate (°)" value={selectedLayer?.rotation ?? 0} onChange={value => patch({ rotation: value })} />
@@ -4929,19 +5101,81 @@ function EmptyPanel({ text }: { text: string }) {
   return <div style={{ height: "100%", display: "grid", placeItems: "center", color: "var(--dn-t4)", textAlign: "center", padding: "1rem" }}>{text}</div>;
 }
 
-function WorkspaceBackButton({ onBack }: { onBack?: () => void }) {
-  if (!onBack) return null;
+// Standard header for ALL non-AI tool workspaces. Single row, flex
+// justify-between: back button → tool icon → tool name + count, with the file
+// name (text only) and size beneath on the left; status badge + any action
+// buttons pushed to the far right. Exactly one icon (the tool icon) — never a
+// file icon.
+//   ←  [Tool Icon] Tool Name | Count
+//      FileName.ext · File Size                            [Status Badge]
+function ToolWorkspaceHeader({
+  tool,
+  onBack,
+  countLabel,
+  fileName,
+  fileSize,
+  badge,
+  actions,
+  fullBleedDivider = false,
+  compactSpacing = false,
+}: {
+  tool: Tool;
+  onBack?: () => void;
+  countLabel: string;
+  fileName?: string;
+  fileSize?: number;
+  badge?: { text: string; color: string; bg: string; icon?: React.ReactNode };
+  actions?: React.ReactNode;
+  fullBleedDivider?: boolean;
+  compactSpacing?: boolean;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onBack}
-      title="Back to upload"
-      aria-label="Back to upload"
-      className="flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-sm font-semibold transition-colors"
-      style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)", color: "var(--dn-t2)" }}
+    <div
+      className={`flex shrink-0 items-center justify-between gap-4 border-b ${compactSpacing ? "mb-0 pb-2" : "mb-4 pb-3"} ${fullBleedDivider ? "-mx-6 px-6" : ""}`}
+      style={{ borderColor: "var(--dn-border)" }}
     >
-      <ArrowLeft size={16} /> Back
-    </button>
+      {/* Left: back arrow (icon-only, same size as the tool icon) → tool icon → tool name/count + file name/size */}
+      <div className="flex min-w-0 items-center gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            title="Back to upload"
+            aria-label="Back to upload"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-colors hover:border-blue-500"
+            style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)", color: "var(--dn-t2)" }}
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white" style={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}>
+          <tool.icon size={20} color="#fff" />
+        </div>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex min-w-0 items-baseline gap-3">
+            <h1 className="truncate text-xl font-bold" style={{ color: "var(--dn-t1)" }}>{tool.label}</h1>
+            <span className="shrink-0 text-sm font-semibold text-blue-500">{countLabel}</span>
+          </div>
+          {fileName && (
+            <p className="truncate text-sm" style={{ color: "var(--dn-t3)" }}>
+              <span className="font-semibold" style={{ color: "var(--dn-t2)" }}>{fileName}</span>
+              {fileSize != null && <> · {formatBytes(fileSize)}</>}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Right: status badge + existing action buttons, pushed far right */}
+      <div className="flex shrink-0 items-center gap-2">
+        {badge && (
+          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold" style={{ background: badge.bg, color: badge.color }}>
+            {badge.icon}
+            {badge.text}
+          </span>
+        )}
+        {actions}
+      </div>
+    </div>
   );
 }
 
@@ -5238,7 +5472,7 @@ async function processTool(
     case "add-watermark":
     case "add-page-numbers": {
       const editorLayers = parseEditorLayers(settings.editorLayers);
-      const blob = await pdfApi.applyEditorEdits(firstFile, editorLayers, tool.id);
+      const blob = await pdfApi.applyEditorEdits(firstFile, editorLayers, tool.id, 680, settings.editorCanvasHeight || 900);
       return makeSingleOutput(blob, `${stripExtension(firstFile.name)}-${tool.id}.pdf`, "pdf", [
         { label: "Previewed edit", value: settings.editTool || tool.label },
         { label: "Editor objects", value: String(editorLayers.length) },
