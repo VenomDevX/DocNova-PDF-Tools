@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@vercel/speed-insights": "^2.0.0",
     "docx-preview": "^0.3.7",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.487.0",
