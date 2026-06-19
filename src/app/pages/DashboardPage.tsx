@@ -5,7 +5,7 @@ import {
   Home, FileText, MessageSquare, Search, ClipboardList,
   BarChart3, Settings, Plus, Bell, HelpCircle, UserCircle,
   Upload, TrendingUp, Clock, MoreVertical, ChevronRight,
-  Eye, Download, Trash2, Bot, Sparkles, Target,
+  Eye, Download, Trash2, Bot, Sparkles, Target, Menu,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { icon: BarChart3, label: "Analytics", active: false },
 ];
 
-function Sidebar() {
+function Sidebar({ mobileOpen }: { mobileOpen: boolean }) {
   const [active, setActive] = useState("Home");
 
   return (
@@ -32,18 +32,18 @@ function Sidebar() {
         padding: "32px 0", zIndex: 50,
         fontFamily: "'Inter', sans-serif",
       }}
-      className="dash-sidebar"
+      className={`dash-sidebar${mobileOpen ? " dash-open" : ""}`}
     >
       {/* Logo */}
-      <div style={{ padding: "0 24px", marginBottom: 32, display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="dash-logo" style={{ padding: "0 24px", marginBottom: 32, display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{
-          width: 32, height: 32, borderRadius: 8,
+          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
           background: "#2563eb", display: "flex", alignItems: "center",
           justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 14,
         }}>
           D
         </div>
-        <div>
+        <div className="dash-label">
           <h1 style={{ fontWeight: 600, fontSize: 24, lineHeight: "32px", color: "#fff" }}>DocNova</h1>
           <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.05em", color: "rgba(93,98,116,0.7)" }}>
             Document Intelligence
@@ -52,7 +52,7 @@ function Sidebar() {
       </div>
 
       {/* New Document Button */}
-      <div style={{ padding: "0 24px", marginBottom: 16 }}>
+      <div className="dash-newdoc" style={{ padding: "0 24px", marginBottom: 16 }}>
         <motion.button
           whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(37,99,235,0.3)" }}
           whileTap={{ scale: 0.97 }}
@@ -64,7 +64,7 @@ function Sidebar() {
             transition: "background 0.2s",
           }}
         >
-          <Plus size={18} /> New Document
+          <Plus size={18} /> <span className="dash-label">New Document</span>
         </motion.button>
       </div>
 
@@ -92,7 +92,7 @@ function Sidebar() {
                 }}
               >
                 <item.icon size={20} style={{ flexShrink: 0 }} fill={isActive ? "currentColor" : "none"} />
-                {item.label}
+                <span className="dash-label">{item.label}</span>
               </button>
             </li>
           );
@@ -111,7 +111,7 @@ function Sidebar() {
             transition: "all 0.15s",
           }}
         >
-          <Settings size={20} /> Settings
+          <Settings size={20} /> <span className="dash-label">Settings</span>
         </button>
       </div>
     </nav>
@@ -119,7 +119,7 @@ function Sidebar() {
 }
 
 /* ─── Top App Bar ─────────────────────────────────────────── */
-function TopBar() {
+function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   return (
     <header
       style={{
@@ -128,12 +128,21 @@ function TopBar() {
         borderBottom: "1px solid var(--dn-border)",
         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "0 2.5rem", zIndex: 40,
+        padding: "0 1.25rem", gap: 12, zIndex: 40,
         fontFamily: "'Inter', sans-serif",
       }}
       className="dash-topbar"
     >
-      <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+      <button
+        type="button"
+        aria-label="Open menu"
+        onClick={onMenuClick}
+        className="dash-hamburger"
+        style={{ display: "none", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 8, border: "none", background: "transparent", color: "var(--dn-t2)", cursor: "pointer", flexShrink: 0 }}
+      >
+        <Menu size={22} />
+      </button>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", minWidth: 0 }}>
         <div style={{ position: "relative" as const, width: 256 }}>
           <Search size={18} style={{
             position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
@@ -483,24 +492,53 @@ function ConversationsList() {
 
 /* ─── Page ─────────────────────────────────────────────────── */
 export default function DashboardPage() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <div style={{
       fontFamily: "'Inter', sans-serif", background: "var(--dn-bg)",
       minHeight: "100vh", transition: "var(--dn-transition)",
     }}>
       <style>{`
-        .dash-sidebar { display: flex !important; }
+        /* Desktop (>=1025px): full sidebar */
+        .dash-sidebar { display: flex !important; transition: transform 0.25s ease; }
         .dash-topbar { left: 240px !important; }
         .dash-main { margin-left: 240px; }
+        .dash-hamburger { display: none; }
+        .dash-backdrop { display: none; }
+
+        /* Tablet (769-1024px): icon-only strip */
+        @media (max-width: 1024px) and (min-width: 769px) {
+          .dash-sidebar { width: 72px !important; align-items: center; }
+          .dash-sidebar .dash-label { display: none !important; }
+          .dash-sidebar .dash-logo { padding: 0 !important; justify-content: center; }
+          .dash-sidebar .dash-newdoc { padding: 0 12px !important; }
+          .dash-topbar { left: 72px !important; }
+          .dash-main { margin-left: 72px !important; }
+        }
+
+        /* Mobile (<=768px): off-canvas drawer toggled by hamburger */
         @media (max-width: 768px) {
-          .dash-sidebar { display: none !important; }
+          .dash-sidebar { transform: translateX(-100%); }
+          .dash-sidebar.dash-open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.5); }
           .dash-topbar { left: 0 !important; }
-          .dash-main { margin-left: 0; }
+          .dash-main { margin-left: 0 !important; }
+          .dash-hamburger { display: flex !important; }
+          .dash-backdrop { display: block; }
         }
       `}</style>
 
-      <Sidebar />
-      <TopBar />
+      {/* Drawer backdrop (mobile only) */}
+      {mobileOpen && (
+        <div
+          className="dash-backdrop"
+          onClick={() => setMobileOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 49 }}
+        />
+      )}
+
+      <Sidebar mobileOpen={mobileOpen} />
+      <TopBar onMenuClick={() => setMobileOpen(true)} />
 
       {/* Main Content */}
       <main

@@ -1512,7 +1512,7 @@ function SecurePdfWorkspace({
 
             {/* Floating zoom controls */}
             <div
-              className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap"
+              className="absolute bottom-6 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-2 overflow-x-auto whitespace-nowrap"
               style={{ background: "transparent", boxShadow: "none" }}
             >
               <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => setZoom(prev => Math.max(50, prev - 10))} />
@@ -2061,7 +2061,7 @@ function OcrWorkspace({
 
             {/* Floating zoom controls */}
             <div
-              className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap"
+              className="absolute bottom-6 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-2 overflow-x-auto whitespace-nowrap"
               style={{ background: "transparent", boxShadow: "none" }}
             >
               <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => setZoom(prev => Math.max(50, prev - 10))} />
@@ -2373,7 +2373,7 @@ function SingleFileConversionPreview({
             </div>
 
             <div
-              className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap bg-transparent"
+              className="absolute bottom-6 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-2 overflow-x-auto whitespace-nowrap bg-transparent"
               style={{ background: "transparent", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }}
             >
               <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => setZoom(prev => Math.max(50, prev - 10))} />
@@ -3119,7 +3119,7 @@ function PdfEditorPreviewWorkspace({
 
         {/* Center: canvas — transparent so ambient blobs show through */}
         <main className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-hidden" style={{ background: "var(--dn-preview-bg)" }}>
-          <div className="ped-tool-tab-bar pdf-editor-scroll absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-1.5 overflow-x-auto px-2 py-1.5">
+          <div className="ped-tool-tab-bar pdf-editor-scroll absolute left-1/2 top-3 z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-1.5 overflow-x-auto px-2 py-1.5">
             {editorToolTabs.map(tab => (
               <button
                 key={tab.id}
@@ -3160,7 +3160,7 @@ function PdfEditorPreviewWorkspace({
               Bottom-bar UI mirrors the convert tool pre-conversion page (glass buttons),
               buttons and behavior unchanged. */}
           <div
-            className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap"
+            className="absolute bottom-6 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-2 overflow-x-auto whitespace-nowrap"
             style={{ background: "transparent", boxShadow: "none" }}
           >
             <button type="button" aria-disabled={history.length === 0} onClick={undo} title="Undo (Ctrl+Z)" className="dn-glassmorphism-button flex h-10 items-center gap-2 whitespace-nowrap rounded-[4px] border px-3 text-sm font-bold transition-colors">
@@ -4785,7 +4785,7 @@ function OrganizeListPreview({
         </div>
 
         {activeItem && (
-          <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap" style={{ background: "transparent", boxShadow: "none" }}>
+          <div className="absolute bottom-6 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-nowrap items-center justify-center gap-2 overflow-x-auto whitespace-nowrap" style={{ background: "transparent", boxShadow: "none" }}>
             <ConversionToolButton label="Zoom out" icon={<ZoomOut size={16} />} compact onClick={() => onZoom(z => Math.max(50, z - 10))} />
             <button type="button" className="dn-glassmorphism-button h-10 min-w-[60px] whitespace-nowrap rounded-[4px] border px-4 text-sm font-extrabold transition-colors">{zoom}%</button>
             <ConversionToolButton label="Zoom in" icon={<ZoomIn size={16} />} compact onClick={() => onZoom(z => Math.min(180, z + 10))} />

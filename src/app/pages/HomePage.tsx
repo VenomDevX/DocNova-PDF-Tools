@@ -31,7 +31,7 @@ function AppMockup() {
     glow: "radial-gradient(circle at top right, rgba(59,130,246,0.18), transparent 55%)",
     windowBg: "rgba(8,15,35,0.75)",
     windowBorder: "rgba(255,255,255,0.08)",
-    windowShadow: "0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04)",
+    windowShadow: "0 10px 28px rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.03)",
     barBg: "rgba(10,15,35,0.9)",
     barBorder: "rgba(255,255,255,0.08)",
     title: "rgba(255,255,255,0.6)",
@@ -65,7 +65,7 @@ function AppMockup() {
     glow: "radial-gradient(circle at top right, rgba(59,130,246,0.16), transparent 55%)",
     windowBg: "rgba(255,255,255,0.88)",
     windowBorder: "rgba(15,23,42,0.08)",
-    windowShadow: "0 20px 60px rgba(37,99,235,0.14), 0 0 0 1px rgba(15,23,42,0.04)",
+    windowShadow: "0 10px 28px rgba(37,99,235,0.08), 0 0 0 1px rgba(15,23,42,0.03)",
     barBg: "rgba(255,255,255,0.92)",
     barBorder: "rgba(15,23,42,0.08)",
     title: "#475569",
@@ -256,7 +256,9 @@ function HeroSection() {
     <section style={{
       position: "relative",
       paddingTop: "0",
-      minHeight: "calc(100vh)",
+      // The home page is rendered at 90% zoom below. Compensate here so the
+      // next section's divider still begins after the visible viewport ends.
+      minHeight: "calc(100vh / 0.9)",
       display: "flex", alignItems: "center",
       overflow: "hidden",
       background: isDark ? "#0a0e1a" : "#f0f4ff",
@@ -303,8 +305,11 @@ function HeroSection() {
       <style>{`
         @keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(37,99,235,0.18)}50%{box-shadow:0 0 44px rgba(37,99,235,0.38)}}
         @keyframes heroShine{to{background-position:200% center}}
-        .hero-2col{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1280px;margin:0 auto;width:100%}
+        .hero-2col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4rem;align-items:center;max-width:1280px;margin:0 auto;width:100%}
         .hero-right{display:block}
+        @media(max-width:1024px){.hero-2col{grid-template-columns:1fr!important;gap:2.5rem}.hero-right{display:none!important}}
+        .hero-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+        @media(max-width:640px){.hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
         .hero-grad{
           background:linear-gradient(100deg,#1e3a8a 0%,#2563eb 25%,#60a5fa 50%,#2563eb 75%,#1e3a8a 100%);
           background-size:200% auto;
@@ -382,12 +387,12 @@ function HeroSection() {
 
       {/* Stats bar */}
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
-        className="dn-card"
-        style={{ position: "absolute", bottom: "2rem", left: "50%", transform: "translateX(-50%)", display: "flex", gap: 0, borderRadius: "6px", background: isDark ? "rgba(15,20,35,0.85)" : "var(--dn-bg-card)", border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid var(--dn-border2)", overflow: "hidden", boxShadow: "var(--dn-shadow)", whiteSpace: "nowrap", zIndex: 2, backdropFilter: isDark ? "blur(12px)" : "none" }}>
+        className="dn-card hero-stats"
+        style={{ position: "absolute", bottom: "2rem", left: "50%", transform: "translateX(-50%)", gap: 0, maxWidth: "calc(100% - 1.5rem)", borderRadius: "6px", background: isDark ? "rgba(15,20,35,0.85)" : "var(--dn-bg-card)", border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid var(--dn-border2)", overflow: "hidden", boxShadow: "var(--dn-shadow)", zIndex: 2, backdropFilter: isDark ? "blur(12px)" : "none" }}>
         {[{ val: `${toolsList.length}+`, label: "Tools" }, { val: "∞", label: "Files" }, { val: "$0", label: "Cost" }, { val: "1 hr", label: "Auto-delete" }].map((s, i) => (
-          <div key={s.val} style={{ padding: "0.875rem 1.5rem", textAlign: "center", borderRight: i < 3 ? `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "var(--dn-border)"}` : "none" }}>
-            <div style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.04em", background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.val}</div>
-            <div style={{ fontSize: "0.65rem", color: "var(--dn-t4)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: "0.1rem" }}>{s.label}</div>
+          <div key={s.val} style={{ padding: "0.8rem clamp(0.65rem, 2.4vw, 1.5rem)", textAlign: "center", borderRight: i < 3 ? `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "var(--dn-border)"}` : "none" }}>
+            <div style={{ fontSize: "clamp(1rem, 4vw, 1.25rem)", fontWeight: 700, letterSpacing: "-0.04em", background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.val}</div>
+            <div style={{ fontSize: "clamp(0.55rem, 2vw, 0.65rem)", color: "var(--dn-t4)", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: "0.1rem" }}>{s.label}</div>
           </div>
         ))}
       </motion.div>
@@ -750,7 +755,7 @@ function CTASection() {
 
 export default function HomePage() {
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: "var(--dn-bg)", transition: "var(--dn-transition)" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: "var(--dn-bg)", transition: "var(--dn-transition)", zoom: 0.9 }}>
       <HeroSection />
       <DocumentIntelligenceSection />
       <CategoriesSection />

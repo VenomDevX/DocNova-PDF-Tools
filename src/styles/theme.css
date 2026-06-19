@@ -283,6 +283,19 @@
   background: #2563eb; /* accent blue */
 }
 
+/* ── Global responsive safety ─────────────────────────────── */
+/* Prevent site-wide horizontal overflow. `clip` (not `hidden`) avoids
+   creating a scroll container, so sticky/fixed positioning keeps working. */
+html, body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+/* Media should never force a page wider than its container. */
+img, video, canvas {
+  max-width: 100%;
+}
+
 /* ── Hide native number-input spinners everywhere ── */
 input[type="number"] {
   appearance: textfield;
