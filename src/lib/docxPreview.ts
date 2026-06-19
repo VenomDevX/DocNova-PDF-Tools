@@ -36,16 +36,27 @@ export async function renderDocxToThumbnails(file: File): Promise<DocxRenderResu
   document.body.appendChild(host);
 
   try {
-    await renderAsync(arrayBuffer, host, undefined, {
-      className: "docnova-docx",
-      inWrapper: true,
-      ignoreWidth: false,
-      ignoreHeight: false,
-      breakPages: true,
-      renderHeaders: true,
-      renderFooters: true,
-      experimental: true,
-    });
+    try {
+      await renderAsync(arrayBuffer, host, undefined, {
+        className: "docnova-docx",
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        breakPages: true,
+        renderHeaders: true,
+        renderFooters: true,
+        experimental: true,
+      });
+    } catch (err) {
+      // docx-preview reads the .docx as a ZIP via JSZip; an invalid/renamed or
+      // corrupted file fails with "Can't find end of central directory...".
+      // Surface a clear, actionable message instead of the raw library error.
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/central directory|is this a zip file|corrupt/i.test(msg)) {
+        throw new Error("This file isn't a valid .docx document. It may be corrupted or saved in an older format — please re-save it as a .docx and try again.");
+      }
+      throw err;
+    }
 
     const pages = Array.from(host.querySelectorAll<HTMLElement>("section.docnova-docx"));
     const targets = pages.length ? pages : [host];

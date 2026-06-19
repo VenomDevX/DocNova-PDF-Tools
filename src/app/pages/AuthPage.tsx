@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Eye, EyeOff, ArrowLeft, CheckCircle2, Zap, Shield, FileOutput } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, CheckCircle2, Zap, Shield, FileOutput, Sun, Moon } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 export default function AuthPage() {
   const [tab, setTab] = useState<"signin" | "signup">("signin");
@@ -8,6 +9,7 @@ export default function AuthPage() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,8 +253,20 @@ export default function AuthPage() {
       </div>
 
       {/* RIGHT PANEL: Auth Form Side */}
-      <div className="w-full md:w-1/2 h-full flex flex-col items-center justify-center p-[24px] overflow-y-auto" style={{ background: "var(--dn-bg)" }}>
-        
+      <div className="relative w-full md:w-1/2 h-full flex flex-col items-center justify-center p-[24px] overflow-y-auto" style={{ background: "var(--dn-bg)" }}>
+
+        {/* Theme toggle */}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          className="absolute top-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-md border transition-colors"
+          style={{ background: "var(--dn-bg-card)", borderColor: "var(--dn-border)", color: "var(--dn-t2)" }}
+        >
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
         {/* Mobile Header */}
         <div className="md:hidden flex flex-col items-center mb-8">
           <div className="flex items-center gap-2 mb-2">

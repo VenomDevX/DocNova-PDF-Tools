@@ -40,7 +40,8 @@ CORS(app, resources={
     r"/api/*": {
         "origins": ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Retry-After"]
     },
     r"/health": {
         "origins": "*",
@@ -52,7 +53,8 @@ limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["60 per minute"],
-    storage_uri="memory://"
+    storage_uri="memory://",
+    headers_enabled=True,  # emit Retry-After + X-RateLimit-* headers on 429
 )
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -61,12 +63,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024  # 30MB max request (defense-in-depth above 25MB per-type cap)
 
 @app.after_request
 def add_security_headers(response):
     # Content-Security-Policy: restrict script and style sources
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self';"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
     # X-Frame-Options: DENY to prevent clickjacking
     response.headers['X-Frame-Options'] = 'DENY'
     # X-Content-Type-Options: nosniff
@@ -128,8 +130,19 @@ MIME_TYPE_MAP = {
 }
 
 def scan_for_malware(filepath):
-    # Mock malware scanner hook
+    """STUB ONLY — this is NOT real malware protection.
+
+    This always returns True (treats every file as clean). It exists purely as
+    a hook so calling code has a single place to plug in real scanning.
+
+    TODO: Integrate a real scanner (e.g. ClamAV via pyclamd / clamd, or an
+    external AV service) before relying on this in production.
+    """
     return True
+
+
+# Startup warning: make it loud that malware scanning is not actually active.
+print("[SECURITY WARNING] scan_for_malware() is a STUB and provides NO real malware protection. See TODO (ClamAV integration).")
 
 def allowed_file(file_obj, allowed_types):
     if not file_obj or not file_obj.filename:
@@ -1173,7 +1186,7 @@ def split_pdf():
 @app.route('/api/preview/pdf', methods=['POST'])
 @app.route('/api/convert/pdf-to-image', methods=['POST'])
 @app.route('/api/pdf-to-jpg', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("60 per minute")  # read-only preview/thumbnail rendering fires often; general-API tier
 def pdf_to_jpg():
     """Convert PDF pages to JPG images"""
     try:
@@ -1249,17 +1262,29 @@ def preview_document():
         file = request.files.get('file')
         if not file or not allowed_file(file, ALLOWED_DOCS):
             return jsonify({'error': 'Invalid document'}), 400
-        if not file.filename.lower().endswith('.docx'):
+
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'docx'
+        temp_path = save_uploaded_file(file, '.' + ext)
+        try:
+            # Preferred: render real document pages (layout, margins, tables,
+            # images, headers/footers, page breaks, fonts) via LibreOffice ->
+            # PDF -> per-page images, so the page count and pagination are exact.
+            rendered = office_to_pdf_thumbnails(temp_path, max_pages=60, label_prefix='Page')
+            if rendered:
+                return jsonify({'kind': 'document', 'total': len(rendered), 'items': rendered, 'metadata': {'name': file.filename}})
+
+            # Fallback: extract text (docx only) so we still show content when
+            # LibreOffice/PyMuPDF is unavailable, busy, or conversion fails.
+            if ext == 'docx':
+                items = document_preview_items(temp_path)
+                return jsonify({'kind': 'document', 'total': len(items), 'items': items, 'metadata': {'name': file.filename}})
+
             return jsonify({
                 'kind': 'document',
                 'total': 1,
-                'items': [{'label': 'Document preview', 'text': 'DOC preview requires LibreOffice. Processing will use a safe placeholder.'}],
+                'items': [{'label': 'Document preview', 'text': 'Full preview for this format needs LibreOffice on the server.'}],
                 'metadata': {'name': file.filename}
             })
-        temp_path = save_uploaded_file(file, '.docx')
-        try:
-            items = document_preview_items(temp_path)
-            return jsonify({'kind': 'document', 'total': len(items), 'items': items, 'metadata': {'name': file.filename}})
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -2226,11 +2251,10 @@ def ai_process():
         return jsonify({'error': 'API Quota reached for all available free models. Please try again after some time.'}), 429
 
     except Exception as e:
-        error_str = str(e)
         import traceback
         print('Gemini Unexpected error:', e)
         traceback.print_exc()
-        return jsonify({'error': f'Failed to process document: {error_str}'}), 500
+        return jsonify({'error': 'Failed to process document'}), 500
 
 @app.route('/api/ai/chat', methods=['POST'])
 @validate_request(AIChatSchema)

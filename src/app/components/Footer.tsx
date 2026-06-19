@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import { Github, Linkedin, Globe, Check, ArrowUp, Loader2 } from "lucide-react";
+
+const PORTFOLIO_URL = "https://venomparth.dev";
+const GITHUB_URL = "https://github.com/venom-parth";
+const LINKEDIN_URL = "https://www.linkedin.com/in/parth-sharma-b96661245/";
 
 /** Link to a feature that isn't built yet — clearly disabled, never a silent dead click. */
 function ComingSoonLink({ label }: { label: string }) {
@@ -8,11 +13,31 @@ function ComingSoonLink({ label }: { label: string }) {
       type="button"
       disabled
       title="Coming soon"
-      className="inline-flex items-center gap-1.5 bg-transparent border-none p-0 text-[14px] text-[var(--dn-footer-link)] opacity-60 cursor-not-allowed text-left"
+      className="dn-foot-link inline-flex items-center gap-1.5 bg-transparent border-none p-0 text-[14px] opacity-55 cursor-not-allowed text-left"
+      style={{ color: "rgba(255,255,255,0.75)" }}
     >
       {label}
-      <span className="rounded px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide" style={{ background: "var(--dn-footer-icon-bg)", color: "var(--dn-footer-text)" }}>Soon</span>
+      <span className="rounded px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide" style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>Soon</span>
     </button>
+  );
+}
+
+function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="col-span-1 flex flex-col gap-4">
+      <h3 className="text-[16px] font-semibold text-white">{title}</h3>
+      <ul className="flex flex-col gap-3">{children}</ul>
+    </div>
+  );
+}
+
+function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <Link to={to} className="dn-foot-link text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>
+        {children}
+      </Link>
+    </li>
   );
 }
 
@@ -20,55 +45,107 @@ export function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [emailError, setEmailError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubscribe = () => {
+    if (loading) return;
     const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
     if (!valid) {
       setEmailError(true);
       return;
     }
     setEmailError(false);
-    setSubscribed(true);
-    setEmail("");
+    setLoading(true);
+    // Simulate a request; swap for a real API call when the backend endpoint exists.
+    setTimeout(() => {
+      setLoading(false);
+      setSubscribed(true);
+      setEmail("");
+    }, 800);
   };
 
+  const trust = ["52+ Tools", "Secure Processing", "Auto File Deletion", "No Watermarks"];
+
   return (
-    <footer className="w-full border-t border-[var(--dn-footer-bd)] bg-[var(--dn-footer-bg)] text-[var(--dn-footer-link)] font-sans text-[14px] leading-[22px] mt-auto">
-      <div className="mx-auto max-w-[1280px] px-[40px] py-12 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-[24px]">
-        {/* Column 1: Brand & Tagline */}
-        <div className="col-span-1 lg:col-span-2 flex flex-col gap-4 pr-8">
+    <footer
+      className="w-full mt-auto font-sans"
+      style={{
+        background: "linear-gradient(180deg, #020817, #071129)",
+        borderTop: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
+      }}
+    >
+      <style>{`
+        .dn-foot-link { transition: color 0.2s ease, transform 0.2s ease; }
+        .dn-foot-link:hover:not(:disabled) { color: #3B82F6 !important; }
+        .dn-foot-social { transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+        .dn-foot-social:hover { color: #3B82F6; border-color: rgba(59,130,246,0.5); box-shadow: 0 0 18px rgba(59,130,246,0.35); transform: translateY(-2px); }
+        .dn-foot-subscribe { transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease; }
+        .dn-foot-subscribe:hover:not(:disabled) { background: #1d4ed8; box-shadow: 0 6px 18px rgba(37,99,235,0.4); }
+        .dn-foot-subscribe:active:not(:disabled) { transform: scale(0.98); }
+        .dn-foot-top { transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease; }
+        .dn-foot-top:hover { color: #3B82F6; border-color: rgba(59,130,246,0.5); }
+        .dn-foot-top:hover svg { transform: translateY(-3px); }
+        .dn-foot-top svg { transition: transform 0.2s ease; }
+      `}</style>
+
+      {/* Main grid */}
+      <div className="mx-auto max-w-[1280px] px-6 md:px-[40px] pt-[80px] pb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-y-12 gap-x-12">
+        {/* Branding + newsletter */}
+        <div className="lg:col-span-2 flex flex-col gap-5 items-center text-center md:items-start md:text-left">
           <Link to="/" className="group flex items-center gap-2">
-            <svg className="text-[var(--dn-nav-logo)] w-6 h-6 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-7 h-7 text-[#3B82F6] group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
               <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
             </svg>
-            <span className="text-[20px] font-bold tracking-tight text-[var(--dn-nav-logo)]">DocNova</span>
+            <span className="text-[22px] font-bold tracking-tight text-white">DocNova</span>
           </Link>
-          <p className="mt-2 max-w-sm text-[14px] text-[var(--dn-footer-link)]">
-            Empowering your workflow with advanced AI Document Intelligence. Convert, organize, and edit with unprecedented speed and accuracy.
+
+          <p className="max-w-sm text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.6)" }}>
+            Convert, edit, organize, OCR, secure, and manage documents with powerful AI and professional PDF tools.
           </p>
-          {/* Newsletter Signup */}
-          <div className="mt-6 flex w-full max-w-sm flex-col gap-2">
-            <label className="text-[12px] font-medium text-[var(--dn-footer-title)]" htmlFor="newsletter">
-              Subscribe to our newsletter
-            </label>
+
+          {/* Trust row */}
+          <div className="flex flex-wrap justify-center md:justify-start gap-2">
+            {trust.map((t) => (
+              <span
+                key={t}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)" }}
+              >
+                <Check size={12} className="text-[#22c55e]" /> {t}
+              </span>
+            ))}
+          </div>
+
+          {/* Newsletter */}
+          <div className="mt-3 w-full max-w-sm flex flex-col gap-2">
+            <label className="text-[13px] font-medium text-white" htmlFor="newsletter">Subscribe to our newsletter</label>
             {subscribed ? (
-              <div className="flex items-center gap-2 rounded px-3 py-2.5 text-[13px] font-medium" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", color: "#22c55e" }}>
-                ✓ Thanks for subscribing! We'll be in touch.
+              <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-medium" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", color: "#22c55e" }}>
+                <Check size={15} /> Thanks for subscribing! We'll be in touch.
               </div>
             ) : (
               <>
-                <div className="flex items-center overflow-hidden rounded bg-[var(--dn-bg-input)] backdrop-blur-md border transition-all focus-within:ring-1 focus-within:ring-[#2563eb] focus-within:shadow-[0_0_10px_rgba(37,99,235,0.2)]" style={{ borderColor: emailError ? "#ef4444" : "var(--dn-footer-bd)" }}>
+                <div
+                  className="flex items-center gap-2 rounded-xl p-1.5 transition-all focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.2)]"
+                  style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${emailError ? "#ef4444" : "rgba(255,255,255,0.08)"}` }}
+                >
                   <input
-                    className="w-full border-none bg-[var(--dn-bg-card)] px-3 py-2 text-[14px] text-[var(--dn-t1)] placeholder-[var(--dn-t4)] outline-none"
+                    className="w-full border-none bg-transparent px-3 py-1.5 text-[14px] text-white outline-none placeholder:text-[rgba(255,255,255,0.4)]"
                     id="newsletter"
-                    placeholder="Enter your email"
+                    placeholder="Enter your email address"
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(false); }}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSubscribe(); }}
                   />
-                  <button onClick={handleSubscribe} className="whitespace-nowrap bg-[#2563eb] px-4 py-2 text-[12px] font-medium text-[#eeefff] transition-colors hover:bg-[#0053db]">
-                    Subscribe
+                  <button
+                    onClick={handleSubscribe}
+                    disabled={loading}
+                    className="dn-foot-subscribe inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2 text-[13px] font-semibold text-white disabled:opacity-70 disabled:cursor-not-allowed"
+                    style={{ background: "#2563eb" }}
+                  >
+                    {loading ? <><Loader2 size={14} className="animate-spin" /> Subscribing</> : "Subscribe"}
                   </button>
                 </div>
                 {emailError && <span className="text-[11px]" style={{ color: "#ef4444" }}>Please enter a valid email address.</span>}
@@ -77,106 +154,81 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Column 2: Product */}
-        <div className="col-span-1 flex flex-col gap-3">
-          <h3 className="text-[15px] font-semibold text-[var(--dn-footer-title)]">Product</h3>
-          <ul className="flex flex-col gap-2.5">
-            <li>
-              <Link to="/ai-tools" className="flex items-center gap-2 text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">
-                AI Tools
-              </Link>
-            </li>
-            <li>
-              <Link to="/convert" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">
-                Convert
-              </Link>
-            </li>
-            <li>
-              <Link to="/organize" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">
-                Organize
-              </Link>
-            </li>
-            <li>
-              <Link to="/edit" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">
-                Edit
-              </Link>
-            </li>
-            <li>
-              <Link to="/ocr" className="flex items-center gap-2 text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">
-                OCR <span className="rounded bg-[#2563eb] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-widest text-[#eeefff]">New</span>
-              </Link>
-            </li>
-            <li>
-              <Link to="/secure" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">
-                Secure
-              </Link>
-            </li>
-          </ul>
-        </div>
+        {/* Product */}
+        <FooterColumn title="Product">
+          <FooterLink to="/ai-tools">AI Tools</FooterLink>
+          <FooterLink to="/convert">Convert</FooterLink>
+          <FooterLink to="/organize">Organize</FooterLink>
+          <FooterLink to="/edit">Edit</FooterLink>
+          <FooterLink to="/ocr">OCR</FooterLink>
+          <FooterLink to="/secure">Secure</FooterLink>
+        </FooterColumn>
 
-        {/* Column 3: Resources */}
-        <div className="col-span-1 flex flex-col gap-3">
-          <h3 className="text-[15px] font-semibold text-[var(--dn-footer-title)]">Resources</h3>
-          <ul className="flex flex-col gap-2.5">
-            <li><Link to="/pricing" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">Pricing</Link></li>
-            <li><ComingSoonLink label="API" /></li>
-            <li><Link to="/contact" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">Help Center</Link></li>
-            <li><ComingSoonLink label="Blog" /></li>
-          </ul>
-        </div>
+        {/* Resources */}
+        <FooterColumn title="Resources">
+          <FooterLink to="/pricing">Pricing</FooterLink>
+          <FooterLink to="/contact">Help Center</FooterLink>
+          <li><ComingSoonLink label="Blog" /></li>
+          <li><ComingSoonLink label="API" /></li>
+        </FooterColumn>
 
-        {/* Column 4: Company */}
-        <div className="col-span-1 flex flex-col gap-3">
-          <h3 className="text-[15px] font-semibold text-[var(--dn-footer-title)]">Company</h3>
-          <ul className="flex flex-col gap-2.5">
-            <li><Link to="/about" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">About</Link></li>
-            <li><ComingSoonLink label="Careers" /></li>
-            <li><Link to="/contact" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">Contact</Link></li>
-            <li><Link to="/privacy" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">Privacy Policy</Link></li>
-            <li><Link to="/terms" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">Terms of Service</Link></li>
-            <li><Link to="/privacy" className="text-[14px] text-[var(--dn-footer-link)] transition-colors duration-200 hover:text-[#2563eb]">Cookie Policy</Link></li>
-          </ul>
-        </div>
+        {/* Company */}
+        <FooterColumn title="Company">
+          <FooterLink to="/about">About</FooterLink>
+          <FooterLink to="/contact">Contact</FooterLink>
+          <FooterLink to="/privacy">Privacy Policy</FooterLink>
+          <FooterLink to="/terms">Terms of Service</FooterLink>
+          <FooterLink to="/privacy">Cookie Policy</FooterLink>
+        </FooterColumn>
+
+        {/* Developer */}
+        <FooterColumn title="Developer">
+          <li><a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="dn-foot-link text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>GitHub</a></li>
+          <li><a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="dn-foot-link text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>LinkedIn</a></li>
+          <li><a href={PORTFOLIO_URL} target="_blank" rel="noopener noreferrer" className="dn-foot-link text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>Portfolio</a></li>
+        </FooterColumn>
       </div>
 
-      {/* Bottom Bar */}
-      <div className="border-t border-[var(--dn-footer-bd)]" style={{ background: "var(--dn-footer-icon-bg)" }}>
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-[40px] py-4 md:flex-row">
-          {/* Copyright */}
-          <p className="text-[12px] font-medium text-[var(--dn-footer-link)]">
-            © {new Date().getFullYear()} Parth Sharma
-          </p>
-
-          {/* Social Icons */}
-          <div className="flex items-center gap-3">
-            <button type="button" disabled aria-label="Twitter (coming soon)" title="Coming soon" className="p-1.5 text-[var(--dn-footer-link)] opacity-50 cursor-not-allowed bg-transparent border-none">
-              <svg aria-hidden="true" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
-              </svg>
-            </button>
-            <a aria-label="GitHub" className="p-1.5 text-[var(--dn-footer-link)] transition-colors hover:text-[#2563eb] flex items-center gap-1.5" href="https://github.com/venom-parth" target="_blank" rel="noopener noreferrer">
-              <svg aria-hidden="true" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                <path clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fillRule="evenodd"></path>
-              </svg>
-              <span className="text-[12px] font-medium relative -top-[1px]">venom-parth</span>
-            </a>
-            <a aria-label="LinkedIn" className="p-1.5 text-[var(--dn-footer-link)] transition-colors hover:text-[#2563eb] flex items-center gap-1.5" href="https://www.linkedin.com/in/parth-sharma-b96661245/" target="_blank" rel="noopener noreferrer">
-              <svg aria-hidden="true" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                <path clipRule="evenodd" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" fillRule="evenodd"></path>
-              </svg>
-              <span className="text-[12px] font-medium relative -top-[1px]">Parth Sharma</span>
-            </a>
+      {/* Bottom bar */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="mx-auto flex max-w-[1280px] flex-col items-center gap-5 px-6 md:px-[40px] py-6 md:flex-row md:justify-between">
+          {/* Copyright + developer credit */}
+          <div className="flex flex-col items-center md:items-start gap-1 order-2 md:order-1">
+            <p className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
+              © {new Date().getFullYear()} DocNova. All rights reserved.
+            </p>
+            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>Built by Parth Sharma</p>
           </div>
 
-          {/* Back to Top */}
+          {/* Social links */}
+          <div className="flex items-center gap-3 order-1 md:order-2">
+            {[
+              { label: "GitHub", href: GITHUB_URL, Icon: Github },
+              { label: "LinkedIn", href: LINKEDIN_URL, Icon: Linkedin },
+              { label: "Portfolio", href: PORTFOLIO_URL, Icon: Globe },
+            ].map(({ label, href, Icon }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                title={label}
+                className="dn-foot-social flex h-9 w-9 items-center justify-center rounded-lg"
+                style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.03)" }}
+              >
+                <Icon size={16} />
+              </a>
+            ))}
+          </div>
+
+          {/* Back to top */}
           <button
-            className="group flex items-center gap-2 text-[12px] font-medium text-[var(--dn-footer-link)] transition-colors hover:text-[#2563eb]"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="dn-foot-top order-3 flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] font-medium"
+            style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.03)" }}
           >
-            Back to Top
-            <svg className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
+            Back to Top <ArrowUp size={14} />
           </button>
         </div>
       </div>
