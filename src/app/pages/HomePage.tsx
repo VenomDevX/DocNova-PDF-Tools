@@ -28,10 +28,10 @@ function AppMockup() {
 
   // Theme-aware tokens — dark keeps the premium glass; light is a clean variant.
   const c = isDark ? {
-    glow: "radial-gradient(circle at top right, rgba(59,130,246,0.18), transparent 55%)",
+    glow: "radial-gradient(circle at top right, rgba(59,130,246,0.045), transparent 55%)",
     windowBg: "rgba(8,15,35,0.75)",
     windowBorder: "rgba(255,255,255,0.08)",
-    windowShadow: "0 10px 28px rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.03)",
+    windowShadow: "0 4px 12px rgba(0,0,0,0.14), 0 0 0 1px rgba(255,255,255,0.025)",
     barBg: "rgba(10,15,35,0.9)",
     barBorder: "rgba(255,255,255,0.08)",
     title: "rgba(255,255,255,0.6)",
@@ -62,10 +62,10 @@ function AppMockup() {
     inputText: "#e2e8f0",
     iconColor: "rgba(255,255,255,0.5)",
   } : {
-    glow: "radial-gradient(circle at top right, rgba(59,130,246,0.16), transparent 55%)",
+    glow: "radial-gradient(circle at top right, rgba(59,130,246,0.04), transparent 55%)",
     windowBg: "rgba(255,255,255,0.88)",
     windowBorder: "rgba(15,23,42,0.08)",
-    windowShadow: "0 10px 28px rgba(37,99,235,0.08), 0 0 0 1px rgba(15,23,42,0.03)",
+    windowShadow: "0 4px 12px rgba(37,99,235,0.04), 0 0 0 1px rgba(15,23,42,0.025)",
     barBg: "rgba(255,255,255,0.92)",
     barBorder: "rgba(15,23,42,0.08)",
     title: "#475569",
@@ -120,7 +120,7 @@ function AppMockup() {
       `}</style>
 
       {/* Faint blue glow behind the window so it blends into the hero */}
-      <div aria-hidden="true" style={{ position: "absolute", inset: "-14% -10% -10% -10%", background: c.glow, filter: "blur(10px)", pointerEvents: "none", zIndex: 0 }} />
+      <div aria-hidden="true" style={{ position: "absolute", inset: "-5% -4% -4% -4%", background: c.glow, filter: "blur(4px)", pointerEvents: "none", zIndex: 0 }} />
 
       {/* Premium glass window */}
       <div
