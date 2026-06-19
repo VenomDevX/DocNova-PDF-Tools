@@ -26,6 +26,11 @@ export default defineConfig({
   ],
   server: {
     port: 5174,
+    watch: {
+      // The backend writes transient LibreOffice profile/temp files under
+      // backend/uploads; watching them crashes Vite with EBUSY on Windows.
+      ignored: ['**/backend/uploads/**'],
+    },
   },
   resolve: {
     alias: {

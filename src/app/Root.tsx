@@ -23,6 +23,11 @@ function Layout() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [location.pathname]);
 
+  // Workspace pages (tool + result) paint the premium gradient on the main
+  // wrapper itself — one continuous box that extends BEHIND the transparent
+  // navbar, so there is no black strip at the top.
+  const isWorkspacePage = location.pathname.startsWith("/tools/") || location.pathname.startsWith("/result/");
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -75,6 +80,7 @@ function Layout() {
         zIndex: 1,
         marginLeft: `${width}px`,
         paddingTop: (location.pathname === "/" || location.pathname.startsWith("/ai-tools")) ? "0" : "60px",
+        background: isWorkspacePage ? "var(--dn-workspace-bg)" : undefined,
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",

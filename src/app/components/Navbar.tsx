@@ -180,8 +180,11 @@ export function Navbar() {
 
   const isAIToolsPage = location.pathname.startsWith("/ai-tools");
 
-  /* On homepage at top: fully transparent. On AI tools: always transparent. Otherwise: normal. */
-  const heroTransparent = isAIToolsPage ? true : (isHomePage && !scrolled);
+  /* At the top of any page: fully transparent so the navbar blends with the
+     page background (no solid bar). On AI tools: always transparent. Once the
+     user scrolls, a subtle blurred/theme background kicks in for readability. */
+  void isHomePage;
+  const heroTransparent = isAIToolsPage ? true : !scrolled;
 
   return (
     <>

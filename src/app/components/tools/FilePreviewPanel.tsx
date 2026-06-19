@@ -51,6 +51,10 @@ interface FilePreviewPanelProps {
   outputFileName?: string;
   onOutputFileNameChange?: (value: string) => void;
   onBack?: () => void;
+  /** Tool identity for the header — renders the single tool icon (no file icon). */
+  title?: string;
+  icon?: React.ReactNode;
+  iconStyle?: React.CSSProperties;
 }
 
 
@@ -79,6 +83,9 @@ export function FilePreviewPanel({
   outputFileName = "docnova-merged-selected",
   onOutputFileNameChange,
   onBack,
+  title = "Merge Files",
+  icon,
+  iconStyle,
 }: FilePreviewPanelProps) {
   const [previewPage, setPreviewPage] = useState<PreviewPage | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -120,12 +127,12 @@ export function FilePreviewPanel({
               <ArrowLeft size={16} /> Back
             </button>
           )}
-          <div className="flex h-9 w-9 items-center justify-center rounded border shadow-sm" style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>
-            <FileText size={20} />
+          <div className="flex h-9 w-9 items-center justify-center rounded-md shadow-sm text-white" style={iconStyle ?? { background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>
+            {icon ?? <FileText size={20} />}
           </div>
           <div className="flex min-w-0 items-baseline gap-3">
-            <h1 className="truncate text-lg font-semibold" style={{ color: "var(--dn-t1)" }}>Merge Files</h1>
-            <span className="text-sm font-medium text-blue-500">{files.length} files selected</span>
+            <h1 className="truncate text-lg font-semibold" style={{ color: "var(--dn-t1)" }}>{title}</h1>
+            <span className="text-sm font-medium text-blue-500">{files.length} {files.length === 1 ? "file" : "files"} selected</span>
           </div>
         </div>
 
