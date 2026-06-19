@@ -1,6 +1,28 @@
 export type ErrorCategory = 'upload' | 'conversion' | 'download' | 'auth' | 'network' | 'server' | 'ai' | 'validation' | 'general';
 
 /**
+ * Parses an HTTP Retry-After value (delta-seconds or HTTP-date) into a
+ * positive number of seconds, or null if it can't be determined.
+ */
+const parseRetryAfter = (value: unknown): number | null => {
+  if (value == null) return null;
+  const raw = String(value).trim();
+  if (raw === '') return null;
+  // delta-seconds form, e.g. "59"
+  if (/^\d+$/.test(raw)) {
+    const secs = parseInt(raw, 10);
+    return secs > 0 ? secs : null;
+  }
+  // HTTP-date form, e.g. "Wed, 21 Oct 2025 07:28:00 GMT"
+  const when = Date.parse(raw);
+  if (!Number.isNaN(when)) {
+    const secs = Math.ceil((when - Date.now()) / 1000);
+    return secs > 0 ? secs : null;
+  }
+  return null;
+};
+
+/**
  * Extracts a user-friendly error message from an unknown error object.
  * Logs the actual technical error to the console for developers.
  */
@@ -11,12 +33,14 @@ export const getFriendlyErrorMessage = (error: unknown, category: ErrorCategory 
   let errorMsg = '';
   let status = 0;
   let details = '';
+  let retryAfter: number | null = null;
 
   if (error instanceof Error) {
     errorMsg = error.message;
     const errObj = error as any;
     status = errObj.status || errObj.code || 0;
     details = errObj.details || '';
+    retryAfter = parseRetryAfter(errObj.retryAfter);
   } else if (typeof error === 'string') {
     errorMsg = error;
   } else if (error && typeof error === 'object') {
@@ -24,13 +48,17 @@ export const getFriendlyErrorMessage = (error: unknown, category: ErrorCategory 
     errorMsg = errObj.message || errObj.error || errObj.details || JSON.stringify(errObj);
     status = errObj.status || errObj.code || 0;
     details = errObj.details || '';
+    retryAfter = parseRetryAfter(errObj.retryAfter);
   }
 
   const combinedStr = `${errorMsg} ${details}`.toLowerCase();
 
   // 1. Rate Limits & Quotas (Check this first, since some 500 errors wrap 429 quota exceptions)
   if (status === 429 || combinedStr.includes('429') || combinedStr.includes('quota') || combinedStr.includes('resource_exhausted')) {
-    return 'API Quota reached. Please try again after some time.';
+    if (retryAfter && retryAfter > 0) {
+      return `Too many requests — please wait ${retryAfter}s and try again.`;
+    }
+    return 'Too many requests — please wait a moment and try again.';
   }
 
   // 2. Status Codes / HTTP Errors

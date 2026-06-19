@@ -121,10 +121,10 @@ export function FilePreviewPanel({
               onClick={onBack}
               title="Back to upload"
               aria-label="Back to upload"
-              className="flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-sm font-semibold transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-md border text-sm font-semibold transition-colors"
               style={{ borderColor: "var(--dn-border)", background: "var(--dn-bg-card)", color: "var(--dn-t2)" }}
             >
-              <ArrowLeft size={16} /> Back
+              <ArrowLeft size={16} />
             </button>
           )}
           <div className="flex h-9 w-9 items-center justify-center rounded-md shadow-sm text-white" style={iconStyle ?? { background: "var(--dn-bg-subtle)", color: "var(--dn-t2)" }}>

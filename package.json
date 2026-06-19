@@ -11,13 +11,11 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^2.8.0",
     "docx-preview": "^0.3.7",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.487.0",
     "motion": "12.23.24",
     "pdf-parse": "^2.4.5",
-    "puppeteer": "^25.1.0",
     "react-dropzone": "^15.0.0",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.4.1",
@@ -30,6 +28,7 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "6.0.2",
+    "puppeteer": "^25.1.0",
     "tailwindcss": "4.3.1",
     "typescript": "^6.0.3",
     "vite": "8.0.16"

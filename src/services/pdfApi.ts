@@ -533,6 +533,7 @@ class PDFApiService {
     const err = new Error(errorData.error || errorData.message || errorData.note || fallback) as any;
     err.status = response.status;
     err.details = errorData.details;
+    err.retryAfter = response.headers.get('Retry-After');
     throw err;
   }
 }
@@ -563,6 +564,7 @@ export const chatWithAI = async (messages: Array<{role: string, content: string}
     const err = new Error(data.error || 'Failed to communicate with AI') as any;
     err.status = response.status;
     err.details = data.details;
+    err.retryAfter = response.headers.get('Retry-After');
     throw err;
   }
   return data.result;

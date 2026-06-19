@@ -1,3 +1,4 @@
+import os
 import logging
 from functools import wraps
 from flask import request, jsonify
@@ -8,6 +9,9 @@ from typing import Optional, List, Dict, Any, Union
 # Set up logging for validation errors
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Only expose detailed validation errors in development; production stays generic.
+DEBUG = os.environ.get('FLASK_ENV') == 'development'
 
 # Reusable XSS Sanitizer Validator
 class SanitizedBaseModel(BaseModel):
@@ -91,11 +95,15 @@ def validate_request(schema: type[BaseModel]):
                 client_ip = request.remote_addr
                 logger.warning(f"Validation failed from {client_ip} on {request.path}: {e.errors()}")
                 
-                # Return a clear 400 Bad Request response
-                return jsonify({
-                    'error': 'Bad Request: Invalid input data',
-                    'details': e.errors()
-                }), 400
+                # Return a clear 400 Bad Request response. Detailed field-level
+                # errors are only exposed in development to avoid leaking schema
+                # internals to clients in production.
+                if DEBUG:
+                    return jsonify({
+                        'error': 'Bad Request: Invalid input data',
+                        'details': e.errors()
+                    }), 400
+                return jsonify({'error': 'Invalid request'}), 400
                 
             return f(*args, **kwargs)
         return decorated_function
