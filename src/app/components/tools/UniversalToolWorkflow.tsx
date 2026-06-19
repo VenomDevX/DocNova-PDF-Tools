@@ -66,7 +66,6 @@ import { categoryMeta, ocrLanguages, type Tool } from "../../data/tools";
 import { pdfApi } from "../../../services/pdfApi";
 import { ProcessingOverlay } from "./ProcessingOverlay";
 import { resetDocNovaState } from "../../../lib/resetDocNovaState";
-import { renderDocxToThumbnails } from "../../../lib/docxPreview";
 import { getFriendlyErrorMessage } from "../../../utils/errorHandler";
 import {
   CheckBox as OrganizeCheckBox,
@@ -961,6 +960,12 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
           [data-theme="light"] .dn-glassmorphism-button:hover {
             background: #ffffff !important;
           }
+          [data-theme="dark"] .dn-glassmorphism-button:hover {
+            /* Keep the whole button dark on hover (a lifted slate), not a washed-out
+               white from the translucent --dn-hover-bg overlay. */
+            background: rgba(38,50,74,0.92) !important;
+            color: var(--dn-t1) !important;
+          }
           .active-thumbnail {
               box-shadow: 0 0 0 2px var(--dn-selected-border) !important;
               border-color: var(--dn-selected-border) !important;
@@ -1123,7 +1128,7 @@ export function UniversalToolWorkflow({ tool }: { tool: Tool }) {
                   onConvert={handleProcess}
                   onBack={goBackToUpload}
                 />
-              ) : (
+              ) : (pdfEditorWorkspaceTools.has(tool.id) || singleFileConversionTools.has(tool.id)) ? null : (
                 <section style={{ ...panelStyle, borderRadius: "4px", padding: "1rem", display: "grid", gap: "1rem" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
                     <div>
@@ -2915,14 +2920,14 @@ function PdfEditorPreviewWorkspace({
           cursor: not-allowed;
         }
         .ped-floating-toolbar {
-          --ped-floating-bg: rgba(86, 96, 111, 0.58);
-          --ped-floating-hover-bg: rgba(47, 55, 70, 0.76);
-          --ped-floating-border: rgba(255, 255, 255, 0.28);
-          --ped-floating-text: rgba(255, 255, 255, 0.96);
-          --ped-floating-hover-text: rgba(255, 255, 255, 0.96);
-          --ped-floating-surface: linear-gradient(145deg, rgba(255,255,255,0.30), rgba(255,255,255,0.10) 44%, rgba(255,255,255,0.16)), var(--ped-floating-bg);
-          --ped-floating-hover-surface: linear-gradient(145deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08) 44%, rgba(255,255,255,0.12)), var(--ped-floating-hover-bg);
-          --ped-floating-shadow: 0 16px 34px rgba(15, 23, 42, 0.34), inset 0 1px 0 rgba(255,255,255,0.38), inset 0 -10px 18px rgba(255,255,255,0.08);
+          --ped-floating-bg: rgba(23, 31, 48, 0.42);
+          --ped-floating-hover-bg: rgba(38, 50, 74, 0.58);
+          --ped-floating-border: rgba(255, 255, 255, 0.16);
+          --ped-floating-text: rgba(241, 245, 249, 0.92);
+          --ped-floating-hover-text: rgba(255, 255, 255, 0.98);
+          --ped-floating-surface: linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04) 44%, rgba(255,255,255,0.08)), var(--ped-floating-bg);
+          --ped-floating-hover-surface: linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06) 44%, rgba(255,255,255,0.10)), var(--ped-floating-hover-bg);
+          --ped-floating-shadow: 0 16px 34px rgba(8, 12, 24, 0.46), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -10px 18px rgba(0,0,0,0.18);
           pointer-events: none;
         }
         [data-theme="light"] .ped-floating-toolbar {
@@ -3151,33 +3156,26 @@ function PdfEditorPreviewWorkspace({
             />
           </div>
 
-          {/* Floating controls — undo/redo + zoom + page counter, over the pages */}
-          <div className="ped-floating-toolbar absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
-            <button type="button" aria-disabled={history.length === 0} onClick={undo} className="ped-floating-btn ped-floating-history-btn" title="Undo (Ctrl+Z)">
+          {/* Floating controls — undo/redo + zoom + page counter, over the pages.
+              Bottom-bar UI mirrors the convert tool pre-conversion page (glass buttons),
+              buttons and behavior unchanged. */}
+          <div
+            className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-2 whitespace-nowrap"
+            style={{ background: "transparent", boxShadow: "none" }}
+          >
+            <button type="button" aria-disabled={history.length === 0} onClick={undo} title="Undo (Ctrl+Z)" className="dn-glassmorphism-button flex h-10 items-center gap-2 whitespace-nowrap rounded-[4px] border px-3 text-sm font-bold transition-colors">
               <Undo2 size={15} /> Undo
             </button>
-            <button type="button" aria-disabled={future.length === 0} onClick={redo} className="ped-floating-btn ped-floating-history-btn" title="Redo (Ctrl+Y)">
+            <button type="button" aria-disabled={future.length === 0} onClick={redo} title="Redo (Ctrl+Y)" className="dn-glassmorphism-button flex h-10 items-center gap-2 whitespace-nowrap rounded-[4px] border px-3 text-sm font-bold transition-colors">
               <Redo2 size={15} /> Redo
             </button>
-            <div className="ped-floating-divider shrink-0" />
-            <button type="button" onClick={() => setZoom(prev => Math.max(60, prev - 10))} className="ped-floating-btn ped-floating-icon" title="Zoom out">
-              <Minus size={15} />
-            </button>
-            <span
-              className="ped-floating-value shrink-0"
-            >
-              {zoom}%
-            </span>
-            <button type="button" onClick={() => setZoom(prev => Math.min(160, prev + 10))} className="ped-floating-btn ped-floating-icon" title="Zoom in">
-              <Plus size={15} />
-            </button>
-            <button type="button" onClick={() => setZoom(100)} className="ped-floating-btn ped-floating-icon" title="Pan / reset zoom">
-              <Hand size={15} />
-            </button>
-            <div className="ped-floating-divider shrink-0" />
-            <span
-              className="ped-floating-value ped-floating-page shrink-0"
-            >
+            <div className="mx-1 h-5 w-px shrink-0" style={{ background: "var(--dn-border)" }} />
+            <ConversionToolButton label="Zoom out" icon={<Minus size={15} />} compact onClick={() => setZoom(prev => Math.max(60, prev - 10))} />
+            <button type="button" className="dn-glassmorphism-button h-10 min-w-[60px] whitespace-nowrap rounded-[4px] border px-4 text-sm font-extrabold transition-colors">{zoom}%</button>
+            <ConversionToolButton label="Zoom in" icon={<Plus size={15} />} compact onClick={() => setZoom(prev => Math.min(160, prev + 10))} />
+            <ConversionToolButton label="Pan / reset zoom" icon={<Hand size={15} />} compact onClick={() => setZoom(100)} />
+            <div className="mx-1 h-5 w-px shrink-0" style={{ background: "var(--dn-border)" }} />
+            <span className="dn-glassmorphism-button inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-[4px] border px-4 text-xs font-semibold">
               {activeIndex + 1} / {Math.max(pageCount, 1)}
             </span>
           </div>
@@ -5244,25 +5242,10 @@ async function buildPreviewItems(source: WorkflowFile, tool: Tool): Promise<Prev
     }];
   }
 
-  if (source.kind === "document") {
-    // Render the real Word document to per-page images in the browser so the
-    // user sees actual content (not a placeholder). Failures (e.g. legacy .doc
-    // or corrupted files) propagate to the caller's error state.
-    const { thumbnails } = await renderDocxToThumbnails(source.file);
-    return thumbnails.map((thumbnail, index) => ({
-      id: `${source.id}-${index}`,
-      fileId: source.id,
-      fileName: source.name,
-      index,
-      label: `Page ${index + 1}`,
-      kind: "document" as PreviewKind,
-      thumbnail,
-      rotation: 0,
-    }));
-  }
-
   try {
-    const response = source.kind === "spreadsheet"
+    const response = source.kind === "document"
+        ? await pdfApi.previewDocument(source.file)
+        : source.kind === "spreadsheet"
         ? await pdfApi.previewSpreadsheet(source.file)
         : source.kind === "presentation"
           ? await pdfApi.previewPresentation(source.file)

@@ -6,6 +6,7 @@ import {
   Star, ChevronDown, FileStack, Upload, Settings, Download,
   ScanLine, Lock, FileOutput, PenLine,
   Users, Award, TrendingUp, Sparkles, FileText, Play, Send,
+  Paperclip, Mic, User,
 } from "lucide-react";
 import { toolsList } from "../data/tools";
 import { useTheme } from "../context/ThemeContext";
@@ -18,59 +19,206 @@ function AppMockup() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
+  const docs = [
+    { name: "Q3_Report.pdf", type: "PDF", color: "#F4503B", active: true },
+    { name: "Contract_24.docx", type: "DOCX", color: "#3B82F6", active: false },
+    { name: "Budget_2024.xlsx", type: "XLSX", color: "#22C55E", active: false },
+    { name: "Invoice_Oct.pdf", type: "PDF", color: "#F4503B", active: false },
+  ];
+
+  // Theme-aware tokens — dark keeps the premium glass; light is a clean variant.
+  const c = isDark ? {
+    glow: "radial-gradient(circle at top right, rgba(59,130,246,0.18), transparent 55%)",
+    windowBg: "rgba(8,15,35,0.75)",
+    windowBorder: "rgba(255,255,255,0.08)",
+    windowShadow: "0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04)",
+    barBg: "rgba(10,15,35,0.9)",
+    barBorder: "rgba(255,255,255,0.08)",
+    title: "rgba(255,255,255,0.6)",
+    sidebarBg: "rgba(255,255,255,0.02)",
+    sidebarBorder: "rgba(255,255,255,0.06)",
+    sectionLabel: "rgba(255,255,255,0.4)",
+    docActiveText: "#f8fafc",
+    docText: "rgba(255,255,255,0.62)",
+    separator: "rgba(255,255,255,0.05)",
+    chatBg: "linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.12))",
+    userBubbleBg: "linear-gradient(135deg, #0F172A, #16213E)",
+    userBubbleBorder: "rgba(255,255,255,0.08)",
+    userText: "#e2e8f0",
+    userAvatarBg: "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04))",
+    userAvatarBorder: "rgba(255,255,255,0.14)",
+    userIcon: "rgba(255,255,255,0.85)",
+    aiBubbleBg: "linear-gradient(135deg, #172554, #1E3A8A)",
+    aiBubbleBorder: "rgba(255,255,255,0.08)",
+    aiText: "#eaf1ff",
+    aiStrong: "#fff",
+    aiStrong2: "#7dd3fc",
+    sourceBg: "rgba(255,255,255,0.06)",
+    sourceBorder: "rgba(255,255,255,0.08)",
+    sourceText: "rgba(255,255,255,0.7)",
+    sourceIcon: "#7dd3fc",
+    inputBg: "rgba(255,255,255,0.04)",
+    inputBorder: "rgba(255,255,255,0.08)",
+    inputText: "#e2e8f0",
+    iconColor: "rgba(255,255,255,0.5)",
+  } : {
+    glow: "radial-gradient(circle at top right, rgba(59,130,246,0.16), transparent 55%)",
+    windowBg: "rgba(255,255,255,0.88)",
+    windowBorder: "rgba(15,23,42,0.08)",
+    windowShadow: "0 20px 60px rgba(37,99,235,0.14), 0 0 0 1px rgba(15,23,42,0.04)",
+    barBg: "rgba(255,255,255,0.92)",
+    barBorder: "rgba(15,23,42,0.08)",
+    title: "#475569",
+    sidebarBg: "rgba(15,23,42,0.02)",
+    sidebarBorder: "rgba(15,23,42,0.07)",
+    sectionLabel: "rgba(15,23,42,0.45)",
+    docActiveText: "#0f172a",
+    docText: "#475569",
+    separator: "rgba(15,23,42,0.07)",
+    chatBg: "linear-gradient(180deg, rgba(255,255,255,0.6), rgba(15,23,42,0.025))",
+    userBubbleBg: "linear-gradient(135deg, #ffffff, #eef2ff)",
+    userBubbleBorder: "rgba(15,23,42,0.1)",
+    userText: "#1e293b",
+    userAvatarBg: "linear-gradient(135deg, rgba(15,23,42,0.08), rgba(15,23,42,0.03))",
+    userAvatarBorder: "rgba(15,23,42,0.12)",
+    userIcon: "#475569",
+    aiBubbleBg: "linear-gradient(135deg, #dbe9ff, #eff4ff)",
+    aiBubbleBorder: "#b4c5ff",
+    aiText: "#1e3a8a",
+    aiStrong: "#1e3a8a",
+    aiStrong2: "#2563eb",
+    sourceBg: "rgba(37,99,235,0.06)",
+    sourceBorder: "rgba(37,99,235,0.18)",
+    sourceText: "#475569",
+    sourceIcon: "#2563eb",
+    inputBg: "#ffffff",
+    inputBorder: "rgba(15,23,42,0.12)",
+    inputText: "#1e293b",
+    iconColor: "#64748b",
+  };
+
+  const docHoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(15,23,42,0.04)";
+  const iconHoverColor = isDark ? "#93bbff" : "#2563eb";
+  const iconHoverBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(37,99,235,0.08)";
+
   return (
     <div style={{ position: "relative", width: "100%", maxWidth: "490px" }}>
-      <div style={{ borderRadius: "6px", background: "var(--dn-bg-card)", border: "1px solid var(--dn-border2)", boxShadow: "var(--dn-shadow)", overflow: "hidden" }}>
-        {/* Header bar */}
-        <div style={{ background: "var(--dn-bg-card)", borderBottom: "1px solid var(--dn-border2)", height: "40px", display: "flex", alignItems: "center", padding: "0 1rem", gap: "0.375rem" }}>
-          <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ffdad6" }} />
-          <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#dbe1ff" }} />
-          <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--dn-border2)" }} />
+      <style>{`
+        @keyframes dnDemoFloat { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+        @keyframes dnDemoPulse { 0%,100% { box-shadow: 0 0 22px rgba(59,130,246,0.45); } 50% { box-shadow: 0 0 38px rgba(59,130,246,0.85); } }
+        .dn-demo-window { animation: dnDemoFloat 8s ease-in-out infinite; }
+        .dn-demo-avatar { animation: dnDemoPulse 2.6s ease-in-out infinite; }
+        .dn-demo-doc { transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease; }
+        .dn-demo-doc:hover { background: ${docHoverBg}; transform: translateX(2px); }
+        .dn-demo-inputbar { transition: box-shadow 0.2s ease, border-color 0.2s ease; }
+        .dn-demo-inputbar:focus-within { box-shadow: 0 0 0 3px rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.55); }
+        .dn-demo-iconbtn { transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease; cursor: pointer; }
+        .dn-demo-iconbtn:hover { color: ${iconHoverColor}; background: ${iconHoverBg}; }
+        .dn-demo-send { transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease; cursor: pointer; }
+        .dn-demo-send:hover { transform: translateX(2px) scale(1.06); box-shadow: 0 8px 22px rgba(37,99,235,0.5); filter: brightness(1.08); }
+        @media (prefers-reduced-motion: reduce) { .dn-demo-window, .dn-demo-avatar { animation: none; } }
+      `}</style>
+
+      {/* Faint blue glow behind the window so it blends into the hero */}
+      <div aria-hidden="true" style={{ position: "absolute", inset: "-14% -10% -10% -10%", background: c.glow, filter: "blur(10px)", pointerEvents: "none", zIndex: 0 }} />
+
+      {/* Premium glass window */}
+      <div
+        className="dn-demo-window"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          borderRadius: "5px",
+          background: c.windowBg,
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: `1px solid ${c.windowBorder}`,
+          boxShadow: c.windowShadow,
+          overflow: "hidden",
+        }}
+      >
+        {/* Window title bar */}
+        <div style={{ height: "44px", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0 1rem", background: c.barBg, borderBottom: `1px solid ${c.barBorder}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
+          <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#FF5F57", boxShadow: "0 0 6px rgba(255,95,87,0.55)" }} />
+          <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#FEBC2E", boxShadow: "0 0 6px rgba(254,188,46,0.55)" }} />
+          <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#28C840", boxShadow: "0 0 6px rgba(40,200,64,0.55)" }} />
+          <span style={{ marginLeft: "0.65rem", color: c.title, fontSize: "0.92rem", fontWeight: 700, letterSpacing: "0.02em" }}>DocAI</span>
         </div>
+
         {/* Body */}
         <div style={{ display: "flex", height: "380px" }}>
-          {/* Sidebar */}
-          <div style={{ width: "180px", background: "var(--dn-bg-card)", borderRight: "1px solid var(--dn-border2)", padding: "1rem", flexShrink: 0 }}>
-            <div style={{ color: "var(--dn-t3)", fontSize: "0.68rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "0.625rem" }}>Documents</div>
-            {/* Active file */}
-            <div style={{ background: isDark ? "rgba(37,99,235,0.12)" : "rgba(37,99,235,0.06)", borderRadius: "6px", padding: "0.5rem 0.625rem", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem", borderLeft: "2px solid #2563eb" }}>
-              <FileText size={11} color={isDark ? "#60a5fa" : "#2563eb"} />
-              <span style={{ color: "var(--dn-t1)", fontSize: "0.75rem", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Q3_Report.pdf</span>
-            </div>
-            <div style={{ padding: "0.5rem 0.625rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <FileText size={11} color="var(--dn-t3)" />
-              <span style={{ color: "var(--dn-t3)", fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Contract_24.docx</span>
-            </div>
-            <div style={{ padding: "0.5rem 0.625rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <FileText size={11} color="var(--dn-t3)" />
-              <span style={{ color: "var(--dn-t3)", fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Invoice_Oct.pdf</span>
-            </div>
-          </div>
-          {/* Main chat panel */}
-          <div style={{ flex: 1, background: "var(--dn-bg-subtle)", display: "flex", flexDirection: "column" }}>
-            <div style={{ flex: 1, padding: "1rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-              {/* User message */}
-              <div style={{ background: "var(--dn-bg-card)", borderRadius: "6px", border: "1px solid var(--dn-border2)", padding: "0.875rem", fontSize: "0.8rem", color: "var(--dn-t1)", lineHeight: 1.5, boxShadow: "var(--dn-shadow)", marginLeft: "15%" }}>
-                Can you summarize the total revenue for Q3 based on this report?
-              </div>
-              {/* AI response */}
-              <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", marginRight: "5%" }}>
-                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Sparkles size={14} color="#fff" />
+          {/* Documents sidebar */}
+          <div style={{ width: "184px", flexShrink: 0, background: c.sidebarBg, borderRight: `1px solid ${c.sidebarBorder}`, padding: "0.9rem 0.6rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+            <div style={{ color: c.sectionLabel, fontSize: "0.64rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "0 0.4rem", marginBottom: "0.55rem" }}>Documents</div>
+            {docs.map((doc, i) => (
+              <div key={doc.name}>
+                <div
+                  className="dn-demo-doc"
+                  style={{
+                    borderRadius: "5px",
+                    padding: "0.5rem 0.55rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.55rem",
+                    background: doc.active ? "linear-gradient(90deg, rgba(37,99,235,0.25), rgba(37,99,235,0.08))" : "transparent",
+                    borderLeft: doc.active ? "3px solid #3B82F6" : "3px solid transparent",
+                  }}
+                >
+                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: doc.color + "22", border: `1px solid ${doc.color}40` }}>
+                    <FileText size={12} color={doc.color} />
+                  </div>
+                  <span style={{ color: doc.active ? c.docActiveText : c.docText, fontSize: "0.74rem", fontWeight: doc.active ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.name}</span>
                 </div>
-                <div style={{ background: isDark ? "rgba(37,99,235,0.15)" : "#dbe1ff", borderRadius: "6px", border: `1px solid ${isDark ? "rgba(59,130,246,0.3)" : "#b4c5ff"}`, padding: "0.875rem", fontSize: "0.78rem", color: isDark ? "#f8fafc" : "#1e3a8a", lineHeight: 1.55, boxShadow: "var(--dn-shadow)" }}>
-                  <div style={{ marginBottom: "0.5rem" }}>Based on the Q3_Report.pdf, the total consolidated revenue for Q3 2023 was <strong>$4.2 million</strong>, representing an 18% increase year-over-year.</div>
-                  <div style={{ background: "var(--dn-bg-card)", border: "1px solid var(--dn-border2)", borderRadius: "6px", padding: "0.35rem 0.6rem", fontSize: "0.7rem", color: "var(--dn-t3)", display: "inline-block" }}>
-                    Source: Page 4, Paragraph 2
+                {i === 0 && <div style={{ height: "1px", background: c.separator, margin: "0.4rem 0.3rem" }} />}
+              </div>
+            ))}
+          </div>
+
+          {/* Chat panel */}
+          <div style={{ flex: 1, minWidth: 0, background: c.chatBg, display: "flex", flexDirection: "column" }}>
+            <div style={{ flex: 1, padding: "1.1rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {/* User message */}
+              <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start", justifyContent: "flex-end", alignSelf: "flex-end", maxWidth: "92%" }}>
+                <div style={{ width: "fit-content", maxWidth: "100%", background: c.userBubbleBg, borderRadius: "5px", border: `1px solid ${c.userBubbleBorder}`, padding: "0.7rem 0.85rem", fontSize: "0.78rem", color: c.userText, lineHeight: 1.45 }}>
+                  Can you summarize the total revenue for Q3 based on this report?
+                </div>
+                <div style={{ width: "36px", height: "36px", flexShrink: 0, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: c.userAvatarBg, border: `1px solid ${c.userAvatarBorder}`, boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}>
+                  <User size={17} color={c.userIcon} />
+                </div>
+              </div>
+
+              {/* AI response */}
+              <div style={{ display: "flex", gap: "0.7rem", alignItems: "flex-start", maxWidth: "94%" }}>
+                <div className="dn-demo-avatar" style={{ width: "44px", height: "44px", flexShrink: 0, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #3B82F6, #1D4ED8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Sparkles size={18} color="#fff" />
+                </div>
+                <div style={{ background: c.aiBubbleBg, borderRadius: "5px", border: `1px solid ${c.aiBubbleBorder}`, padding: "0.9rem", fontSize: "0.79rem", color: c.aiText, lineHeight: 1.6, boxShadow: "0 10px 30px rgba(37,99,235,0.15)" }}>
+                  <div style={{ marginBottom: "0.7rem" }}>Based on the Q3_Report.pdf, the total consolidated revenue for Q3 2023 was <strong style={{ color: c.aiStrong, fontWeight: 700 }}>$4.2 million</strong>, representing an <strong style={{ color: c.aiStrong2, fontWeight: 700 }}>18% increase</strong> year-over-year.</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", background: c.sourceBg, border: `1px solid ${c.sourceBorder}`, borderRadius: "999px", padding: "6px 12px", fontSize: "0.7rem", color: c.sourceText }}>
+                    <FileText size={11} color={c.sourceIcon} /> Source: Page 4 • Paragraph 2
                   </div>
                 </div>
               </div>
             </div>
-            {/* Input */}
-            <div style={{ padding: "0.75rem", borderTop: "1px solid var(--dn-border2)" }}>
-              <div style={{ background: "var(--dn-bg-card)", border: "1px solid var(--dn-border2)", borderRadius: "6px", display: "flex", alignItems: "center", padding: "0.6rem 0.75rem", gap: "0.5rem" }}>
-                <span style={{ color: "var(--dn-t3)", fontSize: "0.78rem", flex: 1 }}>Ask a question about this document...</span>
-                <Send size={14} color="#2563eb" />
+
+            {/* Input area */}
+            <div style={{ padding: "0.85rem" }}>
+              <div className="dn-demo-inputbar" style={{ background: c.inputBg, border: `1px solid ${c.inputBorder}`, borderRadius: "5px", display: "flex", alignItems: "center", padding: "0.5rem 0.55rem 0.5rem 0.75rem", gap: "0.5rem" }}>
+                <span className="dn-demo-iconbtn" style={{ color: c.iconColor, display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "5px", flexShrink: 0 }}>
+                  <Paperclip size={15} />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Ask a question about this document..."
+                  readOnly
+                  style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: c.inputText, fontSize: "0.78rem", cursor: "text" }}
+                />
+                <span className="dn-demo-iconbtn" style={{ color: c.iconColor, display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "5px", flexShrink: 0 }}>
+                  <Mic size={15} />
+                </span>
+                <span className="dn-demo-send" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "32px", height: "32px", borderRadius: "5px", flexShrink: 0, background: "linear-gradient(135deg, #3B82F6, #1D4ED8)", boxShadow: "0 4px 14px rgba(37,99,235,0.4)" }}>
+                  <Send size={14} color="#fff" />
+                </span>
               </div>
             </div>
           </div>
@@ -154,8 +302,16 @@ function HeroSection() {
 
       <style>{`
         @keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(37,99,235,0.18)}50%{box-shadow:0 0 44px rgba(37,99,235,0.38)}}
+        @keyframes heroShine{to{background-position:200% center}}
         .hero-2col{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1280px;margin:0 auto;width:100%}
         .hero-right{display:block}
+        .hero-grad{
+          background:linear-gradient(100deg,#1e3a8a 0%,#2563eb 25%,#60a5fa 50%,#2563eb 75%,#1e3a8a 100%);
+          background-size:200% auto;
+          -webkit-background-clip:text;background-clip:text;
+          -webkit-text-fill-color:transparent;color:transparent;
+          animation:heroShine 5s linear infinite;
+        }
         @media(max-width:900px){.hero-2col{grid-template-columns:1fr!important;gap:3rem}.hero-right{display:none!important}}
       `}</style>
 
@@ -175,7 +331,16 @@ function HeroSection() {
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.08 }}
             style={{ fontSize: "clamp(2.6rem,5vw,3.75rem)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.12, marginBottom: "1.25rem", color: "var(--dn-t1)" }}>
-            Your Documents,<br />Finally Understood.
+            Your Documents,<br />
+            <motion.span
+              className="hero-grad"
+              initial={{ opacity: 0, y: 10, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.7, delay: 0.34, ease: "easeOut" }}
+              style={{ display: "inline-block" }}
+            >
+              Finally Understood.
+            </motion.span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.16 }}
             style={{ color: "var(--dn-t3)", fontSize: "1rem", lineHeight: 1.7, maxWidth: "460px", marginBottom: "2rem" }}>
