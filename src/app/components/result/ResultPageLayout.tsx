@@ -31,6 +31,8 @@ import {
 import { pdfApi, type ResultJobResponse, type ResultJobItem, type ResultPreviewResponse } from "../../../services/pdfApi";
 import { hardNavigate } from "../../../lib/navigateClean";
 import { resetDocNovaState } from "../../../lib/resetDocNovaState";
+import { toolsList } from "../../data/tools";
+import { ArrowLeft } from "lucide-react";
 
 interface ResultPageLayoutProps {
   job: ResultJobResponse;
@@ -76,8 +78,19 @@ export function ResultPageLayout({ job, preview, onDelete }: ResultPageLayoutPro
     });
   };
 
+  // Resolve the real tool (icon/gradient/label) so the result header matches the
+  // pre-conversion/editor header exactly — single tool icon, no generic file icon.
+  const toolMeta = useMemo(
+    () => toolsList.find(t => t.id === job.toolType) || toolsList.find(t => `/tools/${t.id}` === getToolPath(job.toolType)),
+    [job.toolType]
+  );
+  const ToolIcon = toolMeta?.icon ?? FileText;
+  const toolIconGrad = toolMeta?.iconGrad ?? "linear-gradient(135deg,#3b82f6,#2563eb)";
+  const toolColor = toolMeta?.color ?? "#2563eb";
+  const statusBadge = getResultStatusBadge(job);
+
   return (
-    <div className="dn-result-layout-root" style={{ height: "100vh", paddingTop: 60, boxSizing: "border-box", display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--dn-bg)", color: "var(--dn-t1)", fontFamily: "'Inter', sans-serif", position: "relative" }}>
+    <div className="dn-result-layout-root" style={{ height: "100vh", paddingTop: 60, boxSizing: "border-box", display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--dn-workspace-bg)", color: "var(--dn-t1)", fontFamily: "'Inter', sans-serif", position: "relative" }}>
       <style>{`
         /* ── Light mode (default) ────────────────────────────────── */
         .dn-result-layout-root {
@@ -145,12 +158,12 @@ export function ResultPageLayout({ job, preview, onDelete }: ResultPageLayoutPro
           min-height: 100vh !important;
           padding-top: 0 !important;
           overflow: visible !important;
-          background: var(--dn-bg) !important;
+          background: var(--dn-workspace-bg) !important;
         }
         .dn-nav-wrap {
-          background: var(--dn-bg-card) !important;
-          background-color: var(--dn-bg-card) !important;
-          border-bottom: 1px solid var(--dn-border2) !important;
+          background: transparent !important;
+          background-color: transparent !important;
+          border-bottom: none !important;
           box-shadow: none !important;
         }
         .dn-nav-wrap > nav {
@@ -259,25 +272,39 @@ export function ResultPageLayout({ job, preview, onDelete }: ResultPageLayoutPro
 
         <div className="dn-result-grid" style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 0, alignItems: "stretch", overflow: "hidden", minHeight: 0 }}>
           <div style={{ minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <div style={{ position: "relative", display: "flex", flexDirection: "column", justifyContent: "center", gap: "1rem", minHeight: 112, flexShrink: 0, padding: "0 26px", zIndex: 10, borderBottom: "1px solid var(--dn-border2)", background: "transparent" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "1rem", minWidth: 0 }}>
-                <h1 style={{ margin: 0, color: "var(--dn-t1)", fontSize: "1.55rem", fontWeight: 850, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-                  {job.toolLabel || job.toolType || "Processed File"}
-                </h1>
-                <span style={{ color: "#3b82f6", fontSize: "0.9rem", fontWeight: 750, whiteSpace: "nowrap" }}>{getResultHeaderMode(job)}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem", minWidth: 0 }}>
-                <div style={{ width: 48, height: 48, flexShrink: 0, borderRadius: 5, background: "linear-gradient(135deg,#3b82f6,#2563eb)", color: "#bfdbfe", display: "grid", placeItems: "center", boxShadow: "0 10px 26px rgba(37,99,235,0.22)" }}>
-                  <FileText size={22} strokeWidth={1.8} />
+            {/* Standard tool header — matches pre-conversion/editor pages:
+                ← [tool icon] Tool Name | count / filename · size ........ [status badge] */}
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", minHeight: 112, flexShrink: 0, padding: "0 26px", zIndex: 10, borderBottom: "1px solid var(--dn-border2)", background: "transparent" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => navigate(getToolPath(job.toolType))}
+                  title="Back"
+                  aria-label="Back"
+                  style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 6, border: "1px solid var(--dn-border)", background: "var(--dn-bg-card)", color: "var(--dn-t2)", display: "grid", placeItems: "center", cursor: "pointer" }}
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 6, background: toolIconGrad, color: "#fff", display: "grid", placeItems: "center", boxShadow: `0 4px 14px ${toolColor}40` }}>
+                  <ToolIcon size={20} color="#fff" />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <h2 style={{ margin: 0, color: "var(--dn-t1)", fontSize: "1.12rem", fontWeight: 800, maxWidth: "min(70vw, 820px)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {job.outputFileName}
-                  </h2>
-                  <p style={{ margin: "0.35rem 0 0", color: "var(--dn-t3)", fontSize: "0.9rem", fontWeight: 550 }}>
-                    {formatResultPages(job.pageCount)} - {formatBytes(job.outputFileSize)}
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem", minWidth: 0 }}>
+                    <h1 style={{ margin: 0, color: "var(--dn-t1)", fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.01em", lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {job.toolLabel || toolMeta?.label || job.toolType || "Processed File"}
+                    </h1>
+                    <span style={{ color: "#3b82f6", fontSize: "0.875rem", fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      {formatResultPages(job.pageCount)}
+                    </span>
+                  </div>
+                  <p style={{ margin: "0.15rem 0 0", color: "var(--dn-t3)", fontSize: "0.875rem", fontWeight: 550, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "min(60vw, 720px)" }}>
+                    <span style={{ color: "var(--dn-t2)", fontWeight: 700 }}>{job.outputFileName}</span> · {formatBytes(job.outputFileSize)}
                   </p>
                 </div>
+              </div>
+              <div style={{ display: "inline-flex", flexShrink: 0, alignItems: "center", gap: "0.4rem", borderRadius: 999, padding: "0.4rem 0.8rem", fontSize: "0.75rem", fontWeight: 700, background: statusBadge.bg, color: statusBadge.color }}>
+                <CheckCircle2 size={14} />
+                {statusBadge.text}
               </div>
             </div>
             <CleanPDFPreview key={job.jobId} job={job} preview={preview} />
@@ -928,12 +955,21 @@ function formatResultPages(pageCount: number) {
   return `${pageCount} ${pageCount === 1 ? "page" : "pages"}`;
 }
 
-function getResultHeaderMode(job: ResultJobResponse) {
-  if (job.toolType?.includes("-to-")) return "Convert single file";
-  if (["merge-pdf", "split-pdf", "rotate-pdf", "delete-pages", "reorder-pages", "extract-pages", "insert-pages", "resize-pdf", "compress-pdf"].includes(job.toolType)) return "Organize PDF";
-  if (job.toolType?.includes("ocr")) return "OCR result";
-  if (job.toolType?.includes("protect") || job.toolType?.includes("unlock") || job.toolType?.includes("password")) return "Secure PDF";
-  return "Processed result";
+// Far-right "processed" status badge, matching the pre-conversion "Ready to …"
+// badge style. Colour/text varies by tool category.
+function getResultStatusBadge(job: ResultJobResponse): { text: string; color: string; bg: string } {
+  const green = { color: "#22c55e", bg: "rgba(34,197,94,0.12)" };
+  const cyan = { color: "#22d3ee", bg: "rgba(6,182,212,0.12)" };
+  const violet = { color: "#a78bfa", bg: "rgba(167,139,250,0.12)" };
+  const t = job.toolType || "";
+  if (t.includes("-to-")) return { text: "Conversion complete", ...green };
+  if (t === "merge-pdf") return { text: "Merge complete", ...green };
+  if (t.includes("ocr")) return { text: "OCR complete", ...cyan };
+  if (t.includes("unlock") || t.includes("decrypt") || t.includes("remove-password")) return { text: "Unlocked successfully", ...violet };
+  if (t.includes("protect") || t.includes("lock") || t.includes("encrypt") || t.includes("password")) return { text: "Protected successfully", ...green };
+  if (["split-pdf", "rotate-pdf", "delete-pages", "reorder-pages", "extract-pages", "insert-pages", "resize-pdf", "compress-pdf"].includes(t)) return { text: "Processed result", ...green };
+  if (t === "edit-pdf" || t === "annotate-pdf" || t.includes("watermark") || t.includes("redact") || t.includes("crop") || t.includes("highlight") || t.includes("draw") || t.includes("add-text") || t.includes("add-image") || t.includes("page-number")) return { text: "Edit complete", ...green };
+  return { text: "Processed result", ...green };
 }
 
 type ContinueTool = { label: string; path: string; icon: React.ComponentType<{ size?: number; color?: string }> };

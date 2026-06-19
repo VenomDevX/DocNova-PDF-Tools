@@ -320,7 +320,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
   const reviewActive = files.length > 0 && !showUploadView;
 
   return (
-    <div style={{ color: "var(--dn-t1)", paddingTop: files.length > 0 ? "0" : "48px", minHeight: files.length > 0 ? "calc(100vh - 60px)" : "100vh", background: "var(--dn-bg)", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif", position: "relative" }}>
+    <div style={{ color: "var(--dn-t1)", paddingTop: files.length > 0 ? "0" : "8px", minHeight: files.length > 0 ? "calc(100vh - 60px)" : "100vh", background: "transparent", transition: "var(--dn-transition)", fontFamily: "'Inter', sans-serif", position: "relative" }}>
       {/* Background Blobs (Dark Mode Only) */}
       <div className="dn-dark-blobs fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#2563eb]/15 rounded-full blur-[100px] animate-[drift1_25s_ease-in-out_infinite]"></div>
@@ -347,7 +347,7 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
             100% { transform: translate(0, 0) scale(1); }
         }
       `}</style>
-      <div style={reviewActive ? { padding: "0", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", position: "relative", zIndex: 10 } : { maxWidth: "1440px", margin: "0 auto", padding: "2rem 1.5rem 6rem", position: "relative", zIndex: 10 }}>
+      <div style={reviewActive ? { padding: "0", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", position: "relative", zIndex: 10 } : { width: "100%", maxWidth: "none", margin: 0, padding: "2rem 1.5rem", position: "relative", zIndex: 10 }}>
         {!reviewActive && (
           <Link to={`/${tool.category}`} style={{ textDecoration: "none" }}>
             <motion.div whileHover={{ x: -3 }} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--dn-t3)", fontSize: "0.875rem", marginBottom: "2rem", cursor: "pointer" }}>
@@ -435,6 +435,9 @@ export function AdvancedMergePDFTool({ tool }: { tool: Tool }) {
         {reviewActive && (
           <FilePreviewPanel
             onBack={() => setShowUploadView(true)}
+            title={tool.label}
+            icon={<tool.icon size={18} color="#fff" />}
+            iconStyle={{ background: tool.iconGrad, boxShadow: `0 4px 14px ${tool.color}40` }}
             files={files}
             queue={queue}
             selectedPageIds={selectedPageIds}
