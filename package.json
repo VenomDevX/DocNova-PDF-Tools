@@ -11,8 +11,6 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "docx-preview": "^0.3.7",
-    "html2canvas": "^1.4.1",
     "lucide-react": "^0.487.0",
     "motion": "12.23.24",
     "pdf-parse": "^2.4.5",
