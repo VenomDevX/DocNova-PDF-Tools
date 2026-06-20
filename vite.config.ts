@@ -27,9 +27,11 @@ export default defineConfig({
   server: {
     port: 5174,
     watch: {
-      // The backend writes transient LibreOffice profile/temp files under
-      // backend/uploads; watching them crashes Vite with EBUSY on Windows.
-      ignored: ['**/backend/uploads/**'],
+      // Don't watch the Python backend at all — the frontend never imports it.
+      // Watching backend/venv (huge, and mutated during pip installs) or the
+      // transient backend/uploads LibreOffice temp files crashes Vite's FSWatcher
+      // on Windows (UNKNOWN scandir / EBUSY).
+      ignored: ['**/backend/**'],
     },
   },
   resolve: {
