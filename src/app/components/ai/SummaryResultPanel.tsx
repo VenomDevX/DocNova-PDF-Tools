@@ -101,7 +101,7 @@ function toCleanMarkdown(raw: string): string {
  * Shared markdown styling. Text colours use the app's CSS theme variables so the
  * result is readable in BOTH dark and light mode. Accent colours stay constant.
  */
-const markdownComponents = {
+export const markdownComponents = {
   h1: (props: any) => <h1 className="text-[24px] font-bold text-[var(--dn-t1)] mt-6 mb-3 first:mt-0" {...props} />,
   h2: (props: any) => <h2 className="text-[20px] font-bold text-[var(--dn-t1)] mt-6 mb-3 first:mt-0 flex items-center gap-2" {...props} />,
   h3: (props: any) => <h3 className="text-[17px] font-semibold text-[var(--dn-t2)] mt-5 mb-2" {...props} />,

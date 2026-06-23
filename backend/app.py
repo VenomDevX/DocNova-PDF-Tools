@@ -2110,18 +2110,85 @@ def ai_process():
         allowed_models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-flash-latest', 'gemini-flash-lite-latest']
         if model not in allowed_models:
             model = 'gemini-3.5-flash'
+            
+        print(f"DEBUG: tool_id is {tool_id!r}, type(tool_id) is {type(tool_id)}, file_base64 is bool {bool(file_base64)}")
         
-        if not file_base64:
+        if not file_base64 and tool_id != 'email-writer':
             return jsonify({'error': 'No file provided'}), 400
             
-        import base64
-        import fitz  # PyMuPDF
-        
-        pdf_bytes = base64.b64decode(file_base64)
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        # File type & size limits (validated server-side; never trust the client).
+        file_name = (data.get('fileName') or '').lower()
+        file_mime = (data.get('mimeType') or '').lower()
+        ext = file_name.rsplit('.', 1)[-1] if '.' in file_name else ''
+        MAX_IMAGE_BYTES = 5 * 1024 * 1024   # 5MB images
+        MAX_DOC_BYTES = 25 * 1024 * 1024    # 25MB documents
+        IMAGE_EXTS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'}
+
         document_text = ""
-        for page in doc:
-            document_text += page.get_text()
+        image_part = None  # set for image uploads → sent to Gemini as a multimodal part
+        if file_base64:
+            import base64
+            import io as _io
+
+            try:
+                file_bytes = base64.b64decode(file_base64)
+            except Exception:
+                return jsonify({'error': 'The uploaded file could not be read.'}), 400
+
+            is_image = file_mime.startswith('image/') or ext in IMAGE_EXTS
+            if is_image:
+                if len(file_bytes) > MAX_IMAGE_BYTES:
+                    return jsonify({'error': 'Image is too large. Please upload an image under 5MB.'}), 400
+                try:
+                    from PIL import Image
+                    from google.genai import types as _types
+                    # Validate the actual bytes are a real image and detect the true format.
+                    with Image.open(_io.BytesIO(file_bytes)) as im:
+                        fmt = (im.format or '').lower()
+                    if fmt not in ('jpeg', 'png', 'webp', 'gif', 'bmp'):
+                        return jsonify({'error': 'Unsupported image format. Use PNG, JPG, WEBP, GIF, or BMP.'}), 400
+                    image_part = _types.Part.from_bytes(data=file_bytes, mime_type=f'image/{fmt}')
+                except Exception:
+                    return jsonify({'error': 'The uploaded image is invalid or corrupted.'}), 400
+            else:
+                if len(file_bytes) > MAX_DOC_BYTES:
+                    return jsonify({'error': 'File is too large. Please upload a document under 25MB.'}), 400
+                try:
+                    if ext == 'pdf' or file_mime == 'application/pdf':
+                        import fitz  # PyMuPDF
+                        with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+                            for page in doc:
+                                document_text += page.get_text()
+                    elif ext == 'docx' or 'wordprocessingml' in file_mime:
+                        from docx import Document
+                        d = Document(_io.BytesIO(file_bytes))
+                        parts = [p.text for p in d.paragraphs if p.text.strip()]
+                        for table in d.tables:
+                            for row in table.rows:
+                                cells = [c.text.strip() for c in row.cells if c.text.strip()]
+                                if cells:
+                                    parts.append(" | ".join(cells))
+                        document_text = "\n".join(parts)
+                    elif ext == 'xlsx' or 'spreadsheetml' in file_mime:
+                        import openpyxl
+                        wb = openpyxl.load_workbook(_io.BytesIO(file_bytes), read_only=True, data_only=True)
+                        lines = []
+                        for ws in wb.worksheets:
+                            lines.append(f"## Sheet: {ws.title}")
+                            for row in ws.iter_rows(values_only=True):
+                                cells = [str(c) for c in row if c is not None]
+                                if cells:
+                                    lines.append(" | ".join(cells))
+                        wb.close()
+                        document_text = "\n".join(lines)
+                    else:
+                        return jsonify({'error': 'Unsupported file type. Upload a PDF, Word (.docx), Excel (.xlsx), or image.'}), 400
+                except Exception as ex:
+                    print('AI file extraction error:', ex)
+                    return jsonify({'error': 'Could not read the uploaded file. Please ensure it is a valid PDF, Word, Excel, or image.'}), 400
+
+            if image_part is None and not document_text.strip():
+                return jsonify({'error': 'No readable text was found in the document.'}), 400
             
         # extract settings
         required_sections = []
@@ -2155,13 +2222,14 @@ def ai_process():
             additional_prompt = "Please summarize the document briefly and suggest 3 questions the user could ask about it to start the chat."
         elif tool_id == 'email-writer':
             tone = data.get('tone', 'Professional')
+            custom_prompt = data.get('prompt', '')
             system_instruction = (
-                "You are DocNova AI, an expert email copywriter. Using ONLY the provided document as context, "
-                "draft a clear, well-structured email. Do not invent facts that are not supported by the document. "
+                "You are DocNova AI, an expert email copywriter. "
+                "Draft a clear, well-structured email based on the user's request. "
                 "Format the output in clean Markdown with a **Subject:** line first, then the email body with a greeting, "
                 "concise paragraphs, and a professional sign-off. Keep it natural and ready to send."
             )
-            additional_prompt = f"Write the email in a {tone} tone. If a recipient or purpose is implied by the document, address it directly."
+            additional_prompt = f"Write the email in a {tone} tone.\nUser Request:\n{custom_prompt}"
         elif tool_id == 'smart-rewriter':
             tone = data.get('tone', 'Professional')
             system_instruction = (
@@ -2179,11 +2247,15 @@ def ai_process():
         output_style_str = f"Output style: {data.get('outputStyle')}" if data.get('outputStyle') else ""
         
         format_instruction = "Generate the result according to these settings. Output MUST be valid JSON as per system instructions." if is_json_output else "Generate the result according to these settings. Use Markdown headers (##)."
-        
+
+        if image_part is not None:
+            doc_section = "The document is provided as an attached image. Read and analyze the content visible in the image directly."
+        else:
+            doc_section = f"Document text:\n        {document_text[:100000]}"
+
         user_prompt = f"""
-        Document text:
-        {document_text[:100000]}
-        
+        {doc_section}
+
         Settings:
         Tone: {data.get('tone', 'Professional')}
         Language: {data.get('language', 'English')}
@@ -2232,7 +2304,7 @@ def ai_process():
                 print(f"Trying model: {fallback_model}...")
                 response = client.models.generate_content(
                     model=fallback_model,
-                    contents=user_prompt,
+                    contents=([user_prompt, image_part] if image_part is not None else user_prompt),
                     config=types.GenerateContentConfig(**config_args)
                 )
                 

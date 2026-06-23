@@ -1,13 +1,39 @@
 import React, { useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, type Accept } from 'react-dropzone';
 import { FileText, ArrowUpToLine, X, RefreshCw } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+// AI tools accept documents (PDF / Word / Excel) and images. Kept in one place so
+// the dropzone and the file-preview/validation logic agree on what's allowed.
+export const AI_UPLOAD_ACCEPT: Accept = {
+  'application/pdf': ['.pdf'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+  'image/png': ['.png'],
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/webp': ['.webp'],
+  'image/gif': ['.gif'],
+  'image/bmp': ['.bmp'],
+};
+
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // matches the backend document cap
 
 interface UploadCardProps {
   file: File | null;
   onFileDrop: (file: File | null) => void;
+  /** Tool-specific heading shown in the empty dropzone. */
+  title?: string;
+  /** Tool-specific value-prop line under the heading. */
+  subtitle?: string;
+  /** Tool-specific hint (file types / limits). */
+  hint?: string;
+  /** Tool-specific icon for the dropzone. */
+  Icon?: LucideIcon;
+  /** Override the accepted file types (defaults to the shared AI set). */
+  accept?: Accept;
 }
 
-export function UploadCard({ file, onFileDrop }: UploadCardProps) {
+export function UploadCard({ file, onFileDrop, title, subtitle, hint, Icon = ArrowUpToLine, accept = AI_UPLOAD_ACCEPT }: UploadCardProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       onFileDrop(acceptedFiles[0]);
@@ -16,8 +42,9 @@ export function UploadCard({ file, onFileDrop }: UploadCardProps) {
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
-    accept: { 'application/pdf': ['.pdf'] },
+    accept,
     maxFiles: 1,
+    maxSize: MAX_UPLOAD_BYTES,
     noClick: false,
   });
 
@@ -81,13 +108,16 @@ export function UploadCard({ file, onFileDrop }: UploadCardProps) {
         className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-500 z-10"
         style={{ background: 'rgba(37,99,235,0.10)', border: '1px solid rgba(37,99,235,0.22)' }}
       >
-        <ArrowUpToLine size={34} className="text-[#2563eb]" />
+        <Icon size={34} className="text-[#2563eb]" />
       </div>
       <h3 className="text-2xl font-bold mb-2 z-10" style={{ color: 'var(--dn-t1)' }}>
-        {isDragActive ? 'Drop your document here' : 'Drag & Drop Document'}
+        {isDragActive ? 'Drop your file here' : (title ?? 'Drag & Drop Document')}
       </h3>
-      <p className="text-[15px] mb-7 z-10" style={{ color: 'var(--dn-t3)' }}>
-        or click to browse · Supports PDF (Max 50MB)
+      <p className="text-[15px] mb-1 z-10" style={{ color: 'var(--dn-t2)' }}>
+        {subtitle ?? 'Drag & drop, or click to browse'}
+      </p>
+      <p className="text-[13px] mb-7 z-10" style={{ color: 'var(--dn-t4)' }}>
+        Click to browse · {hint ?? 'PDF · up to 50MB'}
       </p>
       <button
         className="px-6 py-2.5 rounded-full font-semibold text-sm transition-all z-10 inline-flex items-center gap-2 text-white shadow-[0_6px_18px_rgba(37,99,235,0.3)] hover:scale-[1.03] active:scale-95"
