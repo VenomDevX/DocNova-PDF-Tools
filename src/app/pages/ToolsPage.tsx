@@ -15,6 +15,10 @@ export default function ToolsPage() {
     const matchesSearch = t.label.toLowerCase().includes(search.toLowerCase()) || t.desc.toLowerCase().includes(search.toLowerCase());
     const matchesCat = activeCategory === "all" || t.category === activeCategory;
     return matchesSearch && matchesCat;
+  }).sort((a, b) => {
+    if (a.category === "ai" && b.category !== "ai") return -1;
+    if (a.category !== "ai" && b.category === "ai") return 1;
+    return 0;
   });
 
   const catColors: Record<string, string> = {
