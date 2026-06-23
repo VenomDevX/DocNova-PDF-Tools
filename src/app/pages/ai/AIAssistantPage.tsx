@@ -24,7 +24,7 @@ export default function AIAssistantPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [model, setModel] = useState("gemini-3.5-flash");
+  const [model, setModel] = useState("gemini-2.5-flash");
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -483,7 +483,7 @@ void main() {
                       className="flex items-center gap-2 bg-transparent border border-transparent hover:border-[var(--dn-border2)] hover:bg-[var(--dn-bg-subtle)] focus:border-[var(--dn-border)] focus:bg-[var(--dn-bg-subtle)] text-[var(--dn-t2)] font-medium text-[12px] rounded-lg pl-3 pr-2 py-1.5 outline-none transition-all cursor-pointer"
                     >
                       <Sparkles size={14} className="text-blue-500" />
-                      <span>{models.find(m => m.id === model)?.name || "Gemini 3.5 Flash"}</span>
+                      <span>{models.find(m => m.id === model)?.name || "Gemini 2.5 Flash"}</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 text-[var(--dn-t3)] ${isModelDropdownOpen ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6" /></svg>
                     </button>
 
