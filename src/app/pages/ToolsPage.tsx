@@ -38,12 +38,12 @@ export default function ToolsPage() {
         <div style={{ maxWidth: "700px", margin: "0 auto" }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div style={{ display: "inline-block", padding: "0.3rem 0.85rem", borderRadius: "999px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", color: "#60a5fa", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "1.25rem" }}>
-              38 Tools Available
+              {toolsList.length} Tools Available
             </div>
             <h1 style={{ fontSize: "clamp(2.5rem,5vw,4rem)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: "1rem", background: "linear-gradient(180deg,var(--dn-t1) 0%,var(--dn-t2) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Your document toolkit
             </h1>
-            <p style={{ color: "var(--dn-t3)", fontSize: "1rem", lineHeight: 1.7 }}>38 powerful tools across 5 categories. No watermarks. No sign-up. Free forever.</p>
+            <p style={{ color: "var(--dn-t3)", fontSize: "1rem", lineHeight: 1.7 }}>{toolsList.length} powerful tools across {categories.length} categories. No watermarks. No sign-up. Free forever.</p>
           </motion.div>
 
           {/* Search */}

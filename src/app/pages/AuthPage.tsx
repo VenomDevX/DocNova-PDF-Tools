@@ -245,7 +245,7 @@ export default function AuthPage() {
               </div>
               <div>
                 <h4 style={{ fontSize: "14px", fontWeight: 600, color: "#e2e8f0", marginBottom: "2px" }}>Free tools, no watermarks</h4>
-                <p style={{ fontSize: "13px", color: "#94a3b8", lineHeight: 1.4 }}>Access 38+ essential PDF tools with zero watermarks or hidden limits.</p>
+                <p style={{ fontSize: "13px", color: "#94a3b8", lineHeight: 1.4 }}>Access 53+ essential PDF tools with zero watermarks or hidden limits.</p>
               </div>
             </div>
           </div>

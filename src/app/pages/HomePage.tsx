@@ -552,7 +552,7 @@ function HowItWorksSection() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const steps = [
     { num: "01", icon: Upload, title: "Upload your file", desc: "Drag & drop or click to select. Supports PDF, DOCX, XLSX, PPTX, JPG, PNG, WEBP and more.", color: "#3b82f6" },
-    { num: "02", icon: Settings, title: "Choose your tool", desc: "Select from 38 tools. Configure settings like page range, password, OCR language, or output format.", color: "#8b5cf6" },
+    { num: "02", icon: Settings, title: "Choose your tool", desc: "Select from 53 tools. Configure settings like page range, password, OCR language, or output format.", color: "#8b5cf6" },
     { num: "03", icon: Download, title: "Download instantly", desc: "Processing happens in seconds. Download your file immediately. Files are auto-deleted after 1 hour.", color: "#06b6d4" },
   ];
   return (
@@ -590,7 +590,7 @@ function WhySection() {
     { icon: Shield, title: "Privacy First", desc: "Files are processed in isolated environments and permanently deleted after 1 hour.", color: "#22c55e", bg: "#dcfce7" },
     { icon: Globe, title: "Works Everywhere", desc: "No installation. No plugins. Works on Mac, Windows, iOS, and Android browsers.", color: "#3b82f6", bg: "#dbeafe" },
     { icon: Award, title: "No Watermarks", desc: "All core tools are free with zero watermarks, no hidden fees, no registration walls.", color: "#8b5cf6", bg: "#ede9fe" },
-    { icon: TrendingUp, title: "38+ Tools", desc: "The most comprehensive PDF toolkit. Convert, organize, edit, secure, and OCR.", color: "#06b6d4", bg: "#cffafe" },
+    { icon: TrendingUp, title: "53+ Tools", desc: "The most comprehensive PDF toolkit. Convert, organize, edit, secure, and OCR.", color: "#06b6d4", bg: "#cffafe" },
     { icon: Users, title: "Trusted by Millions", desc: "Over 5 million people use DocNova every month for their document workflows.", color: "#f472b6", bg: "#fce7f3" },
   ];
   return (
