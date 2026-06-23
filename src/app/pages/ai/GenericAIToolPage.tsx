@@ -63,6 +63,7 @@ export default function GenericAIToolPage() {
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [cooldown, setCooldown] = useState(0);
   const [result, setResult] = useState<string | null>(null);
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [followUpQuestion, setFollowUpQuestion] = useState('');
@@ -144,6 +145,14 @@ export default function GenericAIToolPage() {
     };
   }, [isLoading, tool.label]);
 
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (cooldown > 0) {
+      timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
   // Reset all state when switching tools
   useEffect(() => {
     setFile(null);
@@ -167,6 +176,7 @@ export default function GenericAIToolPage() {
     }
     setIsLoading(true);
     setError('');
+    setCooldown(0);
     setResult(null);
     setFollowUpHistory([]);
     setFollowUpQuestion('');
@@ -217,7 +227,12 @@ export default function GenericAIToolPage() {
 
       setResult(data.result);
     } catch (err: any) {
-      setError(getFriendlyErrorMessage(err, 'ai'));
+      if (err.status === 429) {
+        setError('Too many requests. Please try again after ');
+        setCooldown(60);
+      } else {
+        setError(getFriendlyErrorMessage(err, 'ai'));
+      }
     } finally {
       setIsLoading(false);
       setLoadingText('Reading your PDF...');
@@ -851,7 +866,7 @@ export default function GenericAIToolPage() {
                       <div className="pt-5 mt-auto shrink-0" style={{ borderTop: '1px solid var(--dn-border)' }}>
                         <button
                           onClick={handleGenerate}
-                          disabled={isLoading || (tool.id === 'email-writer' ? !emailPrompt.trim() : !file)}
+                          disabled={isLoading || cooldown > 0 || (tool.id === 'email-writer' ? !emailPrompt.trim() : !file)}
                           className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#2563eb] to-[#0267b8] text-white font-semibold text-[16px] shadow-[0_8px_24px_rgba(37,99,235,0.28)] hover:shadow-[0_10px_34px_rgba(37,99,235,0.5)] hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                           {isLoading ? (
@@ -877,7 +892,10 @@ export default function GenericAIToolPage() {
                       <div className="rounded-xl p-[1px] bg-gradient-to-r from-purple-500/50 to-blue-500/50 transition-all animate-in fade-in slide-in-from-bottom-2">
                         <div className="rounded-xl p-5 flex items-start gap-3 w-full h-full" style={{ background: 'var(--dn-bg-card)' }}>
                           <AlertCircle size={20} className="text-purple-400 shrink-0 mt-0.5" />
-                          <p className="text-[15px] leading-relaxed font-medium" style={{ color: 'var(--dn-t1)' }}>{error}</p>
+                          <p className="text-[15px] leading-relaxed font-medium" style={{ color: 'var(--dn-t1)' }}>
+                            {error}
+                            {cooldown > 0 && <span>{cooldown} seconds.</span>}
+                          </p>
                         </div>
                       </div>
                     )}
