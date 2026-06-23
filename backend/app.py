@@ -249,13 +249,33 @@ def _kill_process_tree(proc):
 
 def _sweep_stale_temp_dirs(max_age_seconds=900):
     """Best-effort removal of leftover LibreOffice temp dirs from crashed jobs,
-    so the small disk/RAM footprint of the free tier doesn't accumulate."""
+    as well as old result files and temp files, so the small disk/RAM footprint 
+    of the free tier doesn't accumulate."""
     try:
         now = time.time()
+        
+        # Clean LibreOffice temp dirs
         for path in glob.glob(os.path.join(UPLOAD_FOLDER, 'lo_*')):
             try:
                 if now - os.path.getmtime(path) > max_age_seconds:
                     shutil.rmtree(path, ignore_errors=True)
+            except OSError:
+                pass
+                
+        # Clean old Result files (older than 1 hour)
+        results_age = 3600
+        for path in glob.glob(os.path.join(RESULTS_FOLDER, '*')):
+            try:
+                if os.path.isfile(path) and now - os.path.getmtime(path) > results_age:
+                    os.remove(path)
+            except OSError:
+                pass
+                
+        # Clean old general temp files in UPLOAD_FOLDER
+        for path in glob.glob(os.path.join(UPLOAD_FOLDER, '*')):
+            try:
+                if os.path.isfile(path) and now - os.path.getmtime(path) > max_age_seconds:
+                    os.remove(path)
             except OSError:
                 pass
     except Exception:
@@ -975,7 +995,7 @@ def merge_pdf():
         for file in files:
             if file and file.filename and allowed_file(file, ALLOWED_PDF):
                 filename = secure_filename(file.filename)
-                temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_{filename}")
+                temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4().hex}_{filename}")
                 file.save(temp_path)
                 temp_paths.append(temp_path)
 
@@ -991,7 +1011,7 @@ def merge_pdf():
             return jsonify({'error': 'At least 2 valid PDF files required'}), 400
 
         # Write merged PDF to temporary file
-        output_path = os.path.join(UPLOAD_FOLDER, f"merged_{datetime.now().timestamp()}.pdf")
+        output_path = os.path.join(UPLOAD_FOLDER, f"merged_{uuid.uuid4().hex}.pdf")
         with open(output_path, 'wb') as output_file:
             writer.write(output_file)
 
@@ -1092,7 +1112,7 @@ def compress_pdf():
         if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
         
-        temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_input.pdf")
+        temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4().hex}_input.pdf")
         file.save(temp_path)
         
         reader = PdfReader(temp_path)
@@ -1103,7 +1123,7 @@ def compress_pdf():
             writer.add_page(page)
         
         # Write to file instead of BytesIO
-        output_path = os.path.join(UPLOAD_FOLDER, f"compressed_{datetime.now().timestamp()}.pdf")
+        output_path = os.path.join(UPLOAD_FOLDER, f"compressed_{uuid.uuid4().hex}.pdf")
         with open(output_path, 'wb') as output_file:
             writer.write(output_file)
         
@@ -1138,7 +1158,7 @@ def split_pdf():
         if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
         
-        temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_input.pdf")
+        temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4().hex}_input.pdf")
         file.save(temp_path)
         
         try:
@@ -1197,7 +1217,7 @@ def pdf_to_jpg():
         if not file or not allowed_file(file, ALLOWED_PDF):
             return jsonify({'error': 'Invalid PDF file'}), 400
         
-        temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_input.pdf")
+        temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4().hex}_input.pdf")
         file.save(temp_path)
         
         try:
@@ -1403,7 +1423,7 @@ def jpg_to_pdf():
         try:
             for file in files:
                 if file and allowed_file(file, ALLOWED_IMAGES):
-                    temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().timestamp()}_{secure_filename(file.filename)}")
+                    temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4().hex}_{secure_filename(file.filename)}")
                     file.save(temp_path)
                     temp_paths.append(temp_path)
                     
@@ -1984,7 +2004,7 @@ def apply_editor_edits():
             except Exception as layer_error:
                 print(f"Skipping editor layer {layer_type}: {layer_error}")
 
-        output_path = os.path.join(UPLOAD_FOLDER, f"edited_{datetime.now().timestamp()}.pdf")
+        output_path = os.path.join(UPLOAD_FOLDER, f"edited_{uuid.uuid4().hex}.pdf")
         doc.save(output_path, garbage=4, deflate=True)
         doc.close()
 
