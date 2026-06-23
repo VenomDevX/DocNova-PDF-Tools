@@ -32,6 +32,10 @@ class AIProcessSchema(SanitizedBaseModel):
     toolId: str
     model: Optional[str] = "gemini-3.5-flash"
     
+    # File metadata (used by /api/ai/process for type/size validation)
+    fileName: Optional[str] = None
+    mimeType: Optional[str] = None
+    
     # Toggles (sent as strings from FormData or bools from JSON)
     includeKeyPoints: Optional[Union[str, bool]] = False
     includeImportantDates: Optional[Union[str, bool]] = False
@@ -45,6 +49,7 @@ class AIProcessSchema(SanitizedBaseModel):
     summaryLength: Optional[str] = "Medium"
     outputStyle: Optional[str] = "Bullet Points"
     tone: Optional[str] = "Professional"
+    prompt: Optional[str] = None
 
 class AIChatMessageSchema(SanitizedBaseModel):
     role: str

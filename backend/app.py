@@ -2098,9 +2098,11 @@ def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/ai/process', methods=['POST'])
+@limiter.limit("5 per minute")
+@validate_request(AIProcessSchema)
 def ai_process():
     try:
-        data = request.json
+        data = getattr(request, 'validated_data', {})
         if not data:
             return jsonify({'error': 'No JSON payload provided'}), 400
             
@@ -2111,7 +2113,7 @@ def ai_process():
         if model not in allowed_models:
             model = 'gemini-3.5-flash'
             
-        print(f"DEBUG: tool_id is {tool_id!r}, type(tool_id) is {type(tool_id)}, file_base64 is bool {bool(file_base64)}")
+
         
         if not file_base64 and tool_id != 'email-writer':
             return jsonify({'error': 'No file provided'}), 400
@@ -2323,9 +2325,7 @@ def ai_process():
         return jsonify({'error': 'API Quota reached for all available free models. Please try again after some time.'}), 429
 
     except Exception as e:
-        import traceback
-        print('Gemini Unexpected error:', e)
-        traceback.print_exc()
+        print(f'[ERROR] AI process failed: {type(e).__name__}')
         return jsonify({'error': 'Failed to process document'}), 500
 
 @app.route('/api/ai/chat', methods=['POST'])
