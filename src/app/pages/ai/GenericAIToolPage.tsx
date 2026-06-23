@@ -278,6 +278,14 @@ export default function GenericAIToolPage() {
     }
   };
 
+  const renderSettingsBlocks = () => (
+    <>
+
+                        {renderSettingsBlocks()}
+
+    </>
+  );
+
   return (
     <div className="flex flex-col w-full h-screen overflow-hidden relative font-['Inter']" style={{ background: "var(--dn-bg)", color: "var(--dn-t1)", transition: "var(--dn-transition)" }}>
       {/* Background Blobs */}
@@ -592,42 +600,9 @@ export default function GenericAIToolPage() {
                     <h4 className="font-bold text-[20px] text-[var(--dn-t2)] uppercase tracking-wider mb-6 flex items-center gap-2">
                       <Settings size={20} /> Configuration
                     </h4>
+                    {renderSettingsBlocks()}
 
-                    {/* Summary Length */}
-                    {tool.id === 'pdf-summary' && (
-                      <div className="mb-6">
-                        <label className="block font-semibold text-[16px] text-[var(--dn-t2)] mb-2">Length</label>
-                        <div className="flex bg-[var(--dn-bg-input)] border border-[var(--dn-border)] rounded-lg p-1">
-                          {['Short', 'Medium', 'Detailed'].map((len) => (
-                            <button
-                              key={len}
-                              onClick={() => setSettings({ ...settings, summaryLength: len })}
-                              className={`flex-1 py-2 px-2 rounded-md font-medium text-[14px] transition-all ${settings.summaryLength === len ? 'bg-[var(--dn-bg-input)] text-[var(--dn-t1)] shadow-sm' : 'text-[var(--dn-t4)] hover:text-[var(--dn-t1)]'}`}
-                            >
-                              {len}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
-                    {/* Include Toggles */}
-                    {tool.id === 'pdf-summary' && (
-                      <div className="space-y-4 mb-6">
-                        {[
-                          { key: 'includeKeyPoints', label: 'Extract Key Points' },
-                          { key: 'includeImportantDates', label: 'Important Dates' },
-                          { key: 'includeConclusion', label: 'Generate Conclusions' }
-                        ].map((toggle) => (
-                          <label key={toggle.key} className="flex items-center justify-between cursor-pointer group py-1" onClick={() => setSettings({ ...settings, [toggle.key]: !(settings as any)[toggle.key] })}>
-                            <span className="text-[16px] font-medium text-[var(--dn-t2)] group-hover:text-[var(--dn-t1)] transition-colors">{toggle.label}</span>
-                            <div className={`relative w-11 h-6 rounded-full transition-all ${(settings as any)[toggle.key] ? 'bg-[#2563eb] shadow-[0_0_10px_rgba(37,99,235,0.3)]' : 'bg-[var(--dn-bg-input)] border border-[var(--dn-border)]'}`}>
-                              <div className={`absolute top-[2px] w-5 h-5 rounded-full transition-transform ${(settings as any)[toggle.key] ? 'bg-white translate-x-5' : 'bg-[#94A3B8] translate-x-0 left-[2px]'}`}></div>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    )}
 
                     {/* Action Button moved here for quick re-generate with new settings */}
                     <button
@@ -717,149 +692,7 @@ export default function GenericAIToolPage() {
 
                       {/* Scrollable settings */}
                       <div className="flex-1 overflow-y-auto pr-2 aether-scrollbar space-y-6">
-
-                        {/* AI Model */}
-                        <div>
-                          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--dn-t3)' }}>AI Model</label>
-                          <div className="flex flex-wrap gap-1 rounded-xl p-1" style={{ background: 'var(--dn-bg-subtle)', border: '1px solid var(--dn-border)' }}>
-                            {[
-                              { id: 'gemini-3.1-flash-lite', label: '3.1 Flash Lite' },
-                              { id: 'gemini-2.0-flash', label: '2.0 Flash' },
-                              { id: 'gemini-2.5-flash', label: '2.5 Flash' },
-                              { id: 'gemini-2.5-pro', label: '2.5 Pro' }
-                            ].map((m) => {
-                              const active = settings.model === m.id;
-                              return (
-                                <button
-                                  key={m.id}
-                                  onClick={() => setSettings({ ...settings, model: m.id })}
-                                  className="flex-1 min-w-[70px] py-2 px-2 rounded-lg font-medium text-[12.5px] transition-all"
-                                  style={active
-                                    ? { background: 'var(--dn-bg-card)', color: 'var(--dn-t1)', boxShadow: 'var(--dn-shadow)', border: '1px solid var(--dn-border)' }
-                                    : { color: 'var(--dn-t3)', border: '1px solid transparent' }}
-                                >
-                                  {m.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Output Length */}
-                        {tool.id === 'pdf-summary' && (
-                          <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--dn-t3)' }}>Output Length</label>
-                            <div className="flex gap-1 rounded-xl p-1" style={{ background: 'var(--dn-bg-subtle)', border: '1px solid var(--dn-border)' }}>
-                              {['Short', 'Medium', 'Detailed'].map((len) => {
-                                const active = settings.summaryLength === len;
-                                return (
-                                  <button
-                                    key={len}
-                                    onClick={() => setSettings({ ...settings, summaryLength: len })}
-                                    className="flex-1 py-2 px-4 rounded-lg font-medium text-[12.5px] transition-all"
-                                    style={active
-                                      ? { background: 'var(--dn-bg-card)', color: 'var(--dn-t1)', boxShadow: 'var(--dn-shadow)', border: '1px solid var(--dn-border)' }
-                                      : { color: 'var(--dn-t3)', border: '1px solid transparent' }}
-                                  >
-                                    {len}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Output Style */}
-                        {tool.id === 'pdf-summary' && (
-                          <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--dn-t3)' }}>Output Style</label>
-                            <div className="grid grid-cols-3 gap-2">
-                              {['Bullets', 'Paragraph', 'Notes'].map((style) => {
-                                const active = settings.outputStyle === style;
-                                return (
-                                  <button
-                                    key={style}
-                                    onClick={() => setSettings({ ...settings, outputStyle: style })}
-                                    className="py-2 px-2 rounded-lg font-medium text-[12.5px] transition-all"
-                                    style={active
-                                      ? { background: 'rgba(37,99,235,0.12)', color: 'var(--dn-t1)', border: '1px solid rgba(37,99,235,0.4)' }
-                                      : { color: 'var(--dn-t3)', background: 'var(--dn-bg-subtle)', border: '1px solid var(--dn-border)' }}
-                                  >
-                                    {style}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Tone */}
-                        {['pdf-summary', 'email-writer', 'smart-rewriter'].includes(tool.id) && (
-                          <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--dn-t3)' }}>Tone</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {['Professional', 'Casual', 'Academic', 'Simple'].map((t) => {
-                                const active = settings.tone === t;
-                                return (
-                                  <button
-                                    key={t}
-                                    onClick={() => setSettings({ ...settings, tone: t })}
-                                    className="py-2 px-3 rounded-lg font-medium text-[12.5px] transition-all text-left"
-                                    style={active
-                                      ? { background: 'rgba(37,99,235,0.12)', color: 'var(--dn-t1)', border: '1px solid rgba(37,99,235,0.4)' }
-                                      : { color: 'var(--dn-t3)', background: 'var(--dn-bg-subtle)', border: '1px solid var(--dn-border)' }}
-                                  >
-                                    {t}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Output Language */}
-                        {['pdf-summary', 'email-writer', 'translator', 'smart-rewriter', 'pdf-chat', 'contract-review'].includes(tool.id) && (
-                          <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--dn-t3)' }}>Output Language</label>
-                            <div className="relative">
-                              <select
-                                value={settings.language}
-                                onChange={e => setSettings({ ...settings, language: e.target.value })}
-                                className="h-11 w-full appearance-none rounded-xl px-3 pr-9 text-[14px] font-medium outline-none transition focus:border-[#2563eb]"
-                                style={{ background: 'var(--dn-bg-subtle)', border: '1px solid var(--dn-border)', color: 'var(--dn-t1)' }}
-                              >
-                                {['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Dutch', 'Russian', 'Arabic', 'Chinese', 'Japanese', 'Korean', 'Hindi'].map(lang => (
-                                  <option key={lang} value={lang} style={{ background: 'var(--dn-bg-card)', color: 'var(--dn-t1)' }}>{lang}</option>
-                                ))}
-                              </select>
-                              <ChevronRight size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-90" style={{ color: 'var(--dn-t3)' }} />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Include Toggles */}
-                        {tool.id === 'pdf-summary' && (
-                          <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--dn-t3)' }}>Include</label>
-                            <div className="space-y-1">
-                              {[
-                                { key: 'includeKeyPoints', label: 'Extract Key Points' },
-                                { key: 'includeImportantDates', label: 'Identify Important Dates' },
-                                { key: 'includeConclusion', label: 'Generate Conclusions' }
-                              ].map((toggle) => {
-                                const on = (settings as any)[toggle.key];
-                                return (
-                                  <label key={toggle.key} className="flex items-center justify-between cursor-pointer py-1.5" onClick={() => setSettings({ ...settings, [toggle.key]: !on })}>
-                                    <span className="text-[14px] font-medium" style={{ color: 'var(--dn-t2)' }}>{toggle.label}</span>
-                                    <span className="relative w-10 h-5 rounded-full transition-all shrink-0" style={{ background: on ? '#2563eb' : 'var(--dn-bg-subtle)', border: on ? '1px solid #2563eb' : '1px solid var(--dn-border)' }}>
-                                      <span className="absolute top-[2px] w-4 h-4 rounded-full transition-all" style={{ background: on ? '#fff' : 'var(--dn-t3)', left: on ? '20px' : '2px' }}></span>
-                                    </span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
+                        {renderSettingsBlocks()}
                       </div>
 
                       {/* Generate — pinned bottom */}
