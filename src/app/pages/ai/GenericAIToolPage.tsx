@@ -367,12 +367,12 @@ export default function GenericAIToolPage() {
                   </div>
 
                   {/* Time Estimation */}
-                  <div className="flex justify-between items-center mb-8">
+                  <div className={`flex justify-between items-center ${file ? 'mb-8' : ''}`}>
                     <span className="text-[12px] text-[var(--dn-t2)]">This might take a few moments</span>
                   </div>
 
                   {/* Divider */}
-                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8"></div>
+                  {file && <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8"></div>}
 
                   {/* File Metadata */}
                   {file && (
@@ -401,8 +401,8 @@ export default function GenericAIToolPage() {
                   </button>
                 </div>
 
-                {/* 2-Column Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-6 h-[calc(100vh-30px)]">
+                {/* 2-Column or 1-Column Grid depending on if tool has settings */}
+                <div className={`grid grid-cols-1 gap-6 h-[calc(100vh-30px)] ${tool.id === 'pdf-summary' ? 'lg:grid-cols-[70%_30%]' : ''}`}>
 
                   {/* Center Panel: AI Output Hero */}
                   <div className="flex flex-col h-full bg-[var(--dn-bg-card)] backdrop-blur-2xl border border-[var(--dn-border)] rounded-[6px] relative overflow-hidden shadow-2xl transition-colors">
@@ -525,7 +525,7 @@ export default function GenericAIToolPage() {
 
                         <div className="flex items-center justify-between mb-4">
                           <span className="text-[11px] text-[var(--dn-t4)]">
-                            {tool.id === 'pdf-summary' 
+                            {tool.id === 'pdf-summary'
                               ? `Generated Successfully • ${settings.summaryLength} length • ${settings.outputStyle}`
                               : `Generated Successfully • ${tool.label}`}
                           </span>
@@ -588,13 +588,13 @@ export default function GenericAIToolPage() {
                   </div>
 
                   {/* Right Panel: Settings (Compacted) */}
-                  <div className="flex flex-col h-full bg-[var(--dn-bg-subtle)] backdrop-blur-xl border border-[var(--dn-border)] rounded-[6px] p-6 overflow-y-auto aether-scrollbar">
-                    <h4 className="font-bold text-[20px] text-[var(--dn-t2)] uppercase tracking-wider mb-6 flex items-center gap-2">
-                      <Settings size={20} /> Configuration
-                    </h4>
+                  {tool.id === 'pdf-summary' && (
+                    <div className="flex flex-col h-full bg-[var(--dn-bg-subtle)] backdrop-blur-xl border border-[var(--dn-border)] rounded-[6px] p-6 overflow-y-auto aether-scrollbar">
+                      <h4 className="font-bold text-[20px] text-[var(--dn-t2)] uppercase tracking-wider mb-6 flex items-center gap-2">
+                        <Settings size={20} /> Configuration
+                      </h4>
 
-                    {/* Summary Length */}
-                    {tool.id === 'pdf-summary' && (
+                      {/* Summary Length */}
                       <div className="mb-6">
                         <label className="block font-semibold text-[16px] text-[var(--dn-t2)] mb-2">Length</label>
                         <div className="flex bg-[var(--dn-bg-input)] border border-[var(--dn-border)] rounded-lg p-1">
@@ -609,10 +609,8 @@ export default function GenericAIToolPage() {
                           ))}
                         </div>
                       </div>
-                    )}
 
-                    {/* Include Toggles */}
-                    {tool.id === 'pdf-summary' && (
+                      {/* Include Toggles */}
                       <div className="space-y-4 mb-6">
                         {[
                           { key: 'includeKeyPoints', label: 'Extract Key Points' },
@@ -627,18 +625,18 @@ export default function GenericAIToolPage() {
                           </label>
                         ))}
                       </div>
-                    )}
 
-                    {/* Action Button moved here for quick re-generate with new settings */}
-                    <button
-                      onClick={handleGenerate}
-                      disabled={isLoading || (tool.id === 'email-writer' ? !emailPrompt.trim() : !file)}
-                      className="w-full py-4 mt-auto rounded-xl bg-[var(--dn-bg-subtle)] border border-[var(--dn-border)] hover:border-[var(--dn-border2)] text-[var(--dn-t1)] font-bold text-[18px] transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Sparkles size={20} className="group-hover:rotate-12 transition-transform text-[#3b82f6]" />
-                      Apply Settings
-                    </button>
-                  </div>
+                      {/* Action Button moved here for quick re-generate with new settings */}
+                      <button
+                        onClick={handleGenerate}
+                        disabled={isLoading || !file}
+                        className="w-full py-4 mt-auto rounded-xl bg-[var(--dn-bg-subtle)] border border-[var(--dn-border)] hover:border-[var(--dn-border2)] text-[var(--dn-t1)] font-bold text-[18px] transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Sparkles size={20} className="group-hover:rotate-12 transition-transform text-[#3b82f6]" />
+                        Apply Settings
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -669,7 +667,7 @@ export default function GenericAIToolPage() {
                       <div className="flex flex-col h-[650px] rounded-2xl p-6 transition-colors" style={{ background: 'var(--dn-bg-card)', border: '1px solid var(--dn-border)', boxShadow: 'var(--dn-shadow)' }}>
                         <h3 className="text-[18px] font-semibold text-[var(--dn-t1)] mb-4">Email Details</h3>
                         <p className="text-[14px] text-[var(--dn-t3)] mb-4">Describe the email you want to generate. Who is it for? What is the main purpose?</p>
-                        <textarea 
+                        <textarea
                           value={emailPrompt}
                           onChange={(e) => setEmailPrompt(e.target.value)}
                           placeholder="E.g., Write a follow-up email to the client about yesterday's meeting..."
