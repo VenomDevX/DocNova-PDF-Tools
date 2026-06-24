@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Github, Linkedin, Globe, Check, ArrowUp, Loader2 } from "lucide-react";
 
-const PORTFOLIO_URL = "https://venomparth.dev";
+const PORTFOLIO_URL = "https://www.venomdevx.dev";
 const GITHUB_URL = "https://github.com/venom-parth";
 const LINKEDIN_URL = "https://www.linkedin.com/in/parth-sharma-b96661245/";
 
