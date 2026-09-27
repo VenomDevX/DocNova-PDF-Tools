@@ -1,103 +1,161 @@
-# 🚀 DocNova PDF Tools
+<div align="center">
+
+<img src="public/logo.svg" width="88" alt="DocNova logo" />
+
+# DocNova
+
+**Your documents, finally understood.**
+
+52 free PDF tools and an AI assistant that summarizes, explains and chats with your documents.<br>
+No sign-up. No watermarks. No limits.
+
+<br>
+
+<a href="https://www.docnova.in"><img src="https://img.shields.io/badge/Try_it_live-docnova.in-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Try it live" /></a>
+<a href="https://github.com/VenomDevX/DocNova-PDF-Tools/stargazers"><img src="https://img.shields.io/github/stars/VenomDevX/DocNova-PDF-Tools?style=for-the-badge&logo=github&color=0d1117&labelColor=0d1117" alt="Stars" /></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0d1117?style=for-the-badge" alt="MIT License" /></a>
+
+<br>
+
+<img src="https://img.shields.io/badge/React-0d1117?style=flat-square&logo=react&logoColor=61DAFB" alt="React" />
+<img src="https://img.shields.io/badge/TypeScript-0d1117?style=flat-square&logo=typescript&logoColor=3178C6" alt="TypeScript" />
+<img src="https://img.shields.io/badge/Vite-0d1117?style=flat-square&logo=vite&logoColor=A78BFA" alt="Vite" />
+<img src="https://img.shields.io/badge/Tailwind-0d1117?style=flat-square&logo=tailwindcss&logoColor=38BDF8" alt="Tailwind CSS" />
+<img src="https://img.shields.io/badge/Python-0d1117?style=flat-square&logo=python&logoColor=3776AB" alt="Python" />
+<img src="https://img.shields.io/badge/Flask-0d1117?style=flat-square&logo=flask&logoColor=white" alt="Flask" />
+<img src="https://img.shields.io/badge/Gemini-0d1117?style=flat-square&logo=googlegemini&logoColor=8E75B2" alt="Gemini" />
+
+<br><br>
+
+<a href="https://www.docnova.in"><img src="docs/home.png" width="100%" alt="DocNova home page" /></a>
+
+</div>
+
+<br>
+
+## Why DocNova?
+
+Most PDF sites cap your files, stamp watermarks or ask for an account. DocNova does not.
+
+| | |
+| :-- | :-- |
+| 🧰 **52 tools, one place** | Convert, organize, edit, secure and OCR without switching sites |
+| 🤖 **AI that reads for you** | Summaries, PDF chat, quizzes, flashcards, mind maps and contract review, powered by Gemini |
+| 🔒 **Private by default** | No database. Uploads are temporary and wiped automatically after processing |
+| ⚡ **Fast and free** | React + Vite frontend, lightweight Flask backend, $0 to use |
+
+<br>
+
+## Tools
 
 <p align="center">
-  <b>The ultimate, all-in-one PDF manipulation and AI-powered document suite.</b> <br/>
-  Featuring 53+ powerful tools across 6 categories. No watermarks. No sign-ups. Free forever.
+  <img src="docs/tools.png" width="100%" alt="DocNova tools page" />
 </p>
 
----
+<details>
+<summary><b>🤖 AI Tools</b> · 14</summary>
+<br>
+Summarizer · PDF Chat · Email Writer · Smart Rewriter · OCR Extractor · Resume Analyzer · Quiz Generator · Flashcards · Translator · Table Extractor · Contract Review · Document Categorizer · Mind Maps · Study Assistant
+</details>
 
-## ✨ Features
+<details>
+<summary><b>🔄 Convert</b> · 11</summary>
+<br>
+PDF ⇄ Word · PDF ⇄ Excel · PDF ⇄ PowerPoint · PDF ⇄ JPG · PNG to PDF · PDF to Images · Image to PDF
+</details>
 
-DocNova isn't just a basic PDF editor—it is a complete document command center powered by Google's cutting-edge Gemini AI.
+<details>
+<summary><b>🗂️ Organize</b> · 9</summary>
+<br>
+Merge · Split · Rotate · Delete Pages · Reorder Pages · Extract Pages · Insert Pages · Resize · Compress
+</details>
 
-*   **🤖 AI-Powered Document Analysis:** Extract key points, generate flashcards, summarize 100-page PDFs in seconds, and have interactive follow-up Q&A conversations with your documents.
-*   **🛠️ 53+ Professional Tools:** Everything you need in one place. Split, merge, compress, protect, unlock, rotate, and convert PDFs.
-*   **🔒 Complete Privacy & Security:** Your data is yours. Files are securely processed using cryptographically safe UUIDs, and automated cleanup scripts ensure your documents are permanently wiped from the server the moment you're done. We do not train models on your data.
-*   **⚡ Blazing Fast:** Built with a highly optimized React/Vite frontend and a lightweight Python Flask backend, ensuring ultra-fast load times and instant conversions.
-*   **📱 Responsive & Beautiful UI:** A premium, glassmorphic design that looks stunning and functions perfectly on desktops, tablets, and phones.
+<details>
+<summary><b>✏️ Edit</b> · 10</summary>
+<br>
+Edit PDF · Annotate · Add Text · Add Image · Highlight · Draw · Crop · Redact · Watermark · Page Numbers
+</details>
 
----
+<details>
+<summary><b>🔐 Secure</b> · 6</summary>
+<br>
+Lock · Unlock · Protect · Remove Password · Encrypt · Decrypt
+</details>
 
-## 💻 Tech Stack
+<details>
+<summary><b>🔍 OCR</b> · 2</summary>
+<br>
+PDF OCR · Image OCR
+</details>
 
-**Frontend:**
-*   React 18 + TypeScript
-*   Vite (for blazing fast build tooling)
-*   Tailwind CSS (for fluid, responsive design)
-*   Lucide React (for crisp, modern iconography)
+<br>
 
-**Backend:**
-*   Python 3 + Flask
-*   Google Gemini AI API (for LLM-powered document intelligence)
-*   Flask-Limiter (for robust API rate limiting and DoS protection)
-*   PyPDF2 / pdf2image (for low-level document manipulation)
+## Run it locally
 
----
+**You need:** Node.js 18+, Python 3.8+ and a free [Gemini API key](https://aistudio.google.com/apikey).
 
-## 🚀 Running Locally
-
-Want to run DocNova on your own machine? It's incredibly simple.
-
-### Prerequisites
-*   Node.js (v18+)
-*   Python (3.8+)
-*   A free Google Gemini API Key
-
-### 1. Clone the repository
 ```bash
 git clone https://github.com/VenomDevX/DocNova-PDF-Tools.git
 cd DocNova-PDF-Tools
 ```
 
-### 2. Setup the Backend
-Open a terminal and navigate to the `backend` folder:
+**Backend** (terminal 1)
+
 ```bash
 cd backend
 python -m venv venv
-
-# On Windows:
-venv\Scripts\activate
-# On Mac/Linux:
-source venv/bin/activate
-
+venv\Scripts\activate          # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
-```
-Create a `.env` file in the `backend` directory and add your API key:
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-Start the server:
-```bash
+echo GEMINI_API_KEY=your_key_here > .env
 python app.py
 ```
 
-### 3. Setup the Frontend
-Open a *new* terminal and stay in the root project folder:
+**Frontend** (terminal 2, project root)
+
 ```bash
 npm install
 npm run dev
 ```
 
-Your app will now be running on `http://localhost:5173`!
+Open **http://localhost:5173**. For more detail see [`START_HERE.md`](START_HERE.md) and [`BACKEND_SETUP.md`](BACKEND_SETUP.md).
 
----
+<br>
 
-## 🛡️ Security
+## Tech stack
 
-DocNova has been professionally audited and hardened against common web vulnerabilities:
-*   **Rate Limiting:** Protects against API abuse and bot-spamming.
-*   **Input Sanitization:** Strict Pydantic schemas and `bleach` sanitization prevent XSS and injection attacks.
-*   **File Upload Hardening:** Magic-byte validation (`python-magic`) blocks malicious file spoofing.
-*   **Stateless Processing:** No databases. Uploads are strictly temporary and auto-purged from memory and disk.
+| Layer | Built with |
+| :-- | :-- |
+| Frontend | React 18 · TypeScript · Vite · Tailwind CSS · Lucide icons |
+| Backend | Python · Flask · Gunicorn |
+| Documents | PyMuPDF · PyPDF2 · pdf2image · python-docx · openpyxl · ReportLab |
+| AI | Google Gemini (`google-genai`) |
+| Hosting | Vercel (frontend) · Render (backend) |
 
----
+<br>
 
-## 📜 License
+## Security
 
-This project is licensed under the **MIT License**. You are free to use, modify, and distribute this software, as long as the original copyright header is included. See the `LICENSE` file for details.
+- **Rate limiting** with Flask-Limiter against abuse and bot spam
+- **Input validation** with Pydantic schemas and `bleach` sanitization
+- **Upload hardening** with magic-byte checks (`python-magic`) to block spoofed files
+- **Stateless processing** with no database; files use random UUIDs and are purged after use
 
----
-<p align="center">
-  Built with ❤️ by <b>PARTH SHARMA</b>
-</p>
+<br>
+
+## Contributing
+
+Found a bug or want a new tool? [Open an issue](https://github.com/VenomDevX/DocNova-PDF-Tools/issues) or send a pull request. All contributions are welcome.
+
+## License
+
+[MIT](LICENSE) © Parth Sharma
+
+<br>
+
+<div align="center">
+
+**If DocNova saved you time, please give it a ⭐. It helps other people find it.**
+
+<a href="https://github.com/VenomDevX/DocNova-PDF-Tools/stargazers"><img src="https://img.shields.io/github/stars/VenomDevX/DocNova-PDF-Tools?style=social" alt="Star DocNova" /></a>
+
+</div>
