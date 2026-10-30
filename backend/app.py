@@ -14,7 +14,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
-from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 from PIL import Image, ImageDraw
 from docx import Document
 from pdf2image import convert_from_path
