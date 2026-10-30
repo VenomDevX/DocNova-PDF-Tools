@@ -4,7 +4,7 @@ import { Github, Linkedin, Globe, Check, ArrowUp, Loader2 } from "lucide-react";
 
 const PORTFOLIO_URL = "https://www.venomdevx.dev";
 const GITHUB_URL = "https://github.com/venom-parth";
-const LINKEDIN_URL = "https://www.linkedin.com/in/parth-sharma-b96661245/";
+const LINKEDIN_URL = "https://www.linkedin.com/in/parthsharma-venomdevx/";
 
 /** Link to a feature that isn't built yet — clearly disabled, never a silent dead click. */
 function ComingSoonLink({ label }: { label: string }) {
