@@ -5,6 +5,14 @@
   Featuring 53+ powerful tools across 6 categories. No watermarks. No sign-ups. Free forever.
 </p>
 
+<p align="center">
+  <a href="https://www.docnova.in"><img src="https://img.shields.io/badge/Try_it_live-docnova.in-8B5CF6?style=for-the-badge" alt="Live demo" /></a>
+  <a href="https://github.com/VenomDevX/DocNova-PDF-Tools/stargazers"><img src="https://img.shields.io/github/stars/VenomDevX/DocNova-PDF-Tools?style=for-the-badge&color=yellow" alt="Stars" /></a>
+  <img src="https://img.shields.io/badge/license-MIT-333?style=for-the-badge" alt="MIT License" />
+</p>
+
+<p align="center"><sub>⭐ If DocNova saves you time, star the repo — it helps others find it.</sub></p>
+
 ---
 
 ## ✨ Features
